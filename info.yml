@@ -1,0 +1,20 @@
+#
+# Copyright (c) 2012 Shotgun Software, Inc
+# ----------------------------------------------------
+#
+# Metadata defining the behaviour and requirements for this engine
+
+# expected fields in the configuration file for this engine
+configuration:
+    debug_logging: 
+        type: bool
+        description: Controls whether debug messages should be emitted to the logger
+        default_value: false
+    
+    template_project: 
+        type: template
+        description: Template to use to determine where to set the maya project location
+
+# the Shotgun fields that this engine needs in order to operate correctly
+requires_shotgun_fields:
+        
