@@ -206,18 +206,18 @@ class MayaEngine(tank.system.Engine):
         """
         enabled = True
         
-        if cmd["properties"].has_key("enable_callback"):
-            enabled = cmd["properties"]["enable_callback"]()
+        if "enable_callback" in properties:
+            enabled = properties["enable_callback"]()
         
         params = {
-            "label": cmd["name"],
-            "command": Callback(cmd["callback"]),
+            "label": cmd_name,
+            "command": Callback(callback),
             "parent": self._menu_handle,
             "enable": enabled
         }
         
-        if cmd["properties"].has_key("tooltip"):
-            params["annotation"] = cmd["properties"]["tooltip"]
+        if "tooltip" in properties:
+            params["annotation"] = properties["tooltip"]
         
         pm.menuItem(**params)
 
@@ -315,7 +315,7 @@ class MayaEngine(tank.system.Engine):
         self.__add_context_menu()
         
         # user commands
-        for (cmd_name, cmd_data) in self.commands:
+        for (cmd_name, cmd_data) in self.commands.items():
             self.__add_command_to_menu(cmd_name, cmd_data["callback"], cmd_data["properties"])
         
         # lastly, add the help menu
