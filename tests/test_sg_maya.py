@@ -52,7 +52,7 @@ class MayaEngineTestBase(TankTestBase):
         """
         if tank.engine():
             tank.engine().destroy()
-        ctx = tank.system.Context(**kws)
+        ctx = tank.platform.Context(**kws)
         return MayaEngine(ctx)
 
     def mock_dialogs(self):
@@ -79,7 +79,7 @@ class MayaEngineTestBase(TankTestBase):
 class TestMayaEngine(MayaEngineTestBase):
 
     def test_engine(self):
-        self.assertIsInstance(self.engine, tank.system.engine.Engine)
+        self.assertIsInstance(self.engine, tank.platform.engine.Engine)
 
     def test_create_folders(self):
         """Tests that if path for given context does not yet exist, it is created during engine initialization."""

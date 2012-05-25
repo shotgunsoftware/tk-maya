@@ -51,7 +51,7 @@ def on_scene_event_cb(engine_name, prev_context):
         else:
             # look at current file to get the context
             new_path = pm.sceneName().abspath()
-            ctx = tank.system.Context.from_path(new_path)    
+            ctx = tank.platform.Context.from_path(new_path)    
     
             # if an engine is active right now and context is unchanged, no need to 
             # rebuild the same engine again!
@@ -68,7 +68,7 @@ def on_scene_event_cb(engine_name, prev_context):
     
         # create new engine
         try:
-            new_engine = tank.system.start_engine(engine_name, ctx)    
+            new_engine = tank.platform.start_engine(engine_name, ctx)    
         
         except tank.TankEngineInitError, e:
             OpenMaya.MGlobal.displayInfo("Tank Engine cannot be started: %s" % e)
@@ -119,7 +119,7 @@ def create_tank_disabled_menu():
 ###############################################################################################
 # The Tank Maya engine
 
-class MayaEngine(tank.system.Engine):
+class MayaEngine(tank.platform.Engine):
     
     ##########################################################################################
     # init and destroy
@@ -138,7 +138,7 @@ class MayaEngine(tank.system.Engine):
         # for the maya engine (because it for example sets the maya project)
         if len(self.context.entity_locations) == 0:
             # Try to create path for the context.
-            tank.system.schema.create_filesystem_structure(self.shotgun,
+            tank.platform.schema.create_filesystem_structure(self.shotgun,
                                                            self.context.project_root,
                                                            self.context.entity["type"],
                                                            self.context.entity["id"])
