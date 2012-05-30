@@ -35,28 +35,27 @@ def on_scene_event_cb(engine_name, prev_context):
     """
     
     try:
-    
         current_engine = tank.platform.current_engine()
         
         # first make sure that the disabled menu is reset, if it exists...
         if pm.menu("TankMenuDisabled", exists=True):
             pm.deleteUI("TankMenuDisabled")
         
-        # if the scene opened is actually a file->new, then re-use the previous context
-        # 'untitled' will never result in a context so no point trying...    
+        # if the scene opened is actually a file->new, then maintain the current
+        # context/engine.
         if pm.sceneName() == "":
-            # untitled scene
-            ctx = prev_context
-            
+            return
         else:
-            # look at current file to get the context
             new_path = pm.sceneName().abspath()
-            ctx = tank.platform.Context.from_path(new_path)    
-    
+            
+            # this file could be in another project altogether, so create a new Tank
+            # API instance.
+            tk = tank.tank_from_path(new_path)
+            ctx = tk.context_from_path(new_path)
+            
             # if an engine is active right now and context is unchanged, no need to 
             # rebuild the same engine again!
             if current_engine is not None and ctx == prev_context:
-                # no need to change anything!
                 return
         
         if current_engine:
@@ -68,8 +67,7 @@ def on_scene_event_cb(engine_name, prev_context):
     
         # create new engine
         try:
-            new_engine = tank.platform.start_engine(engine_name, ctx)    
-        
+            new_engine = tank.platform.start_engine(engine_name, tk, ctx)
         except tank.TankEngineInitError, e:
             OpenMaya.MGlobal.displayInfo("Tank Engine cannot be started: %s" % e)
             # render menu
@@ -78,7 +76,6 @@ def on_scene_event_cb(engine_name, prev_context):
             cb_fn = lambda en=engine_name, pc=prev_context: on_scene_event_cb(en, pc)
             pm.scriptJob(event=["SceneOpened", cb_fn], runOnce=True)
             pm.scriptJob(event=["SceneSaved", cb_fn], runOnce=True)
-    
         else:
             new_engine.log_debug("Launched new engine for context!")
 
@@ -138,10 +135,8 @@ class MayaEngine(tank.platform.Engine):
         # for the maya engine (because it for example sets the maya project)
         if len(self.context.entity_locations) == 0:
             # Try to create path for the context.
-            tank.platform.schema.create_filesystem_structure(self.shotgun,
-                                                           self.context.project_root,
-                                                           self.context.entity["type"],
-                                                           self.context.entity["id"])
+            self.tank.create_filesystem_structure(self.context.entity["type"], self.context.entity["id"])
+            
             if len(self.context.entity_locations) == 0:
                 raise tank.TankError("No folders on disk are associated with the current context. The Maya "
                                      "engine requires a context which exists on disk in order to run "
