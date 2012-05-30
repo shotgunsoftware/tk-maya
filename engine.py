@@ -222,6 +222,12 @@ class MayaEngine(tank.platform.Engine):
         pm.menuItem(**params)
 
         
+    def __add_documentation_item(self, parent_menu, label, url):
+        pm.menuItem(label=label, 
+                    parent=parent_menu, 
+                    command=lambda arg, u=url: cmds.showHelp(u, absolute=True))
+        
+        
     def __add_documentation_to_menu(self):
         """
         Adds documentation items to menu based on what docs are available. 
@@ -231,11 +237,17 @@ class MayaEngine(tank.platform.Engine):
         pm.menuItem(divider=True, parent=self._menu_handle) 
         help_menu = pm.subMenuItem(label="Help", parent=self._menu_handle)
 
-        for d in self.documentation:
-            pm.menuItem(label=d, 
-                        parent=help_menu, 
-                        command=lambda arg, u=self.documentation[d]: cmds.showHelp(u, absolute=True))
-            pm.menuItem(divider=True, parent=help_menu)
+        if self.documentation_url:
+            self.__add_documentation_item(help_menu, "Engine Documentation", self.documentation_url)
+
+        for app in self.apps.values():
+            if app.documentation_url:
+                self.__add_documentation_item(help_menu, 
+                                              "%s Documentation" % app.display_name, 
+                                              app.documentation_url)
+                
+        if self.tank.documentation_url:
+            self.__add_documentation_item(help_menu, "Tank Core Documentation", self.tank.documentation_url)
         
     def __launch_context_in_fs(self):
         """
