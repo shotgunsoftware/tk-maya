@@ -152,7 +152,7 @@ class MayaEngine(tank.platform.Engine):
         
         # Watch for scene open events, we'll tear down this engine and start another one based
         # on the new context.
-        cb_fn = lambda en=self.name, pc=self.context: on_scene_event_cb(en, pc)
+        cb_fn = lambda en=self.instance_name, pc=self.context: on_scene_event_cb(en, pc)
         pm.scriptJob(event=["SceneOpened", cb_fn], runOnce=True)
         pm.scriptJob(event=["SceneSaved", cb_fn], runOnce=True)
         self.log_debug("Registered open and save callbacks.")
