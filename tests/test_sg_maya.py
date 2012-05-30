@@ -50,8 +50,8 @@ class MayaEngineTestBase(TankTestBase):
         Instantiates an engine with a context reflecting context
         related keywords passed.
         """
-        if tank.engine():
-            tank.engine().destroy()
+        if tank.platform.current_engine():
+            tank.platform.current_engine().destroy()
         ctx = tank.platform.Context(**kws)
         return MayaEngine(ctx)
 

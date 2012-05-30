@@ -36,7 +36,7 @@ def on_scene_event_cb(engine_name, prev_context):
     
     try:
     
-        current_engine = tank.engine()
+        current_engine = tank.platform.current_engine()
         
         # first make sure that the disabled menu is reset, if it exists...
         if pm.menu("TankMenuDisabled", exists=True):
