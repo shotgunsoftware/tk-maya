@@ -134,14 +134,10 @@ class MayaEngine(tank.platform.Engine):
         # now check that there is a location on disk which corresponds to the context
         # for the maya engine (because it for example sets the maya project)
         if len(self.context.entity_locations) == 0:
-            # Try to create path for the context.
-            self.tank.create_filesystem_structure(self.context.entity["type"], self.context.entity["id"])
+            raise tank.TankError("No folders on disk are associated with the current context. The Maya "
+                                 "engine requires a context which exists on disk in order to run "
+                                 "correctly.")
             
-            if len(self.context.entity_locations) == 0:
-                raise tank.TankError("No folders on disk are associated with the current context. The Maya "
-                                     "engine requires a context which exists on disk in order to run "
-                                     "correctly.")
-                
         # Set the Maya project based on config
         self._set_project()
         
@@ -215,13 +211,11 @@ class MayaEngine(tank.platform.Engine):
             params["annotation"] = properties["tooltip"]
         
         pm.menuItem(**params)
-
-        
+  
     def __add_documentation_item(self, parent_menu, label, url):
         pm.menuItem(label=label, 
                     parent=parent_menu, 
                     command=lambda arg, u=url: cmds.showHelp(u, absolute=True))
-        
         
     def __add_documentation_to_menu(self):
         """
@@ -272,8 +266,6 @@ class MayaEngine(tank.platform.Engine):
         if exit_code != 0:
             self.log_error("Failed to launch '%s'!" % cmd)
         
-        
-
     def __add_context_menu(self):
         """
         Adds a context menu which displays the current context
@@ -355,7 +347,7 @@ class MayaEngine(tank.platform.Engine):
         """
         Executes all items in the queue, one by one, in a controlled fashion
         """
-        self._maya_progress_bar = maya.mel.eval('$tmp = $gMainProgressBar');
+        self._maya_progress_bar = maya.mel.eval('$tmp = $gMainProgressBar')
         
         # execute one after the other syncronously
         while len(self._queue) > 0:
@@ -392,7 +384,7 @@ class MayaEngine(tank.platform.Engine):
             import maya.standalone             
             maya.standalone.initialize()        
         except: 
-           return True
+            return True
         return False
 
             
