@@ -1,0 +1,14 @@
+<RCC>
+  <qresource prefix="res">
+    <file>search.png</file>
+    <file>progress_bar_1.png</file>
+    <file>progress_bar_2.png</file>
+    <file>progress_bar_3.png</file>
+    <file>progress_bar_4.png</file>
+    <file>thumb_empty.png</file>
+    <file>thumb_loading_1.png</file>
+    <file>thumb_loading_2.png</file>
+    <file>thumb_loading_3.png</file>
+    <file>thumb_loading_4.png</file>
+  </qresource>
+</RCC>

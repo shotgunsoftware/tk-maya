@@ -1,0 +1,12 @@
+<RCC>
+  <qresource prefix="res">
+    <file>tank_logo.png</file>
+    <file>cog_white.png</file>
+    <file>logo_color_16.png</file>
+    <file>pipeline_step.png</file>
+    <file>icon_task.png</file>
+    <file>tank_env_logo.png</file>
+    <file>other_app_logo.png</file>
+    <file>tank_app_logo.png</file>
+  </qresource>
+</RCC>
