@@ -15,6 +15,21 @@ configuration:
         type: template
         description: Template to use to determine where to set the maya project location
 
+    menu_favourites:
+        type: list
+        description: "Controls the favourites section on the main menu. This is a list 
+                     and each menu item is a dictionary with keys app_instance and name.
+                     The app_instance parameter connects this entry to a particular
+                     app instance defined in the environment configuration file. The name
+                     is a menu name to make a favourite."
+        allows_empty: True                     
+        values:
+            type: dict
+            items:
+                name: { type: str }
+                app_instance: { type: str }
+
+
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
         

@@ -126,10 +126,16 @@ class MayaEngine(tank.platform.Engine):
         
         # our job queue
         self._queue = []
+        
+        
         # detect if in batch mode
         if self.in_maya_interpreter():
             self._menu_handle = pm.menu("TankMenu", label="Tank", parent=pm.melGlobals["gMainWindow"])
-            self._menu_handle.postMenuCommand(self._post_menu_command)
+            # create our menu handler
+            from tk_maya import MenuGenerator
+            self._menu_generator = MenuGenerator(self, self._menu_handle)
+            # hook things up so that the menu is created every time it is clicked
+            self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
         
         # now check that there is a location on disk which corresponds to the context
         # for the maya engine (because it for example sets the maya project)
@@ -188,138 +194,6 @@ class MayaEngine(tank.platform.Engine):
         self.log_info("Setting Maya project to '%s'" % proj_path)        
         pm.mel.setProject(proj_path)
     
-    ##########################################################################################
-    # managing the menu
-    
-    def __add_command_to_menu(self, cmd_name, callback, properties):
-        """
-        Helper used to populate the menu when it is being rebuilt
-        """
-        enabled = True
-        
-        if "enable_callback" in properties:
-            enabled = properties["enable_callback"]()
-        
-        params = {
-            "label": cmd_name,
-            "command": Callback(callback),
-            "parent": self._menu_handle,
-            "enable": enabled
-        }
-        
-        if "tooltip" in properties:
-            params["annotation"] = properties["tooltip"]
-        
-        pm.menuItem(**params)
-  
-    def __add_documentation_item(self, parent_menu, label, url):
-        pm.menuItem(label=label, 
-                    parent=parent_menu, 
-                    command=lambda arg, u=url: cmds.showHelp(u, absolute=True))
-        
-    def __add_documentation_to_menu(self):
-        """
-        Adds documentation items to menu based on what docs are available. 
-        """
-        
-        # create Help menu
-        pm.menuItem(divider=True, parent=self._menu_handle) 
-        help_menu = pm.subMenuItem(label="Help", parent=self._menu_handle)
-
-        if self.documentation_url:
-            self.__add_documentation_item(help_menu, "Engine Documentation", self.documentation_url)
-
-        for app in self.apps.values():
-            if app.documentation_url:
-                self.__add_documentation_item(help_menu, 
-                                              "%s Documentation" % app.display_name, 
-                                              app.documentation_url)
-                
-        if self.tank.documentation_url:
-            self.__add_documentation_item(help_menu, "Tank Core Documentation", self.tank.documentation_url)
-        
-    def __launch_context_in_fs(self):
-        """
-        Shows the location of the project
-        in a std file system browser
-        """
-        tmpl = self.tank.templates.get(self.get_setting("template_project"))
-        fields = self.context.as_template_fields(tmpl)
-        proj_path = tmpl.apply_fields(fields)
-        self.log_debug("Launching file system viewer for folder %s" % proj_path)        
-        
-        # get the setting        
-        system = platform.system()
-        
-        # run the app
-        if system == "Linux":
-            cmd = 'xdg-open "%s"' % proj_path
-        elif system == "Darwin":
-            cmd = 'open "%s"' % proj_path
-        elif system == "Windows":
-            cmd = 'cmd.exe /C start "Folder" "%s"' % proj_path
-        else:
-            raise Exception("Platform '%s' is not supported." % system)
-        
-        self.log_debug("Executing command '%s'" % cmd)
-        exit_code = os.system(cmd)
-        if exit_code != 0:
-            self.log_error("Failed to launch '%s'!" % cmd)
-        
-    def __add_context_menu(self):
-        """
-        Adds a context menu which displays the current context
-        """        
-        ctx = self.context
-        
-        # try to figure out task/step, however this may not always be present
-        task_step = None
-        if ctx.step:
-            task_step = ctx.step.get("name")
-        if ctx.task:
-            task_step = ctx.task.get("name")
-
-        if task_step is None:
-            # e.g. [Shot ABC_123]
-            ctx_name = "[%s %s]" % (ctx.entity["type"], ctx.entity["name"])
-        else:
-            # e.g. [Lighting, Shot ABC_123]
-            ctx_name = "[%s, %s %s]" % (task_step, ctx.entity["type"], ctx.entity["name"])
-        
-        # create the menu object
-        ctx_menu = pm.subMenuItem(label=ctx_name, parent=self._menu_handle)
-        
-        # link to shotgun
-        sg_url = "%s/detail/%s/%d" % (self.shotgun.base_url, ctx.entity["type"], ctx.entity["id"])
-        pm.menuItem(label="Show %s in Shotgun" % ctx.entity["type"], 
-                    parent=ctx_menu, 
-                    command=lambda arg, u=sg_url: cmds.showHelp(u, absolute=True))
-                
-        # link to fs
-        pm.menuItem(label="Show in File System", 
-                    parent=ctx_menu, 
-                    command=lambda arg: self.__launch_context_in_fs())
-
-        pm.menuItem(divider=True, parent=self._menu_handle)
-    
-    def _post_menu_command(self, *args):
-        """
-        In order to have commands enable/disable themselves based on the enable_callback, 
-        re-create the menu items every time.
-        """
-        self.log_debug("Recreating Tank menu contents...")
-        self._menu_handle.deleteAllItems()
-        
-        # context
-        self.__add_context_menu()
-        
-        # user commands
-        for (cmd_name, cmd_data) in self.commands.items():
-            self.__add_command_to_menu(cmd_name, cmd_data["callback"], cmd_data["properties"])
-        
-        # lastly, add the help menu
-        self.__add_documentation_to_menu()
-        
     ##########################################################################################
     # queue
 
@@ -388,5 +262,8 @@ class MayaEngine(tank.platform.Engine):
         return False
 
             
-            
+
+  
+        
+        
                 

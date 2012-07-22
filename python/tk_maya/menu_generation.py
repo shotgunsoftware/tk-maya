@@ -11,7 +11,11 @@ import platform
 import sys
 import os
 import unicodedata
-
+import maya.OpenMaya as OpenMaya
+import pymel.core as pm
+import maya.cmds as cmds
+import maya
+from pymel.core import Callback
 
 
 class MenuGenerator(object):
@@ -19,36 +23,25 @@ class MenuGenerator(object):
     Menu generation functionality for Maya
     """
 
-    def __init__(self, engine):
+    def __init__(self, engine, menu_handle):
         self._engine = engine
+        self._menu_handle = menu_handle
         self._dialogs = []
-        engine_root_dir = self._engine.disk_location
-        self.tank_logo = os.path.abspath(os.path.join(engine_root_dir, "resources", "logo_gray_22.png"))
 
     ##########################################################################################
     # public methods
 
-    def create_menu(self):
+    def create_menu(self, *args):
         """
         Render the entire Tank menu.
+        In order to have commands enable/disable themselves based on the enable_callback, 
+        re-create the menu items every time.
         """
-        # create main menu
-        nuke_menu = nuke.menu("Nuke")
-        self._menu_handle = nuke_menu.addMenu("Tank") 
-        # the right click menu that is displayed when clicking on a pane 
-        self._pane_menu = nuke.menu("Pane") 
-        # create tank side menu
-        self._node_menu_handle = nuke.menu("Nodes").addMenu("Tank", icon=self.tank_logo)
-
-        # slight hack here but first ensure that the menu is empty
-        self._menu_handle.clearMenu()
-    
-    
+        self._menu_handle.deleteAllItems()
         
         # now add the context item on top of the main menu
         self._context_menu = self._add_context_menu()
-        self._menu_handle.addSeparator()
-
+        pm.menuItem(divider=True, parent=self._menu_handle)
 
         # now add favourites
         for fav in self._engine.get_setting("menu_favourites"):
@@ -62,8 +55,7 @@ class MenuGenerator(object):
                      # found our match!
                      cmd.add_command_to_menu(self._menu_handle)
 
-        self._menu_handle.addSeparator()
-        
+        pm.menuItem(divider=True, parent=self._menu_handle)
         
         # now go through all of the menu items.
         # separate them out into various sections
@@ -71,24 +63,12 @@ class MenuGenerator(object):
         
         for (cmd_name, cmd_details) in self._engine.commands.items():
             cmd = AppCommand(cmd_name, cmd_details)
-            
-            if cmd.get_type() == "node":
-                # add to the node menu
-                # get icon if specified - default to tank icon if not specified
-                icon = cmd.properties.get("icon", self.tank_logo)
-                self._node_menu_handle.addCommand(cmd.name, cmd.callback, icon=icon)
                 
-            elif cmd.get_type() == "custom_pane":
-                # custom pane
-                # add to the std pane menu in nuke
-                self._pane_menu.addCommand(cmd.name, cmd.callback)
-                # also register the panel so that a panel restore command will
-                # properly register it on startup or panel profile restore.
-                nukescripts.registerPanel(cmd.properties.get("panel_id", "undefined"), cmd.callback)
-                
-            elif cmd.get_type() == "context_menu":
-                # context menu!
-                self._context_menu.addCommand(cmd.name, cmd.callback)
+            if cmd.get_type() == "context_menu":
+                # context menu!                
+                pm.menuItem(label=cmd.name, 
+                            parent=self._context_menu, 
+                            command=Callback(cmd.callback))
                 
             else:
                 # normal menu
@@ -102,12 +82,6 @@ class MenuGenerator(object):
         
         # now add all apps to main menu
         self._add_app_menu(commands_by_app)
-            
-            
-    def destroy_menu(self):
-        
-            self._menu_handle.clearMenu()
-            self._node_menu_handle.clearMenu()
         
     ##########################################################################################
     # context menu and UI
@@ -139,10 +113,15 @@ class MenuGenerator(object):
             # e.g. [Lighting, Shot ABC_123]
             ctx_name = "%s, %s %s" % (task_step, ctx.entity["type"], ctx.entity["name"])
         
-        # create the menu object        
-        ctx_menu = self._menu_handle.addMenu(ctx_name)
-        ctx_menu.addCommand("View Context Details", self._show_context_ui)
-        ctx_menu.addSeparator()
+        # create the menu object
+        ctx_menu = pm.subMenuItem(label=ctx_name, parent=self._menu_handle)
+        
+        # link to UI
+        pm.menuItem(label="View Context Details", 
+                    parent=ctx_menu, 
+                    command=Callback(self._show_context_ui))
+        # divider (apps may register entries below this divider)
+        pm.menuItem(divider=True, parent=ctx_menu)
         
         return ctx_menu
                         
@@ -181,11 +160,10 @@ class MenuGenerator(object):
         """
         for app_name in sorted(commands_by_app.keys()):
             
-            
             if len(commands_by_app[app_name]) > 1:
                 # more than one menu entry fort his app
                 # make a sub menu and put all items in the sub menu
-                app_menu = self._menu_handle.addMenu(app_name)
+                app_menu = pm.subMenuItem(label=app_name, parent=self._menu_handle)                
                 for cmd in commands_by_app[app_name]:
                     cmd.add_command_to_menu(app_menu)
             
@@ -261,8 +239,22 @@ class AppCommand(object):
         """
         Adds an app command to the menu
         """
-        # std shotgun menu
-        menu.addCommand(self.name, self.callback) 
+        enabled = True
+        
+        if "enable_callback" in self.properties:
+            enabled = self.properties["enable_callback"]()
+        
+        params = {
+            "label": self.name,
+            "command": Callback(self.callback),
+            "parent": menu,
+            "enable": enabled
+        }
+        
+        if "tooltip" in self.properties:
+            params["annotation"] = self.properties["tooltip"]
+        
+        pm.menuItem(**params)
 
 
 
