@@ -65,10 +65,8 @@ class MenuGenerator(object):
             cmd = AppCommand(cmd_name, cmd_details)
                 
             if cmd.get_type() == "context_menu":
-                # context menu!                
-                pm.menuItem(label=cmd.name, 
-                            parent=self._context_menu, 
-                            command=Callback(cmd.callback))
+                # context menu!
+                cmd.add_command_to_menu(self._context_menu)             
                 
             else:
                 # normal menu
