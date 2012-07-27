@@ -129,21 +129,14 @@ class MayaEngine(tank.platform.Engine):
         
         
         # detect if in batch mode
-        if self.in_maya_interpreter():
+        if self.__is_ui_enabled():
             self._menu_handle = pm.menu("TankMenu", label="Tank", parent=pm.melGlobals["gMainWindow"])
             # create our menu handler
             from tk_maya import MenuGenerator
             self._menu_generator = MenuGenerator(self, self._menu_handle)
             # hook things up so that the menu is created every time it is clicked
             self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
-        
-        # now check that there is a location on disk which corresponds to the context
-        # for the maya engine (because it for example sets the maya project)
-        if len(self.context.entity_locations) == 0:
-            raise tank.TankError("No folders on disk are associated with the current context. The Maya "
-                                 "engine requires a context which exists on disk in order to run "
-                                 "correctly.")
-            
+                    
         # Set the Maya project based on config
         self._set_project()
         
@@ -252,14 +245,15 @@ class MayaEngine(tank.platform.Engine):
             finally:
                 pm.progressBar(self._maya_progress_bar, edit=True, endProgress=True)
         
-    def in_maya_interpreter(self):
-        """Returns true if not in batch mode."""
-        try: 
-            import maya.standalone             
-            maya.standalone.initialize()        
-        except: 
-            return True
-        return False
+    def __is_ui_enabled(self):
+        """
+        Returns true if there is a UI present.
+        """
+        if cmds.about(batch=True):
+            # batch mode or prompt mode
+            return False
+        else:
+            return True        
 
             
 
