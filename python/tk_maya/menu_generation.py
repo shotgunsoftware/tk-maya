@@ -115,13 +115,74 @@ class MenuGenerator(object):
         ctx_menu = pm.subMenuItem(label=ctx_name, parent=self._menu_handle)
         
         # link to UI
-        pm.menuItem(label="View Context Details", 
+        pm.menuItem(label="About Tank", 
                     parent=ctx_menu, 
                     command=Callback(self._show_context_ui))
+        pm.menuItem(divider=True, parent=ctx_menu)
+        pm.menuItem(label="Jump to Shotgun", 
+                    parent=ctx_menu, 
+                    command=Callback(self._jump_to_sg))
+        pm.menuItem(label="Jump to File System", 
+                    parent=ctx_menu, 
+                    command=Callback(self._jump_to_fs))
+
+
         # divider (apps may register entries below this divider)
         pm.menuItem(divider=True, parent=ctx_menu)
         
         return ctx_menu
+                        
+                        
+    def _jump_to_sg(self):
+
+        if self._engine.context.entity is None:
+            # project-only!
+            url = "%s/detail/%s/%d" % (self._engine.shotgun.base_url, 
+                                       "Project", 
+                                       self._engine.context.project["id"])
+        else:
+            # entity-based
+            url = "%s/detail/%s/%d" % (self._engine.shotgun.base_url, 
+                                       self._engine.context.entity["type"], 
+                                       self._engine.context.entity["id"])
+        
+        pm.showHelp(url, absolute=True)        
+        
+        
+    def _jump_to_fs(self):
+        
+        """
+        Jump from context to FS
+        """
+        
+        if self._engine.context.entity:
+            paths = self._engine.tank.paths_from_entity(self._engine.context.entity["type"], 
+                                                     self._engine.context.entity["id"])
+        else:
+            paths = self._engine.tank.paths_from_entity(self._engine.context.project["type"], 
+                                                     self._engine.context.project["id"])
+        
+        # launch one window for each location on disk
+        # todo: can we do this in a more elegant way?
+        for disk_location in paths:
+                
+            # get the setting        
+            system = platform.system()
+            
+            # run the app
+            if system == "Linux":
+                cmd = 'xdg-open "%s"' % disk_location
+            elif system == "Darwin":
+                cmd = 'open "%s"' % disk_location
+            elif system == "Windows":
+                cmd = 'cmd.exe /C start "Folder" "%s"' % disk_location
+            else:
+                raise Exception("Platform '%s' is not supported." % system)
+            
+            exit_code = os.system(cmd)
+            if exit_code != 0:
+                self._engine.log_error("Failed to launch '%s'!" % cmd)
+        
                         
     
     def _show_context_ui(self):

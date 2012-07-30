@@ -8,6 +8,7 @@ import unicodedata
 import os
 import sys
 import threading
+import pymel.core as pm
 
 from PyQt4 import QtCore, QtGui
 from .ui.dialog import Ui_Dialog
@@ -78,17 +79,7 @@ class ContextDetailsDialog(QtGui.QDialog):
         
     ########################################################################################
     # basic business logic        
-        
-    def _launch_url_unicode_fix(self, url):
-        """
-        wrapper to fix nuke's broken unicode functionality.
-        """ 
-        # deal with nuke's inability to handle unicode. #fail
-        if url.__class__ == unicode:
-            url = unicodedata.normalize('NFKD', url).encode('ascii', 'ignore')
-        #nukescripts.openurl.start(url)
-
-        
+                
     def setup_context_list(self): 
         self.ui.context_browser.clear()
         self.ui.context_browser.load({})
@@ -102,11 +93,11 @@ class ContextDetailsDialog(QtGui.QDialog):
         self.ui.environment_browser.load({})
 
     def open_helpdesk(self):
-        self._launch_url_unicode_fix("http://tank.zendesk.com")
+        pm.showHelp("http://tank.zendesk.com", absolute=True)
     
     def open_platform_docs(self):        
         if self._app.tank.documentation_url:
-            self._launch_url_unicode_fix(self._app.tank.documentation_url)
+            pm.showHelp(self._app.tank.documentation_url, absolute=True)
 
         else:
             QtGui.QMessageBox.critical(self, 
@@ -156,8 +147,8 @@ class ContextDetailsDialog(QtGui.QDialog):
             return
         
         data = curr_selection.sg_data
-        sg_url = "%s/detail/%s/%d" % (self._app.shotgun.base_url, data["type"], data["id"])
-        self._launch_url_unicode_fix(sg_url)
+        sg_url = "%s/detail/%s/%d" % (self._app.shotgun.base_url, data["type"], data["id"])        
+        pm.showHelp(sg_url, absolute=True)
         
 
     def show_app_in_app_store(self):
@@ -174,7 +165,7 @@ class ContextDetailsDialog(QtGui.QDialog):
                                        "No Documentation found!",
                                        "Sorry, this app does not have any associated documentation!")
         else:
-            self._launch_url_unicode_fix(doc_url)
+            pm.showHelp(doc_url, absolute=True)
 
     def show_engine_in_app_store(self):
         """
@@ -186,5 +177,5 @@ class ContextDetailsDialog(QtGui.QDialog):
         
         doc_url = curr_selection.data.get("documentation_url")
         if doc_url:
-            self._launch_url_unicode_fix(doc_url)
+            pm.showHelp(doc_url, absolute=True)
         
