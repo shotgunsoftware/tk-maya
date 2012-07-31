@@ -238,7 +238,7 @@ class MenuGenerator(object):
                 # todo: Should this be labelled with the name of the app 
                 # or the name of the menu item? Not sure.
                 cmd_obj = commands_by_app[app_name][0]
-                if not cmd.favourite:
+                if not cmd_obj.favourite:
                     # skip favourites since they are alreay on the menu
                     cmd_obj.add_command_to_menu(self._menu_handle)
                                 
