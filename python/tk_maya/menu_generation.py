@@ -43,17 +43,23 @@ class MenuGenerator(object):
         self._context_menu = self._add_context_menu()
         pm.menuItem(divider=True, parent=self._menu_handle)
 
+
+        # now enumerate all items and create menu objects for them
+        menu_items = []
+        for (cmd_name, cmd_details) in self._engine.commands.items():
+             menu_items.append( AppCommand(cmd_name, cmd_details) )
+
         # now add favourites
         for fav in self._engine.get_setting("menu_favourites"):
             app_instance_name = fav["app_instance"]
             menu_name = fav["name"]
-            
             # scan through all menu items
-            for (cmd_name, cmd_details) in self._engine.commands.items():
-                 cmd = AppCommand(cmd_name, cmd_details)
+            for cmd in menu_items:                 
                  if cmd.get_app_instance_name() == app_instance_name and cmd.name == menu_name:
                      # found our match!
                      cmd.add_command_to_menu(self._menu_handle)
+                     # mark as a favourite item
+                     cmd.favourite = True
 
         pm.menuItem(divider=True, parent=self._menu_handle)
         
@@ -61,9 +67,8 @@ class MenuGenerator(object):
         # separate them out into various sections
         commands_by_app = {}
         
-        for (cmd_name, cmd_details) in self._engine.commands.items():
-            cmd = AppCommand(cmd_name, cmd_details)
-                
+        for cmd in menu_items:
+
             if cmd.get_type() == "context_menu":
                 # context menu!
                 cmd.add_command_to_menu(self._context_menu)             
@@ -227,12 +232,15 @@ class MenuGenerator(object):
                     cmd.add_command_to_menu(app_menu)
             
             else:
+
                 # this app only has a single entry. 
                 # display that on the menu
                 # todo: Should this be labelled with the name of the app 
                 # or the name of the menu item? Not sure.
                 cmd_obj = commands_by_app[app_name][0]
-                cmd_obj.add_command_to_menu(self._menu_handle)
+                if not cmd.favourite:
+                    # skip favourites since they are alreay on the menu
+                    cmd_obj.add_command_to_menu(self._menu_handle)
                                 
         
         
@@ -247,6 +255,7 @@ class AppCommand(object):
         self.name = name
         self.properties = command_dict["properties"]
         self.callback = command_dict["callback"]
+        self.favourite = False
         
     def get_app_name(self):
         """
@@ -329,3 +338,4 @@ class AppCommand(object):
 
 
     
+        
