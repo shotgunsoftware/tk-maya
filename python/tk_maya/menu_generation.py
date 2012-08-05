@@ -98,12 +98,12 @@ class MenuGenerator(object):
         
         if ctx.entity is None:
             # project-only!
-            ctx_name = "[%s]" % ctx.project["name"]
+            ctx_name = "%s" % ctx.project["name"]
         
         elif ctx.step is None and ctx.task is None:
             # entity only
             # e.g. [Shot ABC_123]
-            ctx_name = "[%s %s]" % (ctx.entity["type"], ctx.entity["name"])
+            ctx_name = "%s %s" % (ctx.entity["type"], ctx.entity["name"])
 
         else:
             # we have either step or task
