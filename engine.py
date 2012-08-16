@@ -50,7 +50,14 @@ def on_scene_event_cb(engine_name, prev_context):
             
             # this file could be in another project altogether, so create a new Tank
             # API instance.
-            tk = tank.tank_from_path(new_path)
+            try:
+                tk = tank.tank_from_path(new_path)
+            except tank.TankError, e:
+                OpenMaya.MGlobal.displayInfo("Tank Engine cannot be started: %s" % e)
+                # render menu
+                create_tank_disabled_menu()
+                return
+
             ctx = tk.context_from_path(new_path)
             
             # if an engine is active right now and context is unchanged, no need to 
@@ -108,6 +115,9 @@ def create_tank_disabled_menu():
     """
     Render a special "tank is disabled menu"
     """
+    if pm.menu("TankMenu", exists=True):
+        pm.deleteUI("TankMenu")
+
     sg_menu = pm.menu("TankMenuDisabled", label="Tank", parent=pm.melGlobals["gMainWindow"])
     pm.menuItem(label="Tank is disabled.", parent=sg_menu, 
                 command=lambda arg: tank_disabled_message())
