@@ -8,8 +8,11 @@ import sys
 import datetime
 import threading 
 
+try:
+    from PySide import QtCore, QtGui
+except:
+    from PyQt4 import QtCore, QtGui
 
-from PyQt4 import QtCore, QtGui
 from .browser_widget import BrowserWidget
 from .browser_widget import ListItem
 from .browser_widget import ListHeader

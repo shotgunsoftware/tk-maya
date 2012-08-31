@@ -10,7 +10,11 @@ import sys
 import threading
 import pymel.core as pm
 
-from PyQt4 import QtCore, QtGui
+try:
+    from PySide import QtCore, QtGui
+except:
+    from PyQt4 import QtCore, QtGui
+
 from .ui.dialog import Ui_Dialog
 
 class ContextDetailsDialog(QtGui.QDialog):
