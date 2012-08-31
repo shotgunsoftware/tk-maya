@@ -196,6 +196,31 @@ class MayaEngine(tank.platform.Engine):
         proj_path = tmpl.apply_fields(fields)
         self.log_info("Setting Maya project to '%s'" % proj_path)        
         pm.mel.setProject(proj_path)
+
+    def save_file(self, path=None):
+        '''
+        Save the file if path == None else
+        perform a SaveAs using path.
+        '''
+        if not path:
+            cmds.file(save=True, force=True)
+        else:
+            pm.saveAs(path)
+
+    def get_scene_path(self):
+        '''
+        Return the current scene path.
+        '''
+        scene_path = pm.sceneName()
+        if scene_path:
+            return scene_path.abspath()
+        return ''
+
+    def get_app_version(self):
+        '''
+        Return a tuple of ("software name", "software version")
+        '''
+        return ("maya", pm.versions.fullName())
     
     ##########################################################################################
     # queue
