@@ -1,0 +1,298 @@
+Build instructions for Pyside, QT and Python - on macosx
+------------------------------------------------------------------
+
+This version of pyside was built with python 2.6 (64 bit) and QT 4.7.1 to match Maya 2012/2013.
+
+
+
+BUILDING PYSIDE
+===============
+
+Building the bundle is relatively straight forward:
+
+- install QT LGPL 4.7.1 - easiest way is probably by downloading the ready built dmg installer:
+ftp://ftp.qt.nokia.com/qt/source/qt-mac-opensource-4.7.1.dmg
+
+- install python 2.6.x 64 bit - there are lots of ways of doing this (installer, brew, macports etc)
+  Just make sure it is 64 bits (check sys.maxint for example).
+  
+- download the pyside helpers from git:
+git clone git://gitorious.org/pyside/buildscripts.git pyside_sources
+
+- Now move inside the new pyside-sources folder and clone all the PySide sub-projects:
+cd pyside_sources
+git clone git://gitorious.org/pyside/apiextractor.git
+git clone git://gitorious.org/pyside/generatorrunner.git
+git clone git://gitorious.org/pyside/shiboken.git
+git clone git://gitorious.org/pyside/pyside.git
+git clone git://gitorious.org/pyside/pyside-tools.git
+
+- if you want a specific tag of the code, check that out for each repo:
+git checkout 1.1.2 to use tag 1.1.2 for pyside for example (use 'git tag' to list tags)
+
+- Get some required libraries (these are not actually part of the final binary distro, just used by intermediate products)
+brew install cmake libxml2
+
+- Edit the build_and_install helper script:
+-- Make sure it points at the right python version. For example you may add 
+   a -DPYTHON_EXECUTABLE=/usr/bin/python2.6 to the cmake command in the build_and_install script (or the environment.sh)
+-- You can get rid of some of the build targets - only need to build "apiextractor" "generatorrunner" "shiboken" "pyside"
+
+- Run the build_and_install helper script. Unless you have changed your environment.sh, this should build into ~/pkg/pyside-sandbox
+
+
+
+
+TESTING THE BUILD
+=================
+
+
+- Add your sandbox location to the PYTHONPATH and the DYLD_LIBRARY_PATH:
+
+export DYLD_LIBRARY_PATH=~/pkg/pyside-sandbox/lib
+export PYTHONPATH=$PYTHONPATH:~/pkg/pyside-sandbox/lib/python2.6/site-packages
+
+- Run python
+python2.6
+>>> from PySide import QtGui
+>>> wid = QtGui.QWidget()
+>>> wid.resize(250, 150)
+>>> wid.setWindowTitle('Simple')
+>>> wid.show()
+
+- Hopefully this should give you a nice window popping up.
+
+
+
+HOOKING UP WITH MAYA
+====================
+
+Now for the more tricky part. We need to make sure that all the dynamic library locations 
+are repointed to suit our purposes.
+
+The target structure is as follows:
+
+pyside112_py26_qt471_mac
+ |
+ |-- python
+ |     \----PySide
+ |           |----QtGui.so
+ |           |                [lots of files]
+ |           \----GtCore.so
+ |
+ \-- lib
+       \----libpyside-python-xyz.dylib
+
+
+When the python modules are loaded, they need to load some of the source lib stuff in the libs folder,
+and they of course also need to load the QT library files themselves.
+
+- We want to make sure the QT libraries are always picked up from Maya
+- We want to make sure that the pyside dylibs are always picked up from our local location (the Tank Engine)
+
+The tool on the mac to analyze the dependencies is otool. To get a quick overview of the library dependencies
+after the build, you can for example do:
+
+find . -name "*dylib" -exec otool -L {} \;
+find . -name "*so" -exec otool -L {} \;
+
+Now, paths and locations on the mac are typically fixed paths, which is NOT what we want. Instead we use the two 
+special keywords @executable_path and @loader_path. @executable_path points at the location where the actual running 
+executable Macosx folder resides - for maya this is /Applications/Autodesk/maya2013/Maya.app/Contents/MacOS. 
+Notice that we have the QT libraries residing in this location.
+
+For our pyside dylibs, we need to use the other keyword, @loader_path, which is the path relative to the object currently
+being loaded. So if QtCore.so needs to load libpyside.dylib, we can point it to our local version using the path
+@loader_path/../../lib/libpyside.dylib.
+
+The tool to process and repoint all the loading paths is install_name_tool. Basically, this involves a bunch of various 
+commands and processing, along the lines of:
+
+# for .so files:
+find . -name "*so" -exec install_name_tool -change QtCore.framework/Versions/4/QtCore @executable_path/QtCore {} \;
+find . -name "*so" -exec install_name_tool -change QtGui.framework/Versions/4/QtGui @executable_path/QtGui {} \;
+find . -name "*so" -exec install_name_tool -change QtSvg.framework/Versions/4/QtSvg @executable_path/QtSvg {} \;
+find . -name "*so" -exec install_name_tool -change QtOpenGL.framework/Versions/4/QtOpenGL @executable_path/QtOpenGL {} \;
+find . -name "*so" -exec install_name_tool -change QtXml.framework/Versions/4/QtXml @executable_path/libQtXml {} \;
+find . -name "*so" -exec install_name_tool -change QtNetwork.framework/Versions/4/QtNetwork @executable_path/QtNetwork {} \;
+find . -name "*so" -exec install_name_tool -change QtScript.framework/Versions/4/QtScript @executable_path/QtScript {} \;
+find . -name "*so" -exec install_name_tool -change QtSql.framework/Versions/4/QtSql @executable_path/QtSql {} \;
+find . -name "*so" -exec install_name_tool -change QtXmlPatterns.framework/Versions/4/QtXmlPatterns @executable_path/QtXmlPatterns {} \;
+find . -name "*so" -exec install_name_tool -change QtOpenGL.framework/Versions/4/QtOpenGL @executable_path/QtOpenGL {} \;
+find . -name "*so" -exec install_name_tool -change QtDeclarative.framework/Versions/4/QtDeclarative @executable_path/QtDeclarative {} \;
+find . -name "*so" -exec install_name_tool -change QtHelp.framework/Versions/4/QtHelp @executable_path/QtHelp {} \;
+find . -name "*so" -exec install_name_tool -change QtMultimedia.framework/Versions/4/QtMultimedia @executable_path/QtMultimedia {} \;
+find . -name "*so" -exec install_name_tool -change QtTest.framework/Versions/4/QtTest @executable_path/QtTest {} \;
+find . -name "*so" -exec install_name_tool -change QtDesigner.framework/Versions/4/QtDesigner @executable_path/QtDesigner {} \;
+find . -name "*so" -exec install_name_tool -change QtWebKit.framework/Versions/4/QtWebKit @executable_path/QtWebKit {} \;
+find . -name "*so" -exec install_name_tool -change QtXmlPatterns.framework/Versions/4/QtXmlPatterns @executable_path/QtXmlPatterns {} \;
+find . -name "*so" -exec install_name_tool -change phonon.framework/Versions/4/phonon @executable_path/phonon {} \;
+
+# for dylibs
+find . -name "*so" -exec install_name_tool -change libpyside-python2.6.1.1.dylib @loader_path/../../lib/libpyside-python2.6.1.1.dylib {} \;
+find . -name "*so" -exec install_name_tool -change libshiboken-python2.6.1.1.dylib @loader_path/../../lib/libshiboken-python2.6.1.1.dylib {} \;
+
+The result you want to be left with at the end is as follows:
+
+find . -name "*dylib" -exec otool -L {} \;
+
+./lib/libpyside-python2.6.1.1.dylib:
+	libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./lib/libshiboken-python2.6.1.1.dylib:
+	libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+
+
+find . -name "*so" -exec otool -L {} \;
+
+./python/PySide/phonon.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/phonon (compatibility version 4.4.0, current version 4.4.0)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtCore.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtDeclarative.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtNetwork (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtScript (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtSvg (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtSql (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtXmlPatterns (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtOpenGL (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtDeclarative (compatibility version 4.7.0, current version 4.7.1)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtGui.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtHelp.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtHelp (compatibility version 4.7.0, current version 4.7.1)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtMultimedia.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtMultimedia (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtNetwork.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtNetwork (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtOpenGL.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtOpenGL (compatibility version 4.7.0, current version 4.7.1)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtScript.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtScript (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtSql.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtSql (compatibility version 4.7.0, current version 4.7.1)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtSvg.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtSvg (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtTest.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtTest (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtUiTools.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtDesigner (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtWebKit.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtWebKit (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtNetwork (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtGui (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtXml.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtXml (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+./python/PySide/QtXmlPatterns.so:
+	@loader_path/../../lib/libpyside-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	@executable_path/QtCore (compatibility version 4.7.0, current version 4.7.1)
+	@executable_path/QtXmlPatterns (compatibility version 4.7.0, current version 4.7.1)
+	@loader_path/../../lib/libshiboken-python2.6.1.1.dylib (compatibility version 1.1.0, current version 1.1.2)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+
+
+
+TESTING IN MAYA
+===============
+
+Last step is to test in maya. This is simple. 
+
+- Launch Maya
+- Add the pythonpath to sys.path
+- Run some QT code:
+>>> from PySide import QtGui
+>>> wid = QtGui.QWidget()
+>>> wid.resize(250, 150)
+>>> wid.setWindowTitle('Simple')
+>>> wid.show()
+
+
