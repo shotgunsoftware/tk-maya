@@ -54,11 +54,14 @@ export PYTHONPATH=$PYTHONPATH:~/pkg/pyside-sandbox/lib/python2.6/site-packages
 
 - Run python
 python2.6
->>> from PySide import QtGui
->>> wid = QtGui.QWidget()
->>> wid.resize(250, 150)
->>> wid.setWindowTitle('Simple')
->>> wid.show()
+
+from PySide import QtGui
+app = QtGui.QApplication([])
+wid = QtGui.QWidget()
+wid.resize(250, 150)
+wid.setWindowTitle('Simple')
+wid.show()
+app.exec_()
 
 - Hopefully this should give you a nice window popping up.
 

@@ -1,0 +1,146 @@
+Build instructions for Pyside, QT and Python - on Linux
+------------------------------------------------------------------
+
+This version of pyside was built with python 2.6 (64 bit) and QT 4.7.1 to match Maya 2012/2013.
+These instructions assume a clean centos 6 linux build.
+
+
+INSTALL GCC 4.1.2
+=================
+
+We need to match up pyside against Maya, which means going through a number of steps.
+First, we need to make sure we compile everything using the right version of GCC.
+
+Install some stuff first:
+> sudo yum install glibc-devel.i686
+> sudo yum install texinfo
+
+Now go through the steps in this document:
+See http://docs.autodesk.com/MAYAUL/2013/ENU/Maya-API-Documentation/index.html
+
+To summarize the doc above, you need to run configure with the following arguments:
+../gcc-4.1.2/configure --prefix=/opt/gcc412 --program-suffix=412 --enable-shared 
+--enable-threads=posix  --enable-checking=release --with-system-zlib 
+--disable-libunwind-exceptions --enable-__cxa_atexit
+
+And then run the boostrap:
+make -j4 bootstrap
+
+(finally run make install and create symlinks to /usr/bin)
+
+NOTE!
+
+You may get this error:
+WARNING: `makeinfo' is missing on your system. You should only need it if
+you modified a `.texi' or `.texinfo' file, or any other file
+indirectly affecting the aspect of the manual. The spurious
+call might also be the consequence of using a buggy `make' (AIX,
+DU, IRIX). You might want to install the `Texinfo' package or
+the `GNU make' package. Grab either from any GNU archive site.
+make[3]: *** [fastjar.info] Error 1
+make[3]: Leaving directory `/home/kamcio/devkit/gcc-4.1.2/gcc-build/fastjar'
+make[2]: *** [all] Error 2
+make[2]: Leaving directory `/home/kamcio/devkit/gcc-4.1.2/gcc-build/fastjar'
+make[1]: *** [all-fastjar] Error 2
+make[1]: Leaving directory `/home/kamcio/devkit/gcc-4.1.2/gcc-build'
+make: *** [all] Error 2
+
+This is relating to doc generation and in order to get rid of it you can edit the makefile
+to remove the step where it does this check.
+
+
+BUILDING QT
+===========
+
+First make sure we have all the dependnecies for QT:
+> sudo yum install qt-devel
+
+Now download the QT 471 source tarball and unpack it. Before building, we need to tell
+it to use our 412 compiler, so do a 
+
+> export CC=gcc412
+> export CXX=g++412
+
+Turn off certain GCC extensions that our older version of the compiler doesn't support:
+
+./configure -no-ssse3
+
+Finally run make / make install
+
+
+BUILDING PYSIDE
+===============
+
+- install dependnecies
+> sudo yum install cmake libxml2-devel libxslt-devel python-devel rpmdevtools gcc gcc-c++ make
+
+- make sure that our newly built version of QT is used:
+> export PATH=/usr/local/Trolltech/Qt-4.7.1/bin:$PATH
+> export LD_LIBRARY_PATH=/usr/local/Trolltech/Qt-4.7.1/lib:$LD_LIBRARY_PATH
+
+- download the pyside helpers from git:
+git clone git://gitorious.org/pyside/buildscripts.git pyside_sources
+
+- Now move inside the new pyside-sources folder and clone all the PySide sub-projects:
+cd pyside_sources
+git clone git://gitorious.org/pyside/apiextractor.git
+git clone git://gitorious.org/pyside/generatorrunner.git
+git clone git://gitorious.org/pyside/shiboken.git
+git clone git://gitorious.org/pyside/pyside.git
+git clone git://gitorious.org/pyside/pyside-tools.git
+
+- if you want a specific tag of the code, check that out for each repo:
+git checkout 1.1.2 to use tag 1.1.2 for pyside for example (use 'git tag' to list tags)
+
+- Get some required libraries (these are not actually part of the final binary distro, just used by intermediate products)
+> sudo yum install cmake libxml2
+
+- Run the build_and_install helper script. Unless you have changed your environment.sh, this should build into ~/pkg/pyside-sandbox
+
+
+
+
+TESTING THE BUILD
+=================
+
+- Add your sandbox location to the PYTHONPATH and the LD_LIBRARY_PATH:
+
+> export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/pkg/pyside-sandbox/lib
+> export PYTHONPATH=$PYTHONPATH:~/pkg/pyside-sandbox/lib64/python2.6/site-packages
+
+- Run python
+python2.6
+
+from PySide import QtGui
+app = QtGui.QApplication([])
+wid = QtGui.QWidget()
+wid.resize(250, 150)
+wid.setWindowTitle('Simple')
+wid.show()
+app.exec_()
+
+- Hopefully this should give you a nice window popping up.
+
+
+
+HOOKING UP WITH MAYA
+====================
+
+
+
+
+TESTING IN MAYA
+===============
+
+Last step is to test in maya. This is simple. 
+
+- Launch Maya
+- Add the pythonpath to sys.path
+- Run some QT code:
+>>> from PySide import QtGui
+>>> wid = QtGui.QWidget()
+>>> wid.resize(250, 150)
+>>> wid.setWindowTitle('Simple')
+>>> wid.show()
+
+
