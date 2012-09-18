@@ -92,9 +92,27 @@ git clone git://gitorious.org/pyside/pyside-tools.git
 - if you want a specific tag of the code, check that out for each repo:
 git checkout 1.1.2 to use tag 1.1.2 for pyside for example (use 'git tag' to list tags)
 
-- Get some required libraries (these are not actually part of the final binary distro, just used by intermediate products)
-> sudo yum install cmake libxml2
+- add the specific compiler to the build script by adding the flags
+                 -DCMAKE_C_COMPILER=/opt/gcc412/bin/gcc412 
+                 -DCMAKE_CXX_COMPILER=/opt/gcc412/bin/g++412 
 
+- in the make file for pyside, we want to inject an -rpath $ORIGIN declaration.
+  Add something like this to the make file:
+  
+# use, i.e. don't skip the full RPATH for the build tree
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# the RPATH to be used when installing, but only if it's not a system directory
+SET(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib:\$ORIGIN/")
+  
 - Run the build_and_install helper script. Unless you have changed your environment.sh, this should build into ~/pkg/pyside-sandbox
 
 
@@ -126,7 +144,40 @@ app.exec_()
 HOOKING UP WITH MAYA
 ====================
 
+Now for the more tricky part. We need to make sure that all the dynamic library locations 
+are repointed to suit our purposes.
 
+The target structure is as follows:
+
+pyside112_py26_qt471
+ |
+ |-- python
+ |     \----PySide
+ |           |----QtGui.so
+ |           |                [lots of files]
+ |           \----GtCore.so
+ |
+ \-- lib
+       \----libpyside-python-xyz.so
+
+We want to make sure that the various dsos can find their dependencies, but we don't want to 
+add anything to LD_LIBRARY_PATH. Instead, we use RPATH in conjunction with the $ORIGIN directive, 
+this is similar to @loader_path on the mac.
+
+Use the utility chrpath (sudo yum install chrpath) to modify the rpath.
+
+We want the following end result:
+
+lib/shiboken: 
+no rpath
+
+lib/pyside:
+[tank@localhost lib]$ chrpath -l libpyside-python2.6.so.1.1
+libpyside-python2.6.so.1.1: RPATH=$ORIGIN
+
+python/PySide/xyz.so:
+[tank@localhost PySide]$ chrpath -l QtScript.so
+QtScript.so: RPATH=$ORIGIN/../../lib
 
 
 TESTING IN MAYA
