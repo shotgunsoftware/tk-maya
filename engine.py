@@ -167,9 +167,21 @@ class MayaEngine(tank.platform.Engine):
         """
         Handles the pyside init
         """
-        pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_mac", "python")
-        sys.path.append(pyside_path)
         
+        if sys.platform == "darwin":
+            pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_mac", "python")
+            sys.path.append(pyside_path)
+        
+        elif sys.platform == "win32":
+            pyside_path = os.path.join(self.disk_location, "resources","pyside111_py26_qt471_win64", "python")
+            sys.path.append(pyside_path)
+            
+        elif sys.platform == "linux2":        
+            pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_linux", "python")
+            sys.path.append(pyside_path)
+        
+        else:
+            self.log_error("Unknown platform - cannot initialize pyside!")
         
         
     
