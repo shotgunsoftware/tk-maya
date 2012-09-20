@@ -5,14 +5,8 @@ Copyright (c) 2012 Shotgun Software, Inc
 import os
 import sys
 
-try:
-    from PyQt4 import QtCore, QtGui
-    from .ui_pyqt.browser import Ui_Browser
-    USING_PYQT = True
-except:
-    from PySide import QtCore, QtGui
-    from .ui_pyside.browser import Ui_Browser
-    USING_PYQT = False 
+from PySide import QtCore, QtGui
+from .ui_pyside.browser import Ui_Browser
      
 from .worker import Worker
 
@@ -22,16 +16,10 @@ class BrowserWidget(QtGui.QWidget):
     # SIGNALS
     
     # when the selection changes 
-    if USING_PYQT:
-        selection_changed = QtCore.pyqtSignal()
-    else:
-        selection_changed = QtCore.Signal()
+    selection_changed = QtCore.Signal()
     
     # when someone double clicks on an item
-    if USING_PYQT:
-        action_requested = QtCore.pyqtSignal()
-    else:
-        action_requested = QtCore.Signal()
+    action_requested = QtCore.Signal()
     
     
     ######################################################################################

@@ -7,21 +7,12 @@ import urllib
 import uuid
 import sys
 
-try:
-    from PyQt4 import QtCore, QtGui
-    USING_PYQT = True
-except:
-    from PySide import QtCore, QtGui
-    USING_PYQT = False 
+from PySide import QtCore, QtGui
 
 class Worker(QtCore.QThread):
     
-    if USING_PYQT:
-        work_completed = QtCore.pyqtSignal(str, dict)
-        work_failure = QtCore.pyqtSignal(str, str)
-    else:
-        work_completed = QtCore.Signal(str, dict)
-        work_failure = QtCore.Signal(str, str)
+    work_completed = QtCore.Signal(str, dict)
+    work_failure = QtCore.Signal(str, str)
         
     
     def __init__(self, app, parent=None):

@@ -204,14 +204,8 @@ class MenuGenerator(object):
         self._dialogs.append(self._dialog)
         
         # run modal dialogue
-        self._dialog.exec_()
-        
-        # on the mac, need to delete it - otherwise a "ghost" will remain
-        # after closing has happened - on other platforms, however, this
-        # double deletion crashes Nuke >.<
-        if sys.platform == "darwin":
-            self._dialog.deleteLater()
-        
+        self._dialog.show()
+                
         
         
     ##########################################################################################

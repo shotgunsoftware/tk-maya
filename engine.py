@@ -137,6 +137,7 @@ class MayaEngine(tank.platform.Engine):
         # our job queue
         self._queue = []
         
+        self._init_pyside()
         
         # detect if in batch mode
         if self.__is_ui_enabled():
@@ -160,6 +161,18 @@ class MayaEngine(tank.platform.Engine):
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
         pm.deleteUI(self._menu_handle)
+    
+    
+    def _init_pyside(self):
+        """
+        Handles the pyside init
+        """
+        pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_mac", "python")
+        sys.path.append(pyside_path)
+        
+        
+        
+    
     
     ##########################################################################################
     # logging

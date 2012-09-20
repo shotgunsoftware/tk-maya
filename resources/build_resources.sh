@@ -4,7 +4,7 @@
 # ----------------------------------------------------
 
 echo "building user interfaces..."
-pyuic4 --from-imports dialog.ui > ../python/tk_maya/ui/dialog.py
+pyside-uic --from-imports dialog.ui > ../python/tk_maya/ui/dialog.py
 
 echo "building resources..."
-pyrcc4 resources.qrc > ../python/tk_maya/ui/resources_rc.py
+pyside-rcc resources.qrc > ../python/tk_maya/ui/resources_rc.py

@@ -6,22 +6,13 @@ import os
 import urllib
 import sys
 
-try:
-    from PyQt4 import QtCore, QtGui
-    USING_PYQT = True
-except:
-    from PySide import QtCore, QtGui
-    USING_PYQT = False 
+from PySide import QtCore, QtGui
 
 
 class ListBase(QtGui.QWidget):
     
-    if USING_PYQT:
-        clicked = QtCore.pyqtSignal(QtGui.QWidget)
-        double_clicked = QtCore.pyqtSignal(QtGui.QWidget)
-    else:
-        clicked = QtCore.Signal(QtGui.QWidget)
-        double_clicked = QtCore.Signal(QtGui.QWidget)
+    clicked = QtCore.Signal(QtGui.QWidget)
+    double_clicked = QtCore.Signal(QtGui.QWidget)
         
     
     def __init__(self, app, worker, parent=None):
