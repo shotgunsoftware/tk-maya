@@ -168,6 +168,18 @@ class MayaEngine(tank.platform.Engine):
         Handles the pyside init
         """
         
+        # first see if pyside is already present - in that case skip!
+        try:
+            from PySide import QtGui
+        except:
+            # fine, we don't expect pyside to be present just yet
+            self.log_debug("PySide not detected - Tank will add it to the setup now...")
+        else:
+            # looks like pyside is already working! No need to do anything
+            self.log_debug("PySide detected - Tank will use the existing version.")
+            return
+        
+        
         if sys.platform == "darwin":
             pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_mac", "python")
             sys.path.append(pyside_path)
@@ -185,10 +197,14 @@ class MayaEngine(tank.platform.Engine):
             os.environ["PATH"] = path
         
         else:
-            self.log_error("Unknown platform - cannot initialize pyside!")
+            self.log_error("Unknown platform - cannot initialize PySide!")
         
-        
-    
+        # now try to import it
+        try:
+            from PySide import QtGui
+        except Exception, e:
+            self.log_error("PySide could not be imported! Tank Apps using pyside will not "
+                           "operate correctly! Error reported: %s" % e)
     
     ##########################################################################################
     # logging
