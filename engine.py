@@ -58,7 +58,7 @@ def on_scene_event_cb(engine_name, prev_context):
                 create_tank_disabled_menu()
                 return
 
-            ctx = tk.context_from_path(new_path)
+            ctx = tk.context_from_path(new_path, prev_context)
             
             # if an engine is active right now and context is unchanged, no need to 
             # rebuild the same engine again!
