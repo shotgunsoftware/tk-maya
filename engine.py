@@ -137,17 +137,9 @@ class MayaEngine(tank.platform.Engine):
         # our job queue
         self._queue = []
         
+        # import pyside QT UI libraries
         self._init_pyside()
-        
-        # detect if in batch mode
-        if self.__is_ui_enabled():
-            self._menu_handle = pm.menu("TankMenu", label="Tank", parent=pm.melGlobals["gMainWindow"])
-            # create our menu handler
-            from tk_maya import MenuGenerator
-            self._menu_generator = MenuGenerator(self, self._menu_handle)
-            # hook things up so that the menu is created every time it is clicked
-            self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
-                    
+          
         # Set the Maya project based on config
         self._set_project()
         
@@ -157,6 +149,21 @@ class MayaEngine(tank.platform.Engine):
         pm.scriptJob(event=["SceneOpened", cb_fn], runOnce=True)
         pm.scriptJob(event=["SceneSaved", cb_fn], runOnce=True)
         self.log_debug("Registered open and save callbacks.")
+    
+    def post_app_init(self):
+        """
+        Called when all apps have initialized
+        """
+    
+        # detect if in batch mode
+        if self.__is_ui_enabled():
+            self._menu_handle = pm.menu("TankMenu", label="Tank", parent=pm.melGlobals["gMainWindow"])
+            # create our menu handler
+            from tk_maya import MenuGenerator
+            self._menu_generator = MenuGenerator(self, self._menu_handle)
+            # hook things up so that the menu is created every time it is clicked
+            self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
+    
     
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
