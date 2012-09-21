@@ -179,6 +179,10 @@ class MayaEngine(tank.platform.Engine):
         elif sys.platform == "linux2":        
             pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_linux", "python")
             sys.path.append(pyside_path)
+            dll_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_linux", "lib")
+            path = os.environ.get("PATH", "")
+            path += ";%s" % dll_path
+            os.environ["PATH"] = path
         
         else:
             self.log_error("Unknown platform - cannot initialize pyside!")
