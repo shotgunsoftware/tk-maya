@@ -134,6 +134,22 @@ class MayaEngine(tank.platform.Engine):
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
         
+        # check that we are running an ok version of maya
+        current_os = cmds.about(operatingSystem=True)
+        if current_os not in ["mac", "win64", "linux64"]:
+            raise tank.TankError("The current platform is not supported! Supported platforms "
+                                 "are Mac, Linux 64 and Windows 64.")
+        
+        current_maya_version = cmds.about(version=True)
+        if current_maya_version.startswith("2012") or current_maya_version.startswith("2013"):
+            self.log_debug("Running Maya version %s" % current_maya_version)
+        else:
+            raise tank.TankError("Your version of Maya is not supported. Currently, Tank only "
+                                 "supports 2012 and 2013.") 
+        
+        
+        
+        
         # now check that there is a location on disk which 
         if self.context.entity:
             # context has an entity
