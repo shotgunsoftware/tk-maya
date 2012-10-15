@@ -195,8 +195,8 @@ class MayaEngine(tank.platform.Engine):
         if self.__is_ui_enabled():
             self._menu_handle = pm.menu("TankMenu", label="Tank", parent=pm.melGlobals["gMainWindow"])
             # create our menu handler
-            from tk_maya import MenuGenerator
-            self._menu_generator = MenuGenerator(self, self._menu_handle)
+            tk_maya = self.import_module("tk_maya")
+            self._menu_generator = tk_maya.MenuGenerator(self, self._menu_handle)
             # hook things up so that the menu is created every time it is clicked
             self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
     
