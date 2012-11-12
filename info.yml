@@ -33,3 +33,11 @@ configuration:
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
         
+# More verbose description of this item 
+display_name: "Maya Engine"
+description: "Tank Integration in Maya"
+
+# Required minimum versions for this item to run
+requires_shotgun_version:
+requires_core_verson: "v0.12.0"
+ 
