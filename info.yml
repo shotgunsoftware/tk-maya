@@ -39,5 +39,5 @@ description: "Tank Integration in Maya"
 
 # Required minimum versions for this item to run
 requires_shotgun_version:
-requires_core_verson: "v0.12.0"
+requires_core_version: "v0.12.0"
  
