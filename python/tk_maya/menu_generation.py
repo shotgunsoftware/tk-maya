@@ -7,7 +7,6 @@ Menu handling for Maya
 """
 
 import tank
-import platform
 import sys
 import os
 import unicodedata
@@ -168,14 +167,14 @@ class MenuGenerator(object):
         for disk_location in paths:
                 
             # get the setting        
-            system = platform.system()
+            system = sys.platform
             
             # run the app
-            if system == "Linux":
+            if system == "linux2":
                 cmd = 'xdg-open "%s"' % disk_location
-            elif system == "Darwin":
+            elif system == "darwin":
                 cmd = 'open "%s"' % disk_location
-            elif system == "Windows":
+            elif system == "win32":
                 cmd = 'cmd.exe /C start "Folder" "%s"' % disk_location
             else:
                 raise Exception("Platform '%s' is not supported." % system)
