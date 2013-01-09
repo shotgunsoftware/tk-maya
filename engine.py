@@ -282,8 +282,9 @@ class MayaEngine(tank.platform.Engine):
         tmpl = self.tank.templates.get(self.get_setting("template_project"))
         fields = self.context.as_template_fields(tmpl)
         proj_path = tmpl.apply_fields(fields)
-        self.log_info("Setting Maya project to '%s'" % proj_path)        
-        pm.mel.setProject(proj_path)
+        if self.context.entity['type'] != 'Project':
+            self.log_info("Setting Maya project to '%s'" % proj_path)        
+            pm.mel.setProject(proj_path)
     
     ##########################################################################################
     # queue
