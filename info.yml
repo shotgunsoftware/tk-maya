@@ -14,6 +14,7 @@ configuration:
     template_project: 
         type: template
         description: Template to use to determine where to set the maya project location
+        allows_empty: True
 
     menu_favourites:
         type: list
