@@ -192,7 +192,7 @@ class MayaEngine(tank.platform.Engine):
         """
     
         # detect if in batch mode
-        if self.__is_ui_enabled():
+        if self.has_ui:
             self._menu_handle = pm.menu("TankMenu", label="Tank", parent=pm.melGlobals["gMainWindow"])
             # create our menu handler
             tk_maya = self.import_module("tk_maya")
@@ -248,6 +248,17 @@ class MayaEngine(tank.platform.Engine):
         except Exception, e:
             self.log_error("PySide could not be imported! Tank Apps using pyside will not "
                            "operate correctly! Error reported: %s" % e)
+    
+    @property
+    def has_ui(self):
+        """
+        Detect and return if maya is running in batch mode
+        """
+        if cmds.about(batch=True):
+            # batch mode or prompt mode
+            return False
+        else:
+            return True        
     
     ##########################################################################################
     # logging
@@ -347,16 +358,6 @@ class MayaEngine(tank.platform.Engine):
             finally:
                 pm.progressBar(self._maya_progress_bar, edit=True, endProgress=True)
         
-    def __is_ui_enabled(self):
-        """
-        Returns true if there is a UI present.
-        """
-        if cmds.about(batch=True):
-            # batch mode or prompt mode
-            return False
-        else:
-            return True        
-
             
 
   
