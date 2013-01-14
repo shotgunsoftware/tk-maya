@@ -176,6 +176,9 @@ class MayaEngine(tank.platform.Engine):
         # Set the Maya project based on config
         self._set_project()
         
+        # add qt paths and dlls
+        self._init_pyside()
+        
         # Watch for scene open events, we'll tear down this engine and start another one based
         # on the new context.
         cb_fn = lambda en=self.instance_name, pc=self.context: on_scene_event_cb(en, pc)
@@ -246,23 +249,7 @@ class MayaEngine(tank.platform.Engine):
             self.log_error("PySide could not be imported! Tank Apps using pyside will not "
                            "operate correctly! Error reported: %s" % e)
     
-    
-
-    def _define_qt_base(self):
-        """
-        Set up pyside and initialize it
-        :returns: tuple with (QtCoreClass, QtGuiClass)
-        """
-        try:
-            self._init_pyside()
-            from PySide import QtCore, QtGui
-            return (QtCore, QtGui)
-        except:
-            self.log_debug("Default engine QT definition failed to find QT. "
-                           "This may need to be subclassed.")
-            return (None, None)
-    
-    
+        
     @property
     def has_ui(self):
         """
