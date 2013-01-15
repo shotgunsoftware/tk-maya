@@ -308,6 +308,7 @@ class MayaEngine(tank.platform.Engine):
         """
         Maya implementation of the engine synchronous queue. Adds an item to the queue.
         """
+        self.log_warning("The Engine Queue is now deprecated! Please contact support@shotgunsoftware.com")
         qi = {}
         qi["name"] = name
         qi["method"] = method
@@ -328,6 +329,7 @@ class MayaEngine(tank.platform.Engine):
         """
         Executes all items in the queue, one by one, in a controlled fashion
         """
+        self.log_warning("The Engine Queue is now deprecated! Please contact support@shotgunsoftware.com")
         self._maya_progress_bar = maya.mel.eval('$tmp = $gMainProgressBar')
         
         # execute one after the other syncronously
