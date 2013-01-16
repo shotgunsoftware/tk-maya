@@ -22,70 +22,136 @@ CONSOLE_OUTPUT_WIDTH = 200
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
-# for example if a non-tank file is loaded in maya
+# for example if a non-tank file is loaded in maya  
 
+class SceneEventWatcher(object):
+    """
+    Encapsulates event handling for multiple scene events and routes them
+    into a single callback.
+    
+    This uses OpenMaya.MSceneMessage rather than scriptJobs as the former 
+    can safely be removed from inside of the callback itself
+    
+    Specifying run_once=True in the constructor causes all events to be
+    cleaned up after the first one has triggered
+    """
+    def __init__(self, cb_fn,  
+                 scene_events = [OpenMaya.MSceneMessage.kAfterOpen, 
+                                 OpenMaya.MSceneMessage.kAfterSave,
+                                 OpenMaya.MSceneMessage.kAfterNew],
+                 run_once=False):
+        self.__message_ids = []
+        self.__cb_fn = cb_fn
+        self.__scene_events = scene_events
+        self.__run_once=run_once
 
-def on_scene_event_cb(engine_name, prev_context):
-    """
-    Callback which gets executed when a new scene is opened in Maya
-    
-    current_engine may be None if no engine is active.
-    engine_name and prev_context are always populated.
-    
-    """
-    
-    try:
-        current_engine = tank.platform.current_engine()
+        # register scene event callbacks:                                
+        self.start_watching()
+
+    def start_watching(self):
+        # if currently watching then stop:
+        self.stop_watching()
         
-        # first make sure that the disabled menu is reset, if it exists...
-        if pm.menu("TankMenuDisabled", exists=True):
-            pm.deleteUI("TankMenuDisabled")
-        
-        # if the scene opened is actually a file->new, then maintain the current
-        # context/engine.
-        if pm.sceneName() == "":
-            return
-        else:
-            new_path = pm.sceneName().abspath()
-            
-            # this file could be in another project altogether, so create a new Tank
-            # API instance.
+        # now add callbacks to watch for some scene events:
+        for ev in self.__scene_events:
             try:
-                tk = tank.tank_from_path(new_path)
-            except tank.TankError, e:
-                OpenMaya.MGlobal.displayInfo("Tank Engine cannot be started: %s" % e)
-                # render menu
-                create_tank_disabled_menu()
-                return
+                msg_id = OpenMaya.MSceneMessage.addCallback(ev, SceneEventWatcher.__scene_event_callback, self);
+            except Exception, e:
+                # report warning...
+                continue    
+            self.__message_ids.append(msg_id);
 
-            ctx = tk.context_from_path(new_path, prev_context)
-            
-            # if an engine is active right now and context is unchanged, no need to 
-            # rebuild the same engine again!
-            if current_engine is not None and ctx == prev_context:
-                return
-        
-        if current_engine:
-            current_engine.log_debug("Ready to switch to context because of scene event !")
-            current_engine.log_debug("Prev context: %s" % prev_context)   
-            current_engine.log_debug("New context: %s" % ctx)        
-            # tear down existing engine
-            current_engine.destroy()
+        # create a callback that will be run when Maya 
+        # exits so we can do some clean-up:
+        msg_id = OpenMaya.MSceneMessage.addCallback(OpenMaya.MSceneMessage.kMayaExiting, SceneEventWatcher.__maya_exiting_callback, self)
+        self.__message_ids.append(msg_id);
+
+    def stop_watching(self):
+        for msg_id in self.__message_ids:
+            OpenMaya.MMessage.removeCallback(msg_id)
+        self.__message_ids = []
+
+    @staticmethod
+    def __scene_event_callback(watcher):
+        """
+        Called on a scene event:
+        """
+        if watcher.__run_once:
+            watcher.stop_watching()
+        watcher.__cb_fn()
+
+    @staticmethod
+    def __maya_exiting_callback(watcher):
+        """
+        Called on Maya exit - should clean up any existing calbacks
+        """
+        watcher.stop_watching()
+
+def refresh_engine(engine_name, prev_context):
+    """
+    refresh the current engine
+    """    
+    current_engine = tank.platform.current_engine()
     
-        # create new engine
-        try:
-            new_engine = tank.platform.start_engine(engine_name, tk, ctx)
-        except tank.TankEngineInitError, e:
-            OpenMaya.MGlobal.displayInfo("Tank Engine cannot be started: %s" % e)
-            # render menu
-            create_tank_disabled_menu()
-            # set up callbacks
-            cb_fn = lambda en=engine_name, pc=prev_context: on_scene_event_cb(en, pc)
-            pm.scriptJob(event=["SceneOpened", cb_fn], runOnce=True)
-            pm.scriptJob(event=["SceneSaved", cb_fn], runOnce=True)
-        else:
-            new_engine.log_debug("Launched new engine for context!")
+    # first make sure that the disabled menu is reset, if it exists...
+    if pm.menu("TankMenuDisabled", exists=True):
+        pm.deleteUI("TankMenuDisabled")
+    
+    # if the scene opened is actually a file->new, then maintain the current
+    # context/engine.
+    if pm.sceneName() == "":
+        return current_engine
 
+    new_path = pm.sceneName().abspath()
+    
+    # this file could be in another project altogether, so create a new Tank
+    # API instance.
+    try:
+        tk = tank.tank_from_path(new_path)
+    except tank.TankError, e:
+        OpenMaya.MGlobal.displayInfo("Tank Engine cannot be started: %s" % e)
+        # render menu
+        create_tank_disabled_menu()
+        
+        # (AD) - this leaves the engine running - is this correct?        
+        return current_engine
+
+    ctx = tk.context_from_path(new_path, prev_context)
+    
+    # if an engine is active right now and context is unchanged, no need to 
+    # rebuild the same engine again!
+    if current_engine is not None and ctx == prev_context:
+        return current_engine
+    
+    if current_engine:
+        current_engine.log_debug("Ready to switch to context because of scene event !")
+        current_engine.log_debug("Prev context: %s" % prev_context)   
+        current_engine.log_debug("New context: %s" % ctx)
+        # tear down existing engine
+        current_engine.destroy()
+    
+    # create new engine
+    try:
+        new_engine = tank.platform.start_engine(engine_name, tk, ctx)
+    except tank.TankEngineInitError, e:
+        OpenMaya.MGlobal.displayInfo("Tank Engine cannot be started: %s" % e)
+        
+        # render menu
+        create_tank_disabled_menu()
+
+        return None
+    else:
+        new_engine.log_debug("Launched new engine for context!")
+        
+    return new_engine
+        
+def on_scene_event_callback(engine_name, prev_context):
+    """
+    Callback that's run whenever a scene is saved or opened.
+    """
+    new_engine = None
+    try:        
+        new_engine = refresh_engine(engine_name, prev_context)
     except Exception, e:
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         message = ""
@@ -94,8 +160,16 @@ def on_scene_event_cb(engine_name, prev_context):
         message += "Exception: %s - %s\n" % (exc_type, exc_value)
         message += "Traceback (most recent call last):\n"
         message += "\n".join( traceback.format_tb(exc_traceback))
-        OpenMaya.MGlobal.displayError(message)
+        OpenMaya.MGlobal.displayError(message) 
+        new_engine = None
     
+    if not new_engine:
+        # don't have an engine but still want to watch for 
+        # future scene events:
+        print "BLAH BLAH BLAH"
+        cb_fn = lambda en=engine_name, pc=prev_context:on_scene_event_callback(en, pc)
+        SceneEventWatcher(cb_fn, run_once=True)
+
 def tank_disabled_message():
     """
     Explain why tank is disabled.
@@ -133,7 +207,7 @@ class MayaEngine(tank.platform.Engine):
             
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
-        
+                
         # check that we are running an ok version of maya
         current_os = cmds.about(operatingSystem=True)
         if current_os not in ["mac", "win64", "linux64"]:
@@ -175,22 +249,19 @@ class MayaEngine(tank.platform.Engine):
                   
         # Set the Maya project based on config
         self._set_project()
-        
+       
         # add qt paths and dlls
         self._init_pyside()
-        
-        # Watch for scene open events, we'll tear down this engine and start another one based
-        # on the new context.
-        cb_fn = lambda en=self.instance_name, pc=self.context: on_scene_event_cb(en, pc)
-        pm.scriptJob(event=["SceneOpened", cb_fn], runOnce=True)
-        pm.scriptJob(event=["SceneSaved", cb_fn], runOnce=True)
+                  
+        # need to watch some scene events in case the engine needs rebuilding:
+        cb_fn = lambda en=self.instance_name, pc=self.context:on_scene_event_callback(en, pc)
+        self.__watcher = SceneEventWatcher(cb_fn)
         self.log_debug("Registered open and save callbacks.")
-    
+                
     def post_app_init(self):
         """
         Called when all apps have initialized
-        """
-    
+        """    
         # detect if in batch mode
         if self.has_ui:
             self._menu_handle = pm.menu("TankMenu", label="Tank", parent=pm.melGlobals["gMainWindow"])
@@ -200,11 +271,15 @@ class MayaEngine(tank.platform.Engine):
             # hook things up so that the menu is created every time it is clicked
             self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
     
-    
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
-        pm.deleteUI(self._menu_handle)
-    
+        
+        # stop watching scene events:
+        self.__watcher.stop_watching()
+        
+        # clean up UI:
+        if pm.menu(self._menu_handle, exists=True):
+            pm.deleteUI(self._menu_handle)
     
     def _init_pyside(self):
         """
