@@ -166,7 +166,6 @@ def on_scene_event_callback(engine_name, prev_context):
     if not new_engine:
         # don't have an engine but still want to watch for 
         # future scene events:
-        print "BLAH BLAH BLAH"
         cb_fn = lambda en=engine_name, pc=prev_context:on_scene_event_callback(en, pc)
         SceneEventWatcher(cb_fn, run_once=True)
 
