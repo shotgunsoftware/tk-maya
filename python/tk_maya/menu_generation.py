@@ -14,6 +14,7 @@ import maya.OpenMaya as OpenMaya
 import pymel.core as pm
 import maya.cmds as cmds
 import maya
+from PyQt4 import QtGui, QtCore
 from pymel.core import Callback
 
 
@@ -145,8 +146,8 @@ class MenuGenerator(object):
             url = "%s/detail/%s/%d" % (self._engine.shotgun.base_url, 
                                        self._engine.context.entity["type"], 
                                        self._engine.context.entity["id"])
-        
-        pm.showHelp(url, absolute=True)        
+                
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
         
         
     def _jump_to_fs(self):
