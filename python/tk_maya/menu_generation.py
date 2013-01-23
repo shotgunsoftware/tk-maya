@@ -14,7 +14,7 @@ import maya.OpenMaya as OpenMaya
 import pymel.core as pm
 import maya.cmds as cmds
 import maya
-from PyQt4 import QtGui, QtCore
+from tank.platform.qt import QtGui, QtCore
 from pymel.core import Callback
 
 
