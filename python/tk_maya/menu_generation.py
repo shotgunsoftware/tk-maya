@@ -138,11 +138,17 @@ class MenuGenerator(object):
         """
         
         if self._engine.context.entity:
-            paths = self._engine.tank.paths_from_entity(self._engine.context.entity["type"], 
-                                                     self._engine.context.entity["id"])
+            paths = self._engine.tank.paths_from_entity(
+                    self._engine.context.entity["type"],
+                    self._engine.context.entity["id"],
+                    self._engine.context,
+            )
         else:
-            paths = self._engine.tank.paths_from_entity(self._engine.context.project["type"], 
-                                                     self._engine.context.project["id"])
+            paths = self._engine.tank.paths_from_entity(
+                    self._engine.context.project["type"],
+                    self._engine.context.project["id"],
+                    self._engine.context,
+            )
         
         # launch one window for each location on disk
         # todo: can we do this in a more elegant way?
