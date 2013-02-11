@@ -116,42 +116,19 @@ class MenuGenerator(object):
                         
                         
     def _jump_to_sg(self):
-
-        if self._engine.context.entity is None:
-            # project-only!
-            url = "%s/detail/%s/%d" % (self._engine.shotgun.base_url, 
-                                       "Project", 
-                                       self._engine.context.project["id"])
-        else:
-            # entity-based
-            url = "%s/detail/%s/%d" % (self._engine.shotgun.base_url, 
-                                       self._engine.context.entity["type"], 
-                                       self._engine.context.entity["id"])
-                
+        """
+        Jump to shotgun, launch web browser
+        """        
+        url = self._engine.context.shotgun_url
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
         
         
     def _jump_to_fs(self):
-        
         """
         Jump from context to FS
         """
-        
-        if self._engine.context.entity:
-            paths = self._engine.tank.paths_from_entity(
-                    self._engine.context.entity["type"],
-                    self._engine.context.entity["id"],
-                    self._engine.context,
-            )
-        else:
-            paths = self._engine.tank.paths_from_entity(
-                    self._engine.context.project["type"],
-                    self._engine.context.project["id"],
-                    self._engine.context,
-            )
-        
-        # launch one window for each location on disk
-        # todo: can we do this in a more elegant way?
+        # launch one window for each location on disk        
+        paths = self._engine.context.filesystem_locations
         for disk_location in paths:
                 
             # get the setting        
