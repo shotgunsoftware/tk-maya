@@ -242,24 +242,57 @@ class AppCommand(object):
         """
         Adds an app command to the menu
         """
-        enabled = True
-        
-        if "enable_callback" in self.properties:
-            enabled = self.properties["enable_callback"]()
-        
+            
+        # create menu sub-tree if need to:
+        # Support menu items seperated by '/'
+        parent_menu = menu
+        parts = self.name.split("/")
+        for item_label in parts[:-1]:
+
+            # see if there is already a sub-menu item
+            sub_menu = self._find_sub_menu_item(parent_menu, item_label)
+            if sub_menu:
+                # already have sub menu
+                parent_menu = sub_menu
+            else:
+                # create new sub menu
+                params = {
+                    "label" : item_label,
+                    "parent" : parent_menu,
+                    "subMenu" : True
+                }
+                parent_menu = pm.menuItem(**params)
+            
+        # finally create the command menu item:
         params = {
-            "label": self.name,
+            "label": parts[-1],#self.name,
             "command": Callback(self.callback),
-            "parent": menu,
-            "enable": enabled
+            "parent": parent_menu,
         }
-        
         if "tooltip" in self.properties:
             params["annotation"] = self.properties["tooltip"]
-        
+        if "enable_callback" in self.properties:
+            params["enable"] = self.properties["enable_callback"]()
+            
         pm.menuItem(**params)
+        
+    def _find_sub_menu_item(self, menu, label):
+        """
+        Find the 'sub-menu' menu item with the given label
+        """
+        items = pm.menu(menu, query=True, itemArray=True)
+        for item in items:
+            item_path = "%s|%s" % (menu, item)
+            
+            # only care about menuItems that have sub-menus:
+            if not pm.menuItem(item_path, query=True, subMenu=True):
+                continue
+            
+            item_label = pm.menuItem(item_path, query=True, label=True)
+            if item_label == label:
+                return item_path
 
-
+        return None
 
 
 
