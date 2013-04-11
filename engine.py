@@ -322,6 +322,11 @@ class MayaEngine(tank.platform.Engine):
         
         :returns: the created widget_class instance
         """
+        if not self.has_ui:
+            self.log_error("Sorry, this environment does not support UI display! Cannot show "
+                           "the requested window '%s'." % title)
+            return
+        
         from tank.platform.qt import tankqdialog 
         import maya.OpenMayaUI as OpenMayaUI
         from PySide import QtCore, QtGui
@@ -359,6 +364,11 @@ class MayaEngine(tank.platform.Engine):
 
         :returns: (a standard QT dialog status return code, the created widget_class instance)
         """
+        if not self.has_ui:
+            self.log_error("Sorry, this environment does not support UI display! Cannot show "
+                           "the requested window '%s'." % title)
+            return
+        
         from tank.platform.qt import tankqdialog 
         import maya.OpenMayaUI as OpenMayaUI
         from PySide import QtCore, QtGui
