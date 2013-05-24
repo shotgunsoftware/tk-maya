@@ -216,12 +216,12 @@ class MayaEngine(tank.platform.Engine):
             raise tank.TankError("The current platform is not supported! Supported platforms "
                                  "are Mac, Linux 64 and Windows 64.")
         
-        current_maya_version = cmds.about(version=True)
-        if current_maya_version.startswith("2012") or current_maya_version.startswith("2013"):
-            self.log_debug("Running Maya version %s" % current_maya_version)
+        maya_ver = cmds.about(version=True)
+        if maya_ver.startswith("2012") or maya_ver.startswith("2013") or maya_ver.startswith("2014"):
+            self.log_debug("Running Maya version %s" % maya_ver)
         else:
             raise tank.TankError("Your version of Maya is not supported. Currently, Tank only "
-                                 "supports 2012 and 2013.") 
+                                 "supports 2012, 2013 and 2014.") 
                 
         if self.context.project is None:
             # must have at least a project in the context to even start!
