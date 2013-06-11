@@ -266,7 +266,7 @@ class AppCommand(object):
         # finally create the command menu item:
         params = {
             "label": parts[-1],#self.name,
-            "command": Callback(self.callback),
+            "command": Callback(self.__execute_deferred),#self.callback),
             "parent": parent_menu,
         }
         if "tooltip" in self.properties:
@@ -275,6 +275,16 @@ class AppCommand(object):
             params["enable"] = self.properties["enable_callback"]()
             
         pm.menuItem(**params)
+        
+    def __execute_deferred(self):
+        """
+        Execute the callback deferred to avoid
+        potential problems with the command resulting
+        in the menu being deleted, e.g. if the context
+        changes resulting in an engine restart! - this
+        was causing a segmentation fault crash on Linux
+        """
+        cmds.evalDeferred(self.callback)
         
     def _find_sub_menu_item(self, menu, label):
         """
