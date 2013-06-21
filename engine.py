@@ -94,8 +94,8 @@ def refresh_engine(engine_name, prev_context):
     current_engine = tank.platform.current_engine()
     
     # first make sure that the disabled menu is reset, if it exists...
-    if pm.menu("TankMenuDisabled", exists=True):
-        pm.deleteUI("TankMenuDisabled")
+    if pm.menu("ShotgunMenuDisabled", exists=True):
+        pm.deleteUI("ShotgunMenuDisabled")
     
     # if the scene opened is actually a file->new, then maintain the current
     # context/engine.
@@ -109,7 +109,7 @@ def refresh_engine(engine_name, prev_context):
     try:
         tk = tank.tank_from_path(new_path)
     except tank.TankError, e:
-        OpenMaya.MGlobal.displayInfo("Tank Engine cannot be started: %s" % e)
+        OpenMaya.MGlobal.displayInfo("Shotgun Engine cannot be started: %s" % e)
         # render menu
         create_tank_disabled_menu()
         
@@ -134,7 +134,7 @@ def refresh_engine(engine_name, prev_context):
     try:
         new_engine = tank.platform.start_engine(engine_name, tk, ctx)
     except tank.TankEngineInitError, e:
-        OpenMaya.MGlobal.displayInfo("Tank Engine cannot be started: %s" % e)
+        OpenMaya.MGlobal.displayInfo("Shotgun Engine cannot be started: %s" % e)
         
         # render menu
         create_tank_disabled_menu()
@@ -155,8 +155,8 @@ def on_scene_event_callback(engine_name, prev_context):
     except Exception, e:
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         message = ""
-        message += "Message: There was a problem starting the Tank Engine.\n"
-        message += "Please contact tanksupport@shotgunsoftware.com\n\n"
+        message += "Message: Shotgun encountered a problem starting the Engine.\n"
+        message += "Please contact sgtksupport@shotgunsoftware.com\n\n"
         message += "Exception: %s - %s\n" % (exc_type, exc_value)
         message += "Traceback (most recent call last):\n"
         message += "\n".join( traceback.format_tb(exc_traceback))
@@ -173,10 +173,11 @@ def tank_disabled_message():
     """
     Explain why tank is disabled.
     """
-    msg = ("Tank is disabled because it cannot recongnize the currently opened file. "
-           "Try opening another file or restarting Maya.")
+    msg = ("Shotgun integration is disabled because it cannot recognize "
+           "the currently opened file.  Try opening another file or restarting " 
+           "Maya.")
     
-    cmds.confirmDialog( title="Tank is disabled", 
+    cmds.confirmDialog( title="Sgtk is disabled", 
                 message=msg, 
                 button=["Ok"], 
                 defaultButton="Ok", 
@@ -186,13 +187,13 @@ def tank_disabled_message():
     
 def create_tank_disabled_menu():
     """
-    Render a special "tank is disabled menu"
+    Render a special "shotgun is disabled menu"
     """
-    if pm.menu("TankMenu", exists=True):
-        pm.deleteUI("TankMenu")
+    if pm.menu("ShotgunMenu", exists=True):
+        pm.deleteUI("ShotgunMenu")
 
-    sg_menu = pm.menu("TankMenuDisabled", label="Tank", parent=pm.melGlobals["gMainWindow"])
-    pm.menuItem(label="Tank is disabled.", parent=sg_menu, 
+    sg_menu = pm.menu("ShotgunMenuDisabled", label="Shotgun", parent=pm.melGlobals["gMainWindow"])
+    pm.menuItem(label="Sgtk is disabled.", parent=sg_menu, 
                 command=lambda arg: tank_disabled_message())
 
 
@@ -220,12 +221,12 @@ class MayaEngine(tank.platform.Engine):
         if maya_ver.startswith("2012") or maya_ver.startswith("2013") or maya_ver.startswith("2014"):
             self.log_debug("Running Maya version %s" % maya_ver)
         else:
-            raise tank.TankError("Your version of Maya is not supported. Currently, Tank only "
-                                 "supports 2012, 2013 and 2014.") 
+            raise tank.TankError("Your version of Maya is not supported. Currently, the only "
+                                 "versions supported are 2012, 2013 and 2014.") 
                 
         if self.context.project is None:
             # must have at least a project in the context to even start!
-            raise tank.TankError("The Tank engine needs at least a project in the context "
+            raise tank.TankError("The engine needs at least a project in the context "
                                  "in order to start! Your context: %s" % self.context)
 
         # our job queue
@@ -248,7 +249,7 @@ class MayaEngine(tank.platform.Engine):
         """    
         # detect if in batch mode
         if self.has_ui:
-            self._menu_handle = pm.menu("TankMenu", label="Tank", parent=pm.melGlobals["gMainWindow"])
+            self._menu_handle = pm.menu("ShotgunMenu", label="Shotgun", parent=pm.melGlobals["gMainWindow"])
             # create our menu handler
             tk_maya = self.import_module("tk_maya")
             self._menu_generator = tk_maya.MenuGenerator(self, self._menu_handle)
@@ -275,10 +276,10 @@ class MayaEngine(tank.platform.Engine):
             from PySide import QtGui
         except:
             # fine, we don't expect pyside to be present just yet
-            self.log_debug("PySide not detected - Tank will add it to the setup now...")
+            self.log_debug("PySide not detected - it will be added to the setup now...")
         else:
             # looks like pyside is already working! No need to do anything
-            self.log_debug("PySide detected - Tank will use the existing version.")
+            self.log_debug("PySide detected - the existing version will be used.")
             return
         
         
@@ -305,7 +306,7 @@ class MayaEngine(tank.platform.Engine):
         try:
             from PySide import QtGui
         except Exception, e:
-            self.log_error("PySide could not be imported! Tank Apps using pyside will not "
+            self.log_error("PySide could not be imported! Apps using pyside will not "
                            "operate correctly! Error reported: %s" % e)
     
         
@@ -415,17 +416,17 @@ class MayaEngine(tank.platform.Engine):
                 OpenMaya.MGlobal.displayInfo(l)
     
     def log_info(self, msg):
-        msg = "Tank: %s" % msg
+        msg = "Shotgun: %s" % msg
         for l in textwrap.wrap(msg, CONSOLE_OUTPUT_WIDTH):
             OpenMaya.MGlobal.displayInfo(l)
         
     def log_warning(self, msg):
-        msg = "Tank: %s" % msg
+        msg = "Shotgun: %s" % msg
         for l in textwrap.wrap(msg, CONSOLE_OUTPUT_WIDTH):
             OpenMaya.MGlobal.displayWarning(l)
     
     def log_error(self, msg):
-        msg = "Tank: %s" % msg
+        msg = "Shotgun: %s" % msg
         OpenMaya.MGlobal.displayError(msg)
     
     ##########################################################################################

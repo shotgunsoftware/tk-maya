@@ -33,7 +33,7 @@ class MenuGenerator(object):
 
     def create_menu(self, *args):
         """
-        Render the entire Tank menu.
+        Render the entire Shotgun menu.
         In order to have commands enable/disable themselves based on the enable_callback, 
         re-create the menu items every time.
         """
