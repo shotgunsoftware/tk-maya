@@ -32,6 +32,11 @@ configuration:
                 name: { type: str }
                 app_instance: { type: str }
 
+    use_sgtk_as_menu_name:
+        type: bool
+        description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Shotgun'
+        default_value: false
+
 
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:

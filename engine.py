@@ -87,7 +87,7 @@ class SceneEventWatcher(object):
         """
         watcher.stop_watching()
 
-def refresh_engine(engine_name, prev_context):
+def refresh_engine(engine_name, prev_context, menu_name):
     """
     refresh the current engine
     """    
@@ -109,9 +109,9 @@ def refresh_engine(engine_name, prev_context):
     try:
         tk = tank.tank_from_path(new_path)
     except tank.TankError, e:
-        OpenMaya.MGlobal.displayInfo("Shotgun Engine cannot be started: %s" % e)
+        OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
         # render menu
-        create_tank_disabled_menu()
+        create_tank_disabled_menu(menu_name)
         
         # (AD) - this leaves the engine running - is this correct?        
         return current_engine
@@ -134,10 +134,10 @@ def refresh_engine(engine_name, prev_context):
     try:
         new_engine = tank.platform.start_engine(engine_name, tk, ctx)
     except tank.TankEngineInitError, e:
-        OpenMaya.MGlobal.displayInfo("Shotgun Engine cannot be started: %s" % e)
+        OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
         
         # render menu
-        create_tank_disabled_menu()
+        create_tank_disabled_menu(menu_name)
 
         return None
     else:
@@ -145,13 +145,13 @@ def refresh_engine(engine_name, prev_context):
         
     return new_engine
         
-def on_scene_event_callback(engine_name, prev_context):
+def on_scene_event_callback(engine_name, prev_context, menu_name):
     """
     Callback that's run whenever a scene is saved or opened.
     """
     new_engine = None
     try:        
-        new_engine = refresh_engine(engine_name, prev_context)
+        new_engine = refresh_engine(engine_name, prev_context, menu_name)
     except Exception, e:
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         message = ""
@@ -166,7 +166,7 @@ def on_scene_event_callback(engine_name, prev_context):
     if not new_engine:
         # don't have an engine but still want to watch for 
         # future scene events:
-        cb_fn = lambda en=engine_name, pc=prev_context:on_scene_event_callback(en, pc)
+        cb_fn = lambda en=engine_name, pc=prev_context, mn=menu_name:on_scene_event_callback(en, pc, mn)
         SceneEventWatcher(cb_fn, run_once=True)
 
 def tank_disabled_message():
@@ -185,14 +185,14 @@ def tank_disabled_message():
                 dismissString="Ok" )
         
     
-def create_tank_disabled_menu():
+def create_tank_disabled_menu(menu_name):
     """
     Render a special "shotgun is disabled menu"
     """
     if pm.menu("ShotgunMenu", exists=True):
         pm.deleteUI("ShotgunMenu")
 
-    sg_menu = pm.menu("ShotgunMenuDisabled", label="Shotgun", parent=pm.melGlobals["gMainWindow"])
+    sg_menu = pm.menu("ShotgunMenuDisabled", label=menu_name, parent=pm.melGlobals["gMainWindow"])
     pm.menuItem(label="Sgtk is disabled.", parent=sg_menu, 
                 command=lambda arg: tank_disabled_message())
 
@@ -238,8 +238,14 @@ class MayaEngine(tank.platform.Engine):
         # add qt paths and dlls
         self._init_pyside()
                   
+        # default menu name is Shotgun but this can be overriden
+        # in the configuration to be Sgtk in case of conflicts
+        self._menu_name = "Shotgun"
+        if self.get_setting("use_sgtk_as_menu_name", False):
+            self._menu_name = "Sgtk"
+                  
         # need to watch some scene events in case the engine needs rebuilding:
-        cb_fn = lambda en=self.instance_name, pc=self.context:on_scene_event_callback(en, pc)
+        cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name:on_scene_event_callback(en, pc, mn)
         self.__watcher = SceneEventWatcher(cb_fn)
         self.log_debug("Registered open and save callbacks.")
                 
@@ -249,7 +255,7 @@ class MayaEngine(tank.platform.Engine):
         """    
         # detect if in batch mode
         if self.has_ui:
-            self._menu_handle = pm.menu("ShotgunMenu", label="Shotgun", parent=pm.melGlobals["gMainWindow"])
+            self._menu_handle = pm.menu("ShotgunMenu", label=self._menu_name, parent=pm.melGlobals["gMainWindow"])
             # create our menu handler
             tk_maya = self.import_module("tk_maya")
             self._menu_generator = tk_maya.MenuGenerator(self, self._menu_handle)
