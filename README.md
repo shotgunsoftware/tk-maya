@@ -1,4 +1,4 @@
 tk-maya
 =======
 
-Tank Maya Engine
+Shotgun Pipeline Toolkit Maya Engine
