@@ -17,6 +17,7 @@ import tank
 import platform
 import sys
 import traceback
+import time
 import textwrap
 import os
 import maya.OpenMaya as OpenMaya
@@ -206,6 +207,9 @@ def create_tank_disabled_menu(menu_name):
 
 ###############################################################################################
 # The Tank Maya engine
+
+# for debug logging with time stamps
+g_last_message_time = 0
 
 class MayaEngine(tank.platform.Engine):
     
@@ -423,8 +427,18 @@ class MayaEngine(tank.platform.Engine):
     # logging
     
     def log_debug(self, msg):
+        
+        global g_last_message_time
+        
+        # get the time stamps
+        prev_time = g_last_message_time
+        current_time = time.time()
+        
+        # update global counter
+        g_last_message_time = current_time
+        
         if self.get_setting("debug_logging", False):
-            msg = "%s DEBUG: %s" % (self, msg)
+            msg = "Shotgun Debug [%0.3fs]: %s" % ((current_time-prev_time), msg)
             for l in textwrap.wrap(msg, CONSOLE_OUTPUT_WIDTH):
                 OpenMaya.MGlobal.displayInfo(l)
     
