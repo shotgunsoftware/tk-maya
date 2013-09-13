@@ -218,9 +218,6 @@ class MayaEngine(tank.platform.Engine):
             
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
-        
-        # keep handles to all qt dialogs to help GC
-        self.__created_qt_dialogs = []
                 
         # check that we are running an ok version of maya
         current_os = cmds.about(operatingSystem=True)
@@ -325,92 +322,21 @@ class MayaEngine(tank.platform.Engine):
         except Exception, e:
             self.log_error("PySide could not be imported! Apps using pyside will not "
                            "operate correctly! Error reported: %s" % e)
-    
-        
-    def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
+
+    def _get_dialog_parent(self):
         """
-        Shows a non-modal dialog window in a way suitable for this engine. 
-        The engine will attempt to parent the dialog nicely to the host application.
-        
-        :param title: The title of the window
-        :param bundle: The app, engine or framework object that is associated with this window
-        :param widget_class: The class of the UI to be constructed. This must derive from QWidget.
-        
-        Additional parameters specified will be passed through to the widget_class constructor.
-        
-        :returns: the created widget_class instance
+        Get the QWidget parent for all dialogs created through
+        show_dialog & show_modal.
         """
-        if not self.has_ui:
-            self.log_error("Sorry, this environment does not support UI display! Cannot show "
-                           "the requested window '%s'." % title)
-            return
-        
-        from tank.platform.qt import tankqdialog 
+        # Find a parent for the dialog - this is the Maya mainWindow()
+        from tank.platform.qt import QtGui
         import maya.OpenMayaUI as OpenMayaUI
-        from PySide import QtCore, QtGui
         import shiboken
-        
-        # first construct the widget object 
-        obj = widget_class(*args, **kwargs)
-        
-        # now create a dialog to put it inside
+
         ptr = OpenMayaUI.MQtUtil.mainWindow()
         parent = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
-        self.log_debug("Parenting dialog to main window %08x %s" % (ptr, parent))
-        dialog = tankqdialog.TankQDialog(title, bundle, obj, parent)
         
-        # keep a reference to all created dialogs to make GC happy
-        self.__created_qt_dialogs.append(dialog)
-        
-        # finally show it        
-        dialog.show()
-        
-        # lastly, return the instantiated class
-        return obj
-    
-    def show_modal(self, title, bundle, widget_class, *args, **kwargs):
-        """
-        Shows a modal dialog window in a way suitable for this engine. The engine will attempt to
-        integrate it as seamlessly as possible into the host application. This call is blocking 
-        until the user closes the dialog.
-        
-        :param title: The title of the window
-        :param bundle: The app, engine or framework object that is associated with this window
-        :param widget_class: The class of the UI to be constructed. This must derive from QWidget.
-        
-        Additional parameters specified will be passed through to the widget_class constructor.
-
-        :returns: (a standard QT dialog status return code, the created widget_class instance)
-        """
-        if not self.has_ui:
-            self.log_error("Sorry, this environment does not support UI display! Cannot show "
-                           "the requested window '%s'." % title)
-            return
-        
-        from tank.platform.qt import tankqdialog 
-        import maya.OpenMayaUI as OpenMayaUI
-        from PySide import QtCore, QtGui
-        import shiboken
-        
-        # first construct the widget object 
-        obj = widget_class(*args, **kwargs)
-        
-        # now create a dialog to put it inside
-        ptr = OpenMayaUI.MQtUtil.mainWindow()
-        parent = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
-        self.log_debug("Parenting dialog to main window %08x %s" % (ptr, parent))
-        dialog = tankqdialog.TankQDialog(title, bundle, obj, parent)
-        
-        # keep a reference to all created dialogs to make GC happy
-        self.__created_qt_dialogs.append(dialog)
-        
-        # finally launch it, modal state        
-        status = dialog.exec_()
-        
-        # lastly, return the instantiated class
-        return (status, obj)
-
-        
+        return parent 
         
     @property
     def has_ui(self):
