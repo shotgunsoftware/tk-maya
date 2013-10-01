@@ -170,7 +170,13 @@ class MenuGenerator(object):
                 # more than one menu entry fort his app
                 # make a sub menu and put all items in the sub menu
                 app_menu = pm.subMenuItem(label=app_name, parent=self._menu_handle)                
-                for cmd in commands_by_app[app_name]:
+                
+                # get the list of menu cmds for this app
+                cmds = commands_by_app[app_name]
+                # make sure it is in alphabetical order
+                cmds.sort(key=lambda x: x.name) 
+                
+                for cmd in cmds:
                     cmd.add_command_to_menu(app_menu)
             
             else:
