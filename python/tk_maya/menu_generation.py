@@ -56,6 +56,9 @@ class MenuGenerator(object):
         for (cmd_name, cmd_details) in self._engine.commands.items():
              menu_items.append( AppCommand(cmd_name, cmd_details) )
 
+        # sort list of commands in name order
+        menu_items.sort(key=lambda x: x.name) 
+
         # now add favourites
         for fav in self._engine.get_setting("menu_favourites"):
             app_instance_name = fav["app_instance"]
