@@ -226,6 +226,8 @@ class MayaEngine(tank.platform.Engine):
                                  "are Mac, Linux 64 and Windows 64.")
         
         maya_ver = cmds.about(version=True)
+        if maya_ver.startswith("Maya "):
+            maya_ver = maya_ver[5:]
         if maya_ver.startswith(("2012", "2013", "2014")):
             self.log_debug("Running Maya version %s" % maya_ver)
         else:
