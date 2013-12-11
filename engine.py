@@ -226,7 +226,7 @@ class MayaEngine(tank.platform.Engine):
                                  "are Mac, Linux 64 and Windows 64.")
         
         maya_ver = cmds.about(version=True)
-        if maya_ver.startswith("2012") or maya_ver.startswith("2013") or maya_ver.startswith("2014"):
+        if maya_ver.startswith(("2012", "2013", "2014")):
             self.log_debug("Running Maya version %s" % maya_ver)
         else:
             raise tank.TankError("Your version of Maya is not supported. Currently, the only "
