@@ -1,0 +1,7 @@
+The Maya engine uses the following software. Thanks to its creator, license information below.
+
+============================== PYSIDE ==============================
+
+PySide has been published as a response to the lack of suitably licensed Qt bindings for Python. 
+PySide is licensed under the LGPL version 2.1 license, allowing both Free/Open source software 
+and proprietary software development.
