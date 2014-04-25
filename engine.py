@@ -233,7 +233,9 @@ class MayaEngine(tank.platform.Engine):
         else:
             raise tank.TankError("Your version of Maya is not supported. Currently, the only "
                                  "versions supported are 2012, 2013 and 2014.") 
-                
+        
+        self._maya_version = maya_ver  
+        
         if self.context.project is None:
             # must have at least a project in the context to even start!
             raise tank.TankError("The engine needs at least a project in the context "
@@ -301,18 +303,32 @@ class MayaEngine(tank.platform.Engine):
         
         if sys.platform == "darwin":
             pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_mac", "python")
+            self.log_debug("Adding pyside to sys.path: %s" % pyside_path)
             sys.path.append(pyside_path)
         
+        elif sys.platform == "win32" and self._maya_version.startswith("2013"):
+            # special 2013 version of pyside
+            pyside_path = os.path.join(self.disk_location, "resources","pyside113_py26_qt471maya2013_win64", "python")
+            self.log_debug("Adding pyside to sys.path: %s" % pyside_path)
+            sys.path.append(pyside_path)
+            dll_path = os.path.join(self.disk_location, "resources","pyside113_py26_qt471maya2013_win64", "lib")
+            path = os.environ.get("PATH", "")
+            path += ";%s" % dll_path
+            os.environ["PATH"] = path
+            
         elif sys.platform == "win32":
+            # default windows version of pyside for 2011 and 2012
             pyside_path = os.path.join(self.disk_location, "resources","pyside111_py26_qt471_win64", "python")
+            self.log_debug("Adding pyside to sys.path: %s" % pyside_path)
             sys.path.append(pyside_path)
             dll_path = os.path.join(self.disk_location, "resources","pyside111_py26_qt471_win64", "lib")
             path = os.environ.get("PATH", "")
             path += ";%s" % dll_path
             os.environ["PATH"] = path
-            
+
         elif sys.platform == "linux2":        
             pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_linux", "python")
+            self.log_debug("Adding pyside to sys.path: %s" % pyside_path)
             sys.path.append(pyside_path)
         
         else:
