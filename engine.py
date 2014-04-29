@@ -218,7 +218,7 @@ class MayaEngine(tank.platform.Engine):
             
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
-                
+        
         # check that we are running an ok version of maya
         current_os = cmds.about(operatingSystem=True)
         if current_os not in ["mac", "win64", "linux64"]:
@@ -228,11 +228,35 @@ class MayaEngine(tank.platform.Engine):
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
-        if maya_ver.startswith(("2012", "2013", "2014")):
+        if maya_ver.startswith(("2012", "2013", "2014", "2015")):
             self.log_debug("Running Maya version %s" % maya_ver)
         else:
-            raise tank.TankError("Your version of Maya is not supported. Currently, the only "
-                                 "versions supported are 2012, 2013 and 2014.") 
+            # show a warning that this version of Maya isn't yet fully tested with Shotgun:
+            msg = ("The Shotgun Pipeline Toolkit has not yet been fully tested with Maya %s.  "
+                   "You can continue to use Toolkit but you may experience bugs or instability."
+                   "\n\nPlease report any issues to: toolkitsupport@shotgunsoftware.com" 
+                   % (maya_ver))
+            
+            # determine if we should show the compatibility warning dialog:
+            show_warning_dlg = self.has_ui and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
+            if show_warning_dlg:
+                # make sure we only show it once per session:
+                os.environ["SGTK_COMPATIBILITY_DIALOG_SHOWN"] = "1"
+                
+                # split off the major version number - accomodate complex version strings and decimals: 
+                major_version_number_str = maya_ver.split(" ")[0].split(".")[0]
+                if major_version_number_str and major_version_number_str.isdigit():
+                    # check against the compatibility_dialog_min_version setting:
+                    if int(major_version_number_str) < self.get_setting("compatibility_dialog_min_version", 2015):
+                        show_warning_dlg = False
+                
+            if show_warning_dlg:
+                # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                title = "Warning - Shotgun Pipeline Toolkit Compatibility!                          " # padded!
+                cmds.confirmDialog(title = title, message = msg, button = "Ok")
+                
+            # always log the warning to the script editor:
+            self.log_warning(msg)
         
         self._maya_version = maya_ver  
         
