@@ -43,6 +43,13 @@ configuration:
         description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Shotgun'
         default_value: false
 
+    compatibility_dialog_min_version:
+        type:           int
+        description:    "Specify the minimum Application major version that will prompt a warning if
+                        it isn't yet fully supported and tested with Toolkit.  To disable the warning
+                        dialog for the version you are testing, it is recomended that you set this
+                        value to the current major version + 1."
+        default_value:  2015
 
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
