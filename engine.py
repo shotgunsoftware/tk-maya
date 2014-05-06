@@ -164,7 +164,7 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         message = ""
         message += "Message: Shotgun encountered a problem starting the Engine.\n"
-        message += "Please contact sgtksupport@shotgunsoftware.com\n\n"
+        message += "Please contact toolkitsupport@shotgunsoftware.com\n\n"
         message += "Exception: %s - %s\n" % (exc_type, exc_value)
         message += "Traceback (most recent call last):\n"
         message += "\n".join( traceback.format_tb(exc_traceback))
