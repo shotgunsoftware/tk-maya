@@ -265,9 +265,6 @@ class MayaEngine(tank.platform.Engine):
             raise tank.TankError("The engine needs at least a project in the context "
                                  "in order to start! Your context: %s" % self.context)
 
-        # our job queue
-        self._queue = []
-                  
         # Set the Maya project based on config
         self._set_project()
        
@@ -441,69 +438,3 @@ class MayaEngine(tank.platform.Engine):
         self.log_info("Setting Maya project to '%s'" % proj_path)        
         pm.mel.setProject(proj_path)
     
-    ##########################################################################################
-    # queue
-
-    def add_to_queue(self, name, method, args):
-        """
-        Maya implementation of the engine synchronous queue. Adds an item to the queue.
-        """
-        self.log_warning("The Engine Queue is now deprecated! Please contact support@shotgunsoftware.com")
-        qi = {}
-        qi["name"] = name
-        qi["method"] = method
-        qi["args"] = args
-        self._queue.append(qi)
-    
-    def report_progress(self, percent):
-        """
-        Callback function part of the engine queue. This is being passed into the methods
-        that are executing in the queue so that they can report progress back if they like
-        """
-        # convert to delta value before passing to maya
-        delta = percent - self._current_progress
-        pm.progressBar(self._maya_progress_bar, edit=True, step=delta)
-        self._current_progress = percent
-    
-    def execute_queue(self):
-        """
-        Executes all items in the queue, one by one, in a controlled fashion
-        """
-        self.log_warning("The Engine Queue is now deprecated! Please contact support@shotgunsoftware.com")
-        self._maya_progress_bar = maya.mel.eval('$tmp = $gMainProgressBar')
-        
-        # execute one after the other syncronously
-        while len(self._queue) > 0:
-            
-            # take one item off
-            current_queue_item = self._queue[0]
-            self._queue = self._queue[1:]
-
-            # set up the progress bar  
-            pm.progressBar( self._maya_progress_bar,
-                            edit=True,
-                            beginProgress=True,
-                            isInterruptable=False,
-                            status=current_queue_item["name"] )
-            self._current_progress = 0
-            
-            # process it
-            try:
-                kwargs = current_queue_item["args"]
-                # force add a progress_callback arg - this is by convention
-                kwargs["progress_callback"] = self.report_progress
-                # execute
-                current_queue_item["method"](**kwargs)
-            except:
-                # error and continue
-                # todo: may want to abort here - or clear the queue? not sure.
-                self.log_exception("Error while processing callback %s" % current_queue_item)
-            finally:
-                pm.progressBar(self._maya_progress_bar, edit=True, endProgress=True)
-        
-            
-
-  
-        
-        
-                
