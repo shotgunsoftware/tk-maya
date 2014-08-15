@@ -270,7 +270,7 @@ class MayaEngine(tank.platform.Engine):
        
         # add qt paths and dlls
         self._init_pyside()
-                  
+
         # default menu name is Shotgun but this can be overriden
         # in the configuration to be Sgtk in case of conflicts
         self._menu_name = "Shotgun"
@@ -294,6 +294,14 @@ class MayaEngine(tank.platform.Engine):
             self._menu_generator = tk_maya.MenuGenerator(self, self._menu_handle)
             # hook things up so that the menu is created every time it is clicked
             self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
+
+            # unicode characters returned by the shotgun api need to be converted
+            # to display correctly in all of the app windows
+            from tank.platform.qt import QtCore
+            # tell QT to interpret C strings as utf-8
+            utf8 = QtCore.QTextCodec.codecForName("utf-8")
+            QtCore.QTextCodec.setCodecForCStrings(utf8)
+            self.log_debug("set utf-8 codec for widget text")
     
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
