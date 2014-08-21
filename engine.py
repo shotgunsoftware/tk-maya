@@ -215,7 +215,19 @@ class MayaEngine(tank.platform.Engine):
     
     ##########################################################################################
     # init and destroy
-            
+    
+    def pre_app_init(self):
+        """
+        Runs after the engine is set up but before any apps have been initialized.
+        """        
+        # unicode characters returned by the shotgun api need to be converted
+        # to display correctly in all of the app windows
+        from tank.platform.qt import QtCore
+        # tell QT to interpret C strings as utf-8
+        utf8 = QtCore.QTextCodec.codecForName("utf-8")
+        QtCore.QTextCodec.setCodecForCStrings(utf8)
+        self.log_debug("set utf-8 codec for widget text")
+
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
         
@@ -270,7 +282,7 @@ class MayaEngine(tank.platform.Engine):
        
         # add qt paths and dlls
         self._init_pyside()
-                  
+
         # default menu name is Shotgun but this can be overriden
         # in the configuration to be Sgtk in case of conflicts
         self._menu_name = "Shotgun"
