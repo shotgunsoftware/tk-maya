@@ -101,53 +101,55 @@ def refresh_engine(engine_name, prev_context, menu_name):
     """    
     current_engine = tank.platform.current_engine()
     
-    # first make sure that the disabled menu is reset, if it exists...
-    if pm.menu("ShotgunMenuDisabled", exists=True):
-        pm.deleteUI("ShotgunMenuDisabled")
+    # first make sure that the disabled menu is removed, if it exists...
+    menu_was_disabled = remove_sgtk_disabled_menu()
     
-    # if the scene opened is actually a file->new, then maintain the current
-    # context/engine.
+    # determine the tk instance and ctx to use:
+    tk = current_engine.sgtk
+    ctx = prev_context
     if pm.sceneName() == "":
-        return current_engine
-
-    new_path = pm.sceneName().abspath()
+        # if the scene opened is actually a file->new, then maintain the current
+        # context/engine.
+        if not menu_was_disabled:
+            # just return the current engine - no need to restart it!
+            return current_engine
+    else:
+        # loading a scene file
+        new_path = pm.sceneName().abspath()
     
-    # this file could be in another project altogether, so create a new Tank
-    # API instance.
-    try:
-        tk = tank.tank_from_path(new_path)
-    except tank.TankError, e:
-        OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
-        # render menu
-        create_tank_disabled_menu(menu_name)
-        
-        # (AD) - this leaves the engine running - is this correct?        
-        return current_engine
+        # this file could be in another project altogether, so create a new
+        # API instance.
+        try:
+            tk = tank.tank_from_path(new_path)
+        except tank.TankError, e:
+            OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
+            # build disabled menu
+            create_sgtk_disabled_menu(menu_name)
+            return current_engine
 
-    ctx = tk.context_from_path(new_path, prev_context)
-    
-    # if an engine is active right now and context is unchanged, no need to 
-    # rebuild the same engine again!
-    if current_engine is not None and ctx == prev_context:
-        return current_engine
+        # and construct the new context for this path:
+        ctx = tk.context_from_path(new_path, prev_context)
     
     if current_engine:
+        # if context is unchanged and the menu was not previously disabled 
+        # then no need to rebuild the same engine again!
+        if ctx == prev_context and not menu_was_disabled:
+            return current_engine
+
+        # tear down existing engine
         current_engine.log_debug("Ready to switch to context because of scene event !")
         current_engine.log_debug("Prev context: %s" % prev_context)   
         current_engine.log_debug("New context: %s" % ctx)
-        # tear down existing engine
         current_engine.destroy()
     
-    # create new engine
+    # start new engine
+    new_engine = None
     try:
         new_engine = tank.platform.start_engine(engine_name, tk, ctx)
     except tank.TankEngineInitError, e:
         OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
-        
-        # render menu
-        create_tank_disabled_menu(menu_name)
-
-        return None
+        # build disabled menu
+        create_sgtk_disabled_menu(menu_name)
     else:
         new_engine.log_debug("Launched new engine for context!")
         
@@ -177,7 +179,7 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
         cb_fn = lambda en=engine_name, pc=prev_context, mn=menu_name:on_scene_event_callback(en, pc, mn)
         SceneEventWatcher(cb_fn, run_once=True)
 
-def tank_disabled_message():
+def sgtk_disabled_message():
     """
     Explain why tank is disabled.
     """
@@ -193,17 +195,36 @@ def tank_disabled_message():
                 dismissString="Ok" )
         
     
-def create_tank_disabled_menu(menu_name):
+def create_sgtk_disabled_menu(menu_name):
     """
-    Render a special "shotgun is disabled menu"
+    Render a special "shotgun is disabled" menu
     """
+    if cmds.about(batch=True):
+        # don't create menu in batch mode
+        return
+    
     if pm.menu("ShotgunMenu", exists=True):
         pm.deleteUI("ShotgunMenu")
 
     sg_menu = pm.menu("ShotgunMenuDisabled", label=menu_name, parent=pm.melGlobals["gMainWindow"])
     pm.menuItem(label="Sgtk is disabled.", parent=sg_menu, 
-                command=lambda arg: tank_disabled_message())
+                command=lambda arg: sgtk_disabled_message())
 
+def remove_sgtk_disabled_menu():
+    """
+    Remove the special "shotgun is disabled" menu if it exists
+    
+    :returns: True if the menu existed and was deleted
+    """
+    if cmds.about(batch=True):
+        # don't create menu in batch mode
+        return False
+    
+    if pm.menu("ShotgunMenuDisabled", exists=True):
+        pm.deleteUI("ShotgunMenuDisabled")
+        return True
+
+    return False
 
 ###############################################################################################
 # The Tank Maya engine
@@ -314,7 +335,7 @@ class MayaEngine(tank.platform.Engine):
         self.__watcher.stop_watching()
         
         # clean up UI:
-        if pm.menu(self._menu_handle, exists=True):
+        if self.has_ui and pm.menu(self._menu_handle, exists=True):
             pm.deleteUI(self._menu_handle)
     
     def _init_pyside(self):
