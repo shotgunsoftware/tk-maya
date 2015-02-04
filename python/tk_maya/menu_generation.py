@@ -108,8 +108,10 @@ class MenuGenerator(object):
         ctx_name = str(ctx)        
         
         # create the menu object
-        ctx_menu = pm.subMenuItem(label=ctx_name, parent=self._menu_handle)
-        
+        # the label expects a unicode object so we cast it to support when the context may 
+        # contain info with non-ascii characters
+        ctx_menu = pm.subMenuItem(label=ctx_name.decode("utf-8"), parent=self._menu_handle)
+
         # link to UI
         pm.menuItem(label="Jump to Shotgun", 
                     parent=ctx_menu, 
