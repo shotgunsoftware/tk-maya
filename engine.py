@@ -425,7 +425,10 @@ class MayaEngine(tank.platform.Engine):
     # logging
     
     def log_debug(self, msg):
-        
+        """
+        Log debug to the Maya script editor
+        :param msg:    The message to log
+        """
         global g_last_message_time
         
         # get the time stamps
@@ -435,24 +438,35 @@ class MayaEngine(tank.platform.Engine):
         # update global counter
         g_last_message_time = current_time
         
-        if self.get_setting("debug_logging", False):
-            msg = "Shotgun Debug [%0.3fs]: %s" % ((current_time-prev_time), msg)
-            for l in textwrap.wrap(msg, CONSOLE_OUTPUT_WIDTH):
-                OpenMaya.MGlobal.displayInfo(l)
+        if not self.get_setting("debug_logging", False):
+            return
+
+        msg = "Shotgun Debug [%0.3fs]: %s" % ((current_time-prev_time), msg)
+        self.execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
     
     def log_info(self, msg):
+        """
+        Log info to the Maya script editor
+        :param msg:    The message to log
+        """
         msg = "Shotgun: %s" % msg
-        for l in textwrap.wrap(msg, CONSOLE_OUTPUT_WIDTH):
-            OpenMaya.MGlobal.displayInfo(l)
+        self.execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
         
     def log_warning(self, msg):
+        """
+        Log warning to the Maya script editor
+        :param msg:    The message to log
+        """
         msg = "Shotgun: %s" % msg
-        for l in textwrap.wrap(msg, CONSOLE_OUTPUT_WIDTH):
-            OpenMaya.MGlobal.displayWarning(l)
+        self.execute_in_main_thread(OpenMaya.MGlobal.displayWarning, msg)
     
     def log_error(self, msg):
+        """
+        Log error to the Maya script editor
+        :param msg:    The message to log
+        """
         msg = "Shotgun: %s" % msg
-        OpenMaya.MGlobal.displayError(msg)
+        self.execute_in_main_thread(OpenMaya.MGlobal.displayError, msg)
     
     ##########################################################################################
     # scene and project management            
