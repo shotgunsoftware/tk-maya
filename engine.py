@@ -261,7 +261,7 @@ class MayaEngine(tank.platform.Engine):
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
-        if maya_ver.startswith(("2012", "2013", "2014", "2015")):
+        if maya_ver.startswith(("2012", "2013", "2014", "2015", "2016")):
             self.log_debug("Running Maya version %s" % maya_ver)
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
@@ -280,7 +280,7 @@ class MayaEngine(tank.platform.Engine):
                 major_version_number_str = maya_ver.split(" ")[0].split(".")[0]
                 if major_version_number_str and major_version_number_str.isdigit():
                     # check against the compatibility_dialog_min_version setting:
-                    if int(major_version_number_str) < self.get_setting("compatibility_dialog_min_version", 2015):
+                    if int(major_version_number_str) < self.get_setting("compatibility_dialog_min_version"):
                         show_warning_dlg = False
                 
             if show_warning_dlg:
