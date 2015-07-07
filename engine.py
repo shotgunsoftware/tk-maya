@@ -561,6 +561,11 @@ class MayaEngine(tank.platform.Engine):
         
         if pm.control(widget_id, query=1, exists=1):
             self.log_debug("Toolkit widget already exists. Reparenting it...")
+            # find the widget for later use
+            for widget in QtGui.QApplication.allWidgets():
+             if widget.objectName() == widget_id:
+                 widget_instance = widget
+            
         else:
             self.log_debug("Toolkit widget does not exist - creating it...")
             parent = self._get_dialog_parent()            
@@ -592,7 +597,16 @@ class MayaEngine(tank.platform.Engine):
             pm.deleteUI(panel_id)
                     
         # lastly, ditch the maya window and host the layout inside a dock
-        pm.dockControl(panel_id, area="right", content=window, label=title)
+        
+        # see if the app has a preference where it likes to be docked:
+        if hasattr(widget_instance, "docking_preference"):
+            docking_area = widget_instance.docking_preference
+            self.log_debug("App docking preference found: %s" % docking_area)
+        else:
+            docking_area = "right"
+            self.log_debug("Now docking preference found. Using default: %s" % docking_area)
+        
+        pm.dockControl(panel_id, area=docking_area, content=window, label=title)
         self.log_debug("Created panel %s" % panel_id)
     
         # just like nuke, maya doesn't give us any hints when a panel is being closed.
