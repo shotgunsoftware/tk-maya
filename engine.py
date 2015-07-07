@@ -604,7 +604,12 @@ class MayaEngine(tank.platform.Engine):
         #
         # instead, install a QT event watcher to track when the parent
         # is closed and make sure that the tk widget payload is closed and
-        # deallocated at the same time  
-        tk_maya.install_close_callback(panel_id, widget_id)
+        # deallocated at the same time.
+        #
+        # Also, there are some obscure issues relating to UI refresh. These are also
+        # resolved by looking at the stream of event and force triggering refreshes at the 
+        # right locations
+        #  
+        tk_maya.install_callbacks(panel_id, widget_id)
 
         

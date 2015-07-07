@@ -11,23 +11,18 @@
 """
 Panel support utilities for Maya
 """
-
-
-
 import os
 import sys
 import sgtk
-
 from sgtk.platform.qt import QtCore, QtGui
 
-
-def install_close_callback(panel_id, widget_id):
+def install_callbacks(panel_id, widget_id):
     """
     Helper method to assist in the panel creation process.
     This will iterate over all QT widgets and look for a panel_id
     widget. Once found, it will install an event filter on this panel
-    to monitor its close event, so that we can gracefully handle close
-    and deallocation of the embedded tk widget when this happens.
+    to monitor its close event, so that we can gracefully handle close,
+    refresh and deallocation of the embedded tk widget when this happens.
     
     :param panel_id: Object name for panel
     :param widget_id: Object name for tk widget
@@ -37,8 +32,8 @@ def install_close_callback(panel_id, widget_id):
          filter = CloseEventFilter(widget)
          filter.set_associated_widget(widget_id)
          filter.parent_closed.connect(_on_parent_closed_callback)
+         filter.parent_dirty.connect(_on_parent_refresh_callback)
          widget.installEventFilter(filter)
-
 
 def _on_parent_closed_callback(widget_id):
     """
@@ -54,6 +49,22 @@ def _on_parent_closed_callback(widget_id):
             # delete later since we are inside a slot
             widget.deleteLater()
     
+def _on_parent_refresh_callback(widget_id):
+    """
+    Callback which fires when a UI refresh is needed.
+    
+    :param widget_id: Object name of widget to refresh
+    """
+    for widget in QtGui.QApplication.allWidgets():
+        if widget.objectName() == widget_id:
+            # this is a pretty blunt tool, but right now I cannot
+            # come up with a better solution - it seems the internal
+            # window parenting in maya is a little off - and/or I am
+            # not parenting up the QT widgets correctly, and I think
+            # this is the reason the UI refresh isn't working correctly.
+            # the only way to ensure a fully refreshed UI is to repaint 
+            # the entire window.
+            widget.window().update()
 
 class CloseEventFilter(QtCore.QObject):
     """
@@ -61,6 +72,7 @@ class CloseEventFilter(QtCore.QObject):
     the monitored widget closes.
     """
     parent_closed = QtCore.Signal(str)
+    parent_dirty = QtCore.Signal(str)
      
     def set_associated_widget(self, widget_id):
         """
@@ -82,8 +94,13 @@ class CloseEventFilter(QtCore.QObject):
         if event.type() == QtCore.QEvent.Close:
             # re-broadcast the close event
             self.parent_closed.emit(self._widget_id)
+        
+        if event.type() == QtCore.QEvent.LayoutRequest:
+            # this event seems to be fairly representatative
+            # (without too many false positives) of when a tab
+            # needs to trigger a UI redraw of content
+            self.parent_dirty.emit(self._widget_id)
+        
         # pass it on!
         return False
-
-
 
