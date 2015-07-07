@@ -554,12 +554,12 @@ class MayaEngine(tank.platform.Engine):
         self.log_debug("Begin showing panel %s" % panel_id)
                                     
         # create a maya window and layout
-        w = pm.window()
-        self.log_debug("Created window: %s" % w)
-        maya_layout = pm.columnLayout(parent=w)
+        window = pm.window()
+        self.log_debug("Created window: %s" % window)
+        maya_layout = pm.formLayout(parent=window)
         self.log_debug("Created layout %s" % maya_layout)
         
-        if pm.control(widget_id, q=1, ex=1):
+        if pm.control(widget_id, query=1, exists=1):
             self.log_debug("Toolkit widget already exists. Reparenting it...")
         else:
             self.log_debug("Toolkit widget does not exist - creating it...")
@@ -575,15 +575,24 @@ class MayaEngine(tank.platform.Engine):
         # now reparent the widget instance to the layout
         # we can now refer to the QT widget via the widget name
         self.log_debug("Parenting widget %s to temporary window %s..." % (widget_id, maya_layout))
-        pm.control(widget_id, e=True, p=maya_layout)
+        pm.control(widget_id, edit=True, parent=maya_layout)
         
-        if pm.control(panel_id, q=1, ex=1):
+        # now attach our widget in all four corners to the maya layout so that it fills 
+        # the entire panel space
+        pm.formLayout(maya_layout, 
+                      edit=True, 
+                      attachForm=[(widget_id, 'top', 1), 
+                                  (widget_id, 'left', 1), 
+                                  (widget_id, 'bottom', 1), 
+                                  (widget_id, 'right', 1)] )
+        
+        if pm.control(panel_id, query=1, exists=1):
             # exists already - delete it
             self.log_debug("Panel exists. Deleting it.")
             pm.deleteUI(panel_id)
                     
         # lastly, ditch the maya window and host the layout inside a dock
-        pm.dockControl(panel_id, area="right", content=w, label=title)
+        pm.dockControl(panel_id, area="right", content=window, label=title)
         self.log_debug("Created panel %s" % panel_id)
     
         # just like nuke, maya doesn't give us any hints when a panel is being closed.
