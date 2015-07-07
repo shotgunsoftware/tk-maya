@@ -16,6 +16,7 @@ A Maya engine for Tank.
 import tank
 import platform
 import sys
+import re
 import traceback
 import time
 import textwrap
@@ -25,8 +26,6 @@ import pymel.core as pm
 import maya.cmds as cmds
 import maya
 from pymel.core import Callback
-
-CONSOLE_OUTPUT_WIDTH = 200
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
@@ -484,4 +483,106 @@ class MayaEngine(tank.platform.Engine):
         proj_path = tmpl.apply_fields(fields)
         self.log_info("Setting Maya project to '%s'" % proj_path)        
         pm.mel.setProject(proj_path)
+    
+
+    ##########################################################################################
+    # panel support            
+    
+    def _generate_panel_id(self, dialog_name, bundle):
+        """
+        Given a dialog name and a bundle, generate a Nuke panel id.
+        This panel id is used by Nuke to identify and persist the panel.
+        
+        This will return something like 'tk_multi_loader2_main'
+        
+        :param dialog_name: An identifier string to identify the dialog to be hosted by the panel
+        :param bundle: The bundle (e.g. app) object to be associated with the panel
+        :returns: a unique identifier string 
+        """
+        panel_id = "%s_%s" % (bundle.name, dialog_name)
+        # replace any non-alphanumeric chars with underscores
+        panel_id = re.sub("\W", "_", panel_id)
+        panel_id = panel_id.lower()
+        self.log_debug("Unique panel id for %s %s -> %s" % (bundle, dialog_name, panel_id))
+        return panel_id    
+    
+    def register_panel(self, title, bundle, widget_class, *args, **kwargs):
+        """
+        Similar to register_command, but instead of registering a menu item in the form of a
+        command, this method registers a UI panel. The arguments passed to this method is the
+        same as for show_panel().
+        
+        Just like with the register_command() method, panel registration should be executed 
+        from within the init phase of the app. Once a panel has been registered, it is possible
+        for the engine to correctly restore panel UIs that persist between sessions. 
+        
+        Not all engines support this feature, but in for example Nuke, a panel can be saved in 
+        a saved layout. Apps wanting to be able to take advantage of the persistance given by
+        these saved layouts will need to call register_panel as part of their init_app phase.
+        
+        In order to show or focus on a panel, use the show_panel() method instead.
+        
+        :param title: The title of the window
+        :param bundle: The app, engine or framework object that is associated with this panel
+        :param widget_class: The class of the UI to be constructed. This must derive from QWidget.
+        
+        Additional parameters specified will be passed through to the widget_class constructor.
+        """
+        # maya doesn't support the concept of saved panels
+        # may be able to use the panelConfiguration command here.
+        pass        
+        
+    def show_panel(self, title, bundle, widget_class, *args, **kwargs):
+        """
+        Shows a panel in a way suitable for this engine. The engine will attempt to
+        integrate it as seamlessly as possible into the host application. If the engine does 
+        not specifically implement panel support, the window will be shown as a modeless
+        dialog instead.
+        
+        :param title: The title of the window
+        :param bundle: The app, engine or framework object that is associated with this window
+        :param widget_class: The class of the UI to be constructed. This must derive from QWidget.
+        
+        Additional parameters specified will be passed through to the widget_class constructor.
+        """
+        
+        panel_id = self._generate_panel_id(title, bundle)
+        widget_id = "ui_%s" % panel_id
+        self.log_debug("Begin showing panel %s" % panel_id)
+                                    
+        # create a maya window and layout
+        w = pm.window()
+        self.log_debug("Created window: %s" % w)
+        maya_layout = pm.columnLayout(parent=w)
+        self.log_debug("Created layout %s" % maya_layout)
+        
+        if pm.control(widget_id, q=1, ex=1):
+            self.log_debug("Toolkit widget already exists. Reparenting it...")
+        else:
+            self.log_debug("Toolkit widget does not exist - creating it...")
+            parent = self._get_dialog_parent()            
+            widget_instance = widget_class(*args, **kwargs)
+            widget_instance.setParent(parent)
+            widget_instance.setObjectName(widget_id)
+            self.log_debug("Created %s (Object Name '%s')" % (widget_instance, widget_id))
+                      
+        
+        # now reparent the widget instance to the layout
+        # we can now refer to the QT widget via the widget name
+        self.log_debug("Parenting widget %s to temporary window %s..." % (widget_id, maya_layout))
+        pm.control(widget_id, e=True, p=maya_layout)
+        
+        if pm.control(panel_id, q=1, ex=1):
+            # exists already - delete it
+            self.log_debug("Panel exists. Deleting it.")
+            pm.deleteUI(panel_id)
+                    
+        # lastly, ditch the maya window and host the layout inside a dock
+        pm.dockControl(panel_id, area="right", content=w, label=title)
+        self.log_debug("Created panel %s" % panel_id)
+    
+            
+        
+        
+        
     
