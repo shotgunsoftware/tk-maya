@@ -531,7 +531,7 @@ class MayaEngine(tank.platform.Engine):
         # maya doesn't support the concept of saved panels
         # may be able to use the panelConfiguration command here.
         pass        
-        
+            
     def show_panel(self, title, bundle, widget_class, *args, **kwargs):
         """
         Shows a panel in a way suitable for this engine. The engine will attempt to
@@ -545,6 +545,9 @@ class MayaEngine(tank.platform.Engine):
         
         Additional parameters specified will be passed through to the widget_class constructor.
         """
+        from tank.platform.qt import QtCore, QtGui
+        
+        tk_maya = self.import_module("tk_maya")
         
         panel_id = self._generate_panel_id(title, bundle)
         widget_id = "ui_%s" % panel_id
@@ -565,6 +568,8 @@ class MayaEngine(tank.platform.Engine):
             widget_instance.setParent(parent)
             widget_instance.setObjectName(widget_id)
             self.log_debug("Created %s (Object Name '%s')" % (widget_instance, widget_id))
+            # apply external stylesheet
+            self._apply_external_styleshet(bundle, widget_instance)
                       
         
         # now reparent the widget instance to the layout
@@ -581,8 +586,16 @@ class MayaEngine(tank.platform.Engine):
         pm.dockControl(panel_id, area="right", content=w, label=title)
         self.log_debug("Created panel %s" % panel_id)
     
-            
+        # just like nuke, maya doesn't give us any hints when a panel is being closed.
+        # QT widgets contained within this panel are just unparented and the floating
+        # around, taking up memory.
+        #
+        # the visibleChangeCommand callback offered by the dockControl command
+        # doesn't seem to work
+        #
+        # instead, install a QT event watcher to track when the parent
+        # is closed and make sure that the tk widget payload is closed and
+        # deallocated at the same time  
+        tk_maya.install_close_callback(panel_id, widget_id)
+
         
-        
-        
-    
