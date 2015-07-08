@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+# Copyright (c) 2015 Shotgun Software Inc.
 # 
 # CONFIDENTIAL AND PROPRIETARY
 # 
@@ -284,7 +284,7 @@ class AppCommand(object):
         # finally create the command menu item:
         params = {
             "label": parts[-1],#self.name,
-            "command": Callback(self.__execute_deferred),#self.callback),
+            "command": Callback(self.__execute_deferred),
             "parent": parent_menu,
         }
         if "tooltip" in self.properties:
@@ -294,6 +294,19 @@ class AppCommand(object):
             
         pm.menuItem(**params)
         
+    def __exception_trap_callback_wrapper(self, callback):
+        """
+        Wrapper which traps exceptions. We execute menu commands
+        in maya via evaldeferred, meaning that all errors are just
+        swallowed by maya never to resurface. This wrapper prints 
+        them out.
+        """
+        try:
+            callback()
+        except Exception, e:
+            current_engine = tank.platform.current_engine()
+            current_engine.log_exception("An exception was raised from Toolkit")        
+    
     def __execute_deferred(self):
         """
         Execute the callback deferred to avoid
@@ -302,7 +315,8 @@ class AppCommand(object):
         changes resulting in an engine restart! - this
         was causing a segmentation fault crash on Linux
         """
-        cmds.evalDeferred(self.callback)
+        cb = lambda: self.__exception_trap_callback_wrapper(self.callback)
+        cmds.evalDeferred(cb)
         
     def _find_sub_menu_item(self, menu, label):
         """

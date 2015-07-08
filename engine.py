@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+# Copyright (c) 2015 Shotgun Software Inc.
 # 
 # CONFIDENTIAL AND PROPRIETARY
 # 
@@ -16,6 +16,7 @@ A Maya engine for Tank.
 import tank
 import platform
 import sys
+import re
 import traceback
 import time
 import textwrap
@@ -25,8 +26,6 @@ import pymel.core as pm
 import maya.cmds as cmds
 import maya
 from pymel.core import Callback
-
-CONSOLE_OUTPUT_WIDTH = 200
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
@@ -427,7 +426,8 @@ class MayaEngine(tank.platform.Engine):
     def log_debug(self, msg):
         """
         Log debug to the Maya script editor
-        :param msg:    The message to log
+        
+        :param msg: The message to log
         """
         global g_last_message_time
         
@@ -447,7 +447,8 @@ class MayaEngine(tank.platform.Engine):
     def log_info(self, msg):
         """
         Log info to the Maya script editor
-        :param msg:    The message to log
+        
+        :param msg: The message to log
         """
         msg = "Shotgun: %s" % msg
         self.execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
@@ -455,7 +456,8 @@ class MayaEngine(tank.platform.Engine):
     def log_warning(self, msg):
         """
         Log warning to the Maya script editor
-        :param msg:    The message to log
+        
+        :param msg: The message to log
         """
         msg = "Shotgun: %s" % msg
         self.execute_in_main_thread(OpenMaya.MGlobal.displayWarning, msg)
@@ -463,7 +465,8 @@ class MayaEngine(tank.platform.Engine):
     def log_error(self, msg):
         """
         Log error to the Maya script editor
-        :param msg:    The message to log
+        
+        :param msg: The message to log
         """
         msg = "Shotgun: %s" % msg
         self.execute_in_main_thread(OpenMaya.MGlobal.displayError, msg)
@@ -485,3 +488,181 @@ class MayaEngine(tank.platform.Engine):
         self.log_info("Setting Maya project to '%s'" % proj_path)        
         pm.mel.setProject(proj_path)
     
+
+    ##########################################################################################
+    # panel support            
+    
+    def _generate_panel_id(self, dialog_name, bundle):
+        """
+        Given a dialog name and a bundle, generate a Maya panel id.
+        This panel id is used by Maya to identify and persist the panel.
+        
+        This will return something like 'tk_multi_loader2_main'
+        
+        :param dialog_name: An identifier string to identify the dialog to be hosted by the panel
+        :param bundle: The bundle (e.g. app) object to be associated with the panel
+        :returns: A unique identifier string 
+        """
+        panel_id = "%s_%s" % (bundle.name, dialog_name)
+        # replace any non-alphanumeric chars with underscores
+        panel_id = re.sub("\W", "_", panel_id)
+        panel_id = panel_id.lower()
+        self.log_debug("Unique panel id for %s %s -> %s" % (bundle, dialog_name, panel_id))
+        return panel_id    
+    
+    def register_panel(self, title, bundle, widget_class, *args, **kwargs):
+        """
+        Similar to register_command, but instead of registering a menu item in the form of a
+        command, this method registers a UI panel. The arguments passed to this method is the
+        same as for show_panel().
+        
+        Just like with the register_command() method, panel registration should be executed 
+        from within the init phase of the app. Once a panel has been registered, it is possible
+        for the engine to correctly restore panel UIs that persist between sessions. 
+
+        Maya currently doesn't implement any logic for automatically restoring panels, 
+        however we still recommend that all panel based apps call this method in order
+        to provide a good user experience across multiple engines. 
+        
+        In order to show or focus on a panel, use the show_panel() method instead.
+        
+        :param title: The title of the window
+        :param bundle: The app, engine or framework object that is associated with this panel
+        :param widget_class: The class of the UI to be constructed. This must derive from QWidget.
+        
+        Additional parameters specified will be passed through to the widget_class constructor.
+        """
+        # maya doesn't support the concept of saved panels
+        # may be able to use the panelConfiguration command here.
+        pass        
+            
+    def show_panel(self, title, bundle, widget_class, *args, **kwargs):
+        """
+        Shows a panel in a way suitable for this engine. The engine will attempt to
+        integrate it as seamlessly as possible into the host application. If the engine does 
+        not specifically implement panel support, the window will be shown as a modeless
+        dialog instead.
+        
+        :param title: The title of the window
+        :param bundle: The app, engine or framework object that is associated with this window
+        :param widget_class: The class of the UI to be constructed. This must derive from QWidget.
+        
+        Additional parameters specified will be passed through to the widget_class constructor.
+        """
+        from tank.platform.qt import QtCore, QtGui
+        
+        tk_maya = self.import_module("tk_maya")
+        
+        # generate some unique window names for both the panel
+        # and the widget that will be contained in the panel
+        #
+        # these will appear as object names in QT and as the main
+        # api handles inside the maya UI framework
+        panel_id = self._generate_panel_id(title, bundle)
+        widget_id = "ui_%s" % panel_id
+        self.log_debug("Begin showing panel %s" % panel_id)
+                                    
+        
+        # The general approach below is as follows:
+        #
+        # 1. First create our qt tk app widget using QT.
+        #    parent it to the maya main window to give it
+        #    a well established parent. If the widget already
+        #    exists, don't create it again, just retrieve its 
+        #    handle
+        #
+        # 2. Now create a native maya window and layout and 
+        #    attach our QT control to this. For this, we use
+        #    the QT objectname property to do the bind. Note that
+        #    the window won't show in the UI, this is all just 
+        #    setting up the hiearchy.
+        #    
+        # 3. If a panel already exists, delete it. The panel 
+        #    no longer has the tk widget inside it, since that is
+        #    parented to the window that was just created
+        #
+        # 4. Create a new panel using the dockControl command and
+        #    pass our maya window in as the object to dock.
+        #
+        # 5. Lastly, since our widgets won't get notified about 
+        #    when the parent dock is closed (and sometimes when it
+        #    needs redrawing), attach some QT event watchers to it
+        #
+        #
+        # Note: It is possible that the close event and some of the 
+        #       refresh doesn't propagate down to the widget because
+        #       of a misaligned parenting: The tk widget exists inside
+        #       the pane layout but is still parented to the main 
+        #       maya window. It's possible that by setting up the parenting
+        #       explicitly, the missing signals we have to compensate for 
+        #       may start to work. I tried a bunch of stuff but couldn't get
+        #       it to work and instead resorted to the event watcher setup. 
+        
+        # create a maya window and layout
+        window = pm.window()
+        self.log_debug("Created window: %s" % window)
+        maya_layout = pm.formLayout(parent=window)
+        self.log_debug("Created layout %s" % maya_layout)
+        
+        if pm.control(widget_id, query=1, exists=1):
+            self.log_debug("Toolkit widget already exists. Reparenting it...")
+            # find the widget for later use
+            for widget in QtGui.QApplication.allWidgets():
+                if widget.objectName() == widget_id:
+                    widget_instance = widget
+                    break
+            
+        else:
+            self.log_debug("Toolkit widget does not exist - creating it...")
+            # parent the UI to the main maya window
+            parent = self._get_dialog_parent()            
+            widget_instance = widget_class(*args, **kwargs)
+            widget_instance.setParent(parent)
+            # set its name - this means that it can also be found via the maya API
+            widget_instance.setObjectName(widget_id)
+            self.log_debug("Created %s (Object Name '%s')" % (widget_instance, widget_id))
+            # apply external stylesheet
+            self._apply_external_styleshet(bundle, widget_instance)
+                      
+        
+        # now reparent the widget instance to the layout
+        # we can now refer to the QT widget via the widget name
+        self.log_debug("Parenting widget %s to temporary window %s..." % (widget_id, maya_layout))
+        pm.control(widget_id, edit=True, parent=maya_layout)
+        
+        # now attach our widget in all four corners to the maya layout so that it fills 
+        # the entire panel space
+        pm.formLayout(maya_layout, 
+                      edit=True, 
+                      attachForm=[(widget_id, 'top', 1), 
+                                  (widget_id, 'left', 1), 
+                                  (widget_id, 'bottom', 1), 
+                                  (widget_id, 'right', 1)] )
+        
+        if pm.control(panel_id, query=1, exists=1):
+            # exists already - delete it
+            self.log_debug("Panel exists. Deleting it.")
+            pm.deleteUI(panel_id)
+                    
+        # lastly, move the maya window into a dock
+        pm.dockControl(panel_id, area="right", content=window, label=title)
+        self.log_debug("Created panel %s" % panel_id)
+    
+        # just like nuke, maya doesn't give us any hints when a panel is being closed.
+        # QT widgets contained within this panel are just unparented and the floating
+        # around, taking up memory.
+        #
+        # the visibleChangeCommand callback offered by the dockControl command
+        # doesn't seem to work
+        #
+        # instead, install a QT event watcher to track when the parent
+        # is closed and make sure that the tk widget payload is closed and
+        # deallocated at the same time.
+        #
+        # Also, there are some obscure issues relating to UI refresh. These are also
+        # resolved by looking at the stream of event and force triggering refreshes at the 
+        # right locations
+        #  
+        tk_maya.install_callbacks(panel_id, widget_id)
+
+        

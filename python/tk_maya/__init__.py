@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+# Copyright (c) 2015 Shotgun Software Inc.
 # 
 # CONFIDENTIAL AND PROPRIETARY
 # 
@@ -9,4 +9,4 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 from .menu_generation import MenuGenerator
-
+from .panels import install_callbacks
