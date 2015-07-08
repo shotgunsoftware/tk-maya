@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+# Copyright (c) 2015 Shotgun Software Inc.
 # 
 # CONFIDENTIAL AND PROPRIETARY
 # 
@@ -27,13 +27,26 @@ def install_callbacks(panel_id, widget_id):
     :param panel_id: Object name for panel
     :param widget_id: Object name for tk widget
     """
+    widget = _find_widget(panel_id)
+    if widget:
+        filter = CloseEventFilter(widget)
+        filter.set_associated_widget(widget_id)
+        filter.parent_closed.connect(_on_parent_closed_callback)
+        filter.parent_dirty.connect(_on_parent_refresh_callback)
+        widget.installEventFilter(filter)
+
+def _find_widget(widget_name):
+    """
+    Given a name, return the first corresponding
+    QT widget that is found.
+    
+    :param widget_name: QT object name to look for
+    :returns: QWidget object or None if nothing was found
+    """ 
     for widget in QtGui.QApplication.allWidgets():
-     if widget.objectName() == panel_id:
-         filter = CloseEventFilter(widget)
-         filter.set_associated_widget(widget_id)
-         filter.parent_closed.connect(_on_parent_closed_callback)
-         filter.parent_dirty.connect(_on_parent_refresh_callback)
-         widget.installEventFilter(filter)
+        if widget.objectName() == widget_name:
+            return widget
+    return None
 
 def _on_parent_closed_callback(widget_id):
     """
@@ -43,11 +56,11 @@ def _on_parent_closed_callback(widget_id):
     
     :param widget_id: Object name of widget to close
     """
-    for widget in QtGui.QApplication.allWidgets():
-        if widget.objectName() == widget_id:
-            widget.close()
-            # delete later since we are inside a slot
-            widget.deleteLater()
+    widget = _find_widget(widget_id)
+    if widget:
+        widget.close()
+        # delete later since we are inside a slot
+        widget.deleteLater()
     
 def _on_parent_refresh_callback(widget_id):
     """
@@ -55,16 +68,16 @@ def _on_parent_refresh_callback(widget_id):
     
     :param widget_id: Object name of widget to refresh
     """
-    for widget in QtGui.QApplication.allWidgets():
-        if widget.objectName() == widget_id:
-            # this is a pretty blunt tool, but right now I cannot
-            # come up with a better solution - it seems the internal
-            # window parenting in maya is a little off - and/or I am
-            # not parenting up the QT widgets correctly, and I think
-            # this is the reason the UI refresh isn't working correctly.
-            # the only way to ensure a fully refreshed UI is to repaint 
-            # the entire window.
-            widget.window().update()
+    widget = _find_widget(widget_id)
+    if widget:
+        # this is a pretty blunt tool, but right now I cannot
+        # come up with a better solution - it seems the internal
+        # window parenting in maya is a little off - and/or I am
+        # not parenting up the QT widgets correctly, and I think
+        # this is the reason the UI refresh isn't working correctly.
+        # the only way to ensure a fully refreshed UI is to repaint 
+        # the entire window.
+        widget.window().update()
 
 class CloseEventFilter(QtCore.QObject):
     """

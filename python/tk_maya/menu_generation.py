@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+# Copyright (c) 2015 Shotgun Software Inc.
 # 
 # CONFIDENTIAL AND PROPRIETARY
 # 
@@ -305,8 +305,7 @@ class AppCommand(object):
             callback()
         except Exception, e:
             current_engine = tank.platform.current_engine()
-            if current_engine:
-                current_engine.log_exception("An exception was raised from Toolkit")        
+            current_engine.log_exception("An exception was raised from Toolkit")        
     
     def __execute_deferred(self):
         """
