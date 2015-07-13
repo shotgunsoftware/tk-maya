@@ -491,59 +491,13 @@ class MayaEngine(tank.platform.Engine):
 
     ##########################################################################################
     # panel support            
-    
-    def _generate_panel_id(self, dialog_name, bundle):
+                
+    def show_panel(self, panel_id, title, bundle, widget_class, *args, **kwargs):
         """
-        Given a dialog name and a bundle, generate a Maya panel id.
-        This panel id is used by Maya to identify and persist the panel.
+        Docks an app widget in a maya panel. 
         
-        This will return something like 'tk_multi_loader2_main'
-        
-        :param dialog_name: An identifier string to identify the dialog to be hosted by the panel
-        :param bundle: The bundle (e.g. app) object to be associated with the panel
-        :returns: A unique identifier string 
-        """
-        panel_id = "%s_%s" % (bundle.name, dialog_name)
-        # replace any non-alphanumeric chars with underscores
-        panel_id = re.sub("\W", "_", panel_id)
-        panel_id = panel_id.lower()
-        self.log_debug("Unique panel id for %s %s -> %s" % (bundle, dialog_name, panel_id))
-        return panel_id    
-    
-    def register_panel(self, title, bundle, widget_class, *args, **kwargs):
-        """
-        Similar to register_command, but instead of registering a menu item in the form of a
-        command, this method registers a UI panel. The arguments passed to this method is the
-        same as for show_panel().
-        
-        Just like with the register_command() method, panel registration should be executed 
-        from within the init phase of the app. Once a panel has been registered, it is possible
-        for the engine to correctly restore panel UIs that persist between sessions. 
-
-        Maya currently doesn't implement any logic for automatically restoring panels, 
-        however we still recommend that all panel based apps call this method in order
-        to provide a good user experience across multiple engines. 
-        
-        In order to show or focus on a panel, use the show_panel() method instead.
-        
-        :param title: The title of the window
-        :param bundle: The app, engine or framework object that is associated with this panel
-        :param widget_class: The class of the UI to be constructed. This must derive from QWidget.
-        
-        Additional parameters specified will be passed through to the widget_class constructor.
-        """
-        # maya doesn't support the concept of saved panels
-        # may be able to use the panelConfiguration command here.
-        pass        
-            
-    def show_panel(self, title, bundle, widget_class, *args, **kwargs):
-        """
-        Shows a panel in a way suitable for this engine. The engine will attempt to
-        integrate it as seamlessly as possible into the host application. If the engine does 
-        not specifically implement panel support, the window will be shown as a modeless
-        dialog instead.
-        
-        :param title: The title of the window
+        :param panel_id: Unique identifier for the panel, as obtained by register_panel().
+        :param title: The title of the panel
         :param bundle: The app, engine or framework object that is associated with this window
         :param widget_class: The class of the UI to be constructed. This must derive from QWidget.
         
@@ -553,15 +507,7 @@ class MayaEngine(tank.platform.Engine):
         
         tk_maya = self.import_module("tk_maya")
         
-        # generate some unique window names for both the panel
-        # and the widget that will be contained in the panel
-        #
-        # these will appear as object names in QT and as the main
-        # api handles inside the maya UI framework
-        panel_id = self._generate_panel_id(title, bundle)
-        widget_id = "ui_%s" % panel_id
-        self.log_debug("Begin showing panel %s" % panel_id)
-                                    
+        self.log_debug("Begin showing panel %s" % panel_id)                                    
         
         # The general approach below is as follows:
         #
@@ -597,6 +543,9 @@ class MayaEngine(tank.platform.Engine):
         #       explicitly, the missing signals we have to compensate for 
         #       may start to work. I tried a bunch of stuff but couldn't get
         #       it to work and instead resorted to the event watcher setup. 
+        
+        # make a unique id for the app widget based off of the panel id
+        widget_id = "wdgt_%s" % panel_id  
         
         # create a maya window and layout
         window = pm.window()
