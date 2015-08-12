@@ -284,7 +284,7 @@ class AppCommand(object):
         # finally create the command menu item:
         params = {
             "label": parts[-1],#self.name,
-            "command": Callback(self.__execute_deferred),
+            "command": Callback(self._execute_deferred),
             "parent": parent_menu,
         }
         if "tooltip" in self.properties:
@@ -293,31 +293,33 @@ class AppCommand(object):
             params["enable"] = self.properties["enable_callback"]()
             
         pm.menuItem(**params)
-        
-    def __exception_trap_callback_wrapper(self, callback):
+
+    def _execute_deferred(self):
         """
-        Wrapper which traps exceptions. We execute menu commands
-        in maya via evaldeferred, meaning that all errors are just
-        swallowed by maya never to resurface. This wrapper prints 
-        them out.
+        Execute the callback deferred to avoid potential problems with the command resulting in the menu 
+        being deleted, e.g. if the context changes resulting in an engine restart! - this was causing a 
+        segmentation fault crash on Linux
+        """
+        # note that we use a single shot timer instead of cmds.evalDeferred as we were experiencing
+        # odd behaviour when the deferred command presented a modal dialog that then performed a file 
+        # operation that resulted in a QMessageBox being shown - the deferred command would then run 
+        # a second time, presumable from the event loop of the modal dialog from the first command!
+        #
+        # As the primary purpose of this method is to detach the executing code from the menu invocation,
+        # using a singleShot timer achieves this without the odd behaviour exhibited by evalDeferred.
+        QtCore.QTimer.singleShot(0, self._execute_within_exception_trap)
+
+    def _execute_within_exception_trap(self):
+        """
+        Execute the callback and log any exception that gets raised which may otherwise have been
+        swallowed by the deferred execution of the callback.
         """
         try:
-            callback()
+            self.callback()
         except Exception, e:
             current_engine = tank.platform.current_engine()
-            current_engine.log_exception("An exception was raised from Toolkit")        
-    
-    def __execute_deferred(self):
-        """
-        Execute the callback deferred to avoid
-        potential problems with the command resulting
-        in the menu being deleted, e.g. if the context
-        changes resulting in an engine restart! - this
-        was causing a segmentation fault crash on Linux
-        """
-        cb = lambda: self.__exception_trap_callback_wrapper(self.callback)
-        cmds.evalDeferred(cb)
-        
+            current_engine.log_exception("An exception was raised from Toolkit")
+
     def _find_sub_menu_item(self, menu, label):
         """
         Find the 'sub-menu' menu item with the given label
