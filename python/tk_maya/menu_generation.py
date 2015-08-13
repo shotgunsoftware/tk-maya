@@ -303,7 +303,7 @@ class AppCommand(object):
         # note that we use a single shot timer instead of cmds.evalDeferred as we were experiencing
         # odd behaviour when the deferred command presented a modal dialog that then performed a file 
         # operation that resulted in a QMessageBox being shown - the deferred command would then run 
-        # a second time, presumable from the event loop of the modal dialog from the first command!
+        # a second time, presumably from the event loop of the modal dialog from the first command!
         #
         # As the primary purpose of this method is to detach the executing code from the menu invocation,
         # using a singleShot timer achieves this without the odd behaviour exhibited by evalDeferred.
