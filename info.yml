@@ -43,6 +43,12 @@ configuration:
         description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Shotgun'
         default_value: false
 
+    install_event_callbacks:
+        type: bool
+        description: "Optionally choose to not hook up to Open, Save and Load events. Making it easier
+                     to run your own."
+        default_value: true
+
     compatibility_dialog_min_version:
         type:           int
         description:    "Specify the minimum Application major version that will prompt a warning if
