@@ -232,7 +232,7 @@ def remove_sgtk_disabled_menu():
 g_last_message_time = 0
 
 class MayaEngine(tank.platform.Engine):
-    
+
     ##########################################################################################
     # init and destroy
     
@@ -442,7 +442,7 @@ class MayaEngine(tank.platform.Engine):
             return
 
         msg = "Shotgun Debug [%0.3fs]: %s" % ((current_time-prev_time), msg)
-        self.execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
+        self.async_execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
     
     def log_info(self, msg):
         """
@@ -451,7 +451,7 @@ class MayaEngine(tank.platform.Engine):
         :param msg: The message to log
         """
         msg = "Shotgun: %s" % msg
-        self.execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
+        self.async_execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
         
     def log_warning(self, msg):
         """
@@ -460,7 +460,7 @@ class MayaEngine(tank.platform.Engine):
         :param msg: The message to log
         """
         msg = "Shotgun: %s" % msg
-        self.execute_in_main_thread(OpenMaya.MGlobal.displayWarning, msg)
+        self.async_execute_in_main_thread(OpenMaya.MGlobal.displayWarning, msg)
     
     def log_error(self, msg):
         """
@@ -469,7 +469,7 @@ class MayaEngine(tank.platform.Engine):
         :param msg: The message to log
         """
         msg = "Shotgun: %s" % msg
-        self.execute_in_main_thread(OpenMaya.MGlobal.displayError, msg)
+        self.async_execute_in_main_thread(OpenMaya.MGlobal.displayError, msg)
     
     ##########################################################################################
     # scene and project management            
