@@ -290,7 +290,8 @@ class MayaEngine(tank.platform.Engine):
             # always log the warning to the script editor:
             self.log_warning(msg)
         
-        self._maya_version = maya_ver  
+        self._maya_version = maya_ver
+        self.log_user_attribute_metric("Maya version", maya_ver)
         
         if self.context.project is None:
             # must have at least a project in the context to even start!
