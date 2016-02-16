@@ -62,4 +62,3 @@ description: "Shotgun Integration in Maya"
 requires_shotgun_version:
 requires_core_version: "v0.16.35"
 
-# XXX will require core version with metrics logging

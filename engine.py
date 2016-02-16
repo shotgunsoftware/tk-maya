@@ -291,7 +291,12 @@ class MayaEngine(tank.platform.Engine):
             self.log_warning(msg)
         
         self._maya_version = maya_ver
-        self.log_user_attribute_metric("Maya version", maya_ver)
+
+        try:
+            self.log_user_attribute_metric("Maya version", maya_ver)
+        except:
+            # ignore all errors. ex: using a core that doesn't support metrics
+            pass
         
         if self.context.project is None:
             # must have at least a project in the context to even start!
