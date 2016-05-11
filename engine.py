@@ -363,11 +363,23 @@ class MayaEngine(tank.platform.Engine):
         """
         Handles the pyside init
         """
-        # first see if pyside is already present - in that case skip!
+
+        # first see if pyside2 is present
+        try:
+            from PySide2 import QtGui
+        except:
+            # fine, we don't expect PySide2 to be present just yet
+            self.log_debug("PySide2 not detected - trying for PySide now...")
+        else:
+            # looks like pyside2 is already working! No need to do anything
+            self.log_debug("PySide2 detected - the existing version will be used.")
+            return
+
+        # then see if pyside is present
         try:
             from PySide import QtGui
         except:
-            # fine, we don't expect pyside to be present just yet
+            # must be a very old version of Maya.
             self.log_debug("PySide not detected - it will be added to the setup now...")
         else:
             # looks like pyside is already working! No need to do anything
@@ -422,7 +434,11 @@ class MayaEngine(tank.platform.Engine):
         # Find a parent for the dialog - this is the Maya mainWindow()
         from tank.platform.qt import QtGui
         import maya.OpenMayaUI as OpenMayaUI
-        import shiboken
+
+        try:
+            import shiboken
+        except ImportError:
+            import shiboken2 as shiboken
 
         ptr = OpenMayaUI.MQtUtil.mainWindow()
         parent = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
