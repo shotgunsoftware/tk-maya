@@ -436,9 +436,9 @@ class MayaEngine(tank.platform.Engine):
         import maya.OpenMayaUI as OpenMayaUI
 
         try:
-            import shiboken
-        except ImportError:
             import shiboken2 as shiboken
+        except ImportError:
+            import shiboken
 
         ptr = OpenMayaUI.MQtUtil.mainWindow()
         parent = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
