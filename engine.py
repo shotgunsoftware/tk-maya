@@ -309,11 +309,15 @@ class MayaEngine(tank.platform.Engine):
         self._menu_name = "Shotgun"
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
-                  
+
         # need to watch some scene events in case the engine needs rebuilding:
-        cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name:on_scene_event_callback(en, pc, mn)
-        self.__watcher = SceneEventWatcher(cb_fn)
-        self.log_debug("Registered open and save callbacks.")
+        # default is to install those but this can be overriden
+        # in the configuration in case of conflicts or the studio running their
+        # own callbacks.
+        if self.get_setting("install_event_callbacks", True):
+            cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name:on_scene_event_callback(en, pc, mn)
+            self.__watcher = SceneEventWatcher(cb_fn)
+            self.log_debug("Registered open and save callbacks.")
                 
     def post_app_init(self):
         """
@@ -331,8 +335,9 @@ class MayaEngine(tank.platform.Engine):
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
         
-        # stop watching scene events:
-        self.__watcher.stop_watching()
+        if self.get_setting("install_event_callbacks", True):
+            # stop watching scene events:
+            self.__watcher.stop_watching()
         
         # clean up UI:
         if self.has_ui and pm.menu(self._menu_handle, exists=True):
