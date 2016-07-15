@@ -311,10 +311,11 @@ class MayaEngine(tank.platform.Engine):
 
         self._maya_version = maya_ver
 
-        if self.context.project is None:
-            # must have at least a project in the context to even start!
-            raise tank.TankError("The engine needs at least a project in the context "
-                                 "in order to start! Your context: %s" % self.context)
+        try:
+            self.log_user_attribute_metric("Maya version", maya_ver)
+        except:
+            # ignore all errors. ex: using a core that doesn't support metrics
+            pass
 
         # Set the Maya project based on config
         self._set_project()
