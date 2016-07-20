@@ -21,6 +21,7 @@ import os
 import maya.OpenMaya as OpenMaya
 import pymel.core as pm
 import maya.cmds as cmds
+import maya.utils
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
@@ -633,6 +634,10 @@ class MayaEngine(tank.platform.Engine):
         # lastly, move the maya window into a dock
         pm.dockControl(panel_id, area="right", content=window, label=title)
         self.log_debug("Created panel %s" % panel_id)
+
+        # Once Maya will have completed its UI update and be idle,
+        # raise (with "r=True") the docked panel window to the top dock tab.
+        maya.utils.executeDeferred("cmds.dockControl('%s', edit=True, r=True)" % panel_id)
 
         # just like nuke, maya doesn't give us any hints when a panel is being closed.
         # QT widgets contained within this panel are just unparented and the floating
