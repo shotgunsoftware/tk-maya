@@ -348,6 +348,39 @@ class MayaEngine(tank.platform.Engine):
             # hook things up so that the menu is created every time it is clicked
             self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
 
+        # Build a dictionary mapping app instance names to lists of commands they registered with the engine.
+        app_instance_commands = {}
+        for (command_name, value) in self.commands.iteritems():
+            app_instance = value["properties"].get("app")
+            if app_instance:
+                # Add tuple (command name, command function) to the command list of this app instance.
+                command_list = app_instance_commands.setdefault(app_instance.instance_name, [])
+                command_list.append((command_name, value["callback"]))
+
+        # Run a series of app instance commands listed in the run_at_startup setting
+        # of the environment configuration file.
+        for app_setting_dict in self.get_setting("run_at_startup", []):
+
+            app_instance_name = app_setting_dict["app_instance"]
+            # Menu name of the command to run or '' to run all commands of the given app instance.
+            setting_command_name = app_setting_dict["name"]
+
+            # Retrieve the command list of the given app instance.
+            command_list = app_instance_commands.get(app_instance_name)
+
+            if command_list is None:
+                self.log_warning("Configuration setting 'run_at_startup' requests app '%s' that is not installed." %
+                                 app_instance_name)
+            else:
+                for (command_name, command_function) in command_list:
+                    # Run the command when the run_at_startup setting requests all commands to be run
+                    # or when the command name is listed in the run_at_startup setting.
+                    if not setting_command_name or command_name == setting_command_name:
+                        self.log_debug("Engine startup running app '%s' command '%s'." %
+                                       (app_instance_name, command_name))
+                        command_function()
+
+
     def destroy_engine(self):
         """
         Stops watching scene events and tears down menu.
