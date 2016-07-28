@@ -12,36 +12,6 @@
 
 # expected fields in the configuration file for this engine
 configuration:
-    debug_logging: 
-        type: bool
-        description: Controls whether debug messages should be emitted to the logger
-        default_value: false
-    
-    template_project: 
-        type: template
-        description: "Template to use to determine where to set the maya project location.
-                     This should be a string specifying the template to use but can also be
-                     empty if you do not wish the Maya project to be automatically set."
-        allows_empty: True
-
-    menu_favourites:
-        type: list
-        description: "Controls the favourites section on the main menu. This is a list 
-                     and each menu item is a dictionary with keys app_instance and name.
-                     The app_instance parameter connects this entry to a particular
-                     app instance defined in the environment configuration file. The name
-                     is a menu name to make a favourite."
-        allows_empty: True                     
-        values:
-            type: dict
-            items:
-                name: { type: str }
-                app_instance: { type: str }
-
-    use_sgtk_as_menu_name:
-        type: bool
-        description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Shotgun'
-        default_value: false
 
     compatibility_dialog_min_version:
         type:           int
@@ -50,6 +20,53 @@ configuration:
                         dialog for the version you are testing, it is recomended that you set this
                         value to the current major version + 1."
         default_value:  2015
+
+    debug_logging: 
+        type: bool
+        description: Controls whether debug messages should be emitted to the logger
+        default_value: false
+
+    menu_favourites:
+        type: list
+        description: "Controls the favourites section on the main menu. This is a list
+                     and each menu item is a dictionary with keys app_instance and name.
+                     The app_instance parameter connects this entry to a particular
+                     app instance defined in the environment configuration file. The name
+                     is a menu name to make a favourite."
+        allows_empty: True
+        values:
+            type: dict
+            items:
+                name: { type: str }
+                app_instance: { type: str }
+
+    run_at_startup:
+        type: list
+        description: "Controls what apps will run on startup.  This is a list where each element
+                     is a dictionary with two keys: 'app_instance' and 'name'.  The app_instance
+                     value connects this entry to a particular app instance defined in the
+                     environment configuration file.  The name is the menu name of the command
+                     to run when the Maya engine starts up.  If name is '' then all commands from the
+                     given app instance are started."
+        allows_empty: True
+        default_value: []
+        values:
+            type: dict
+            items:
+                name: { type: str }
+                app_instance: { type: str }
+
+    template_project:
+        type: template
+        description: "Template to use to determine where to set the maya project location.
+                     This should be a string specifying the template to use but can also be
+                     empty if you do not wish the Maya project to be automatically set."
+        allows_empty: True
+
+    use_sgtk_as_menu_name:
+        type: bool
+        description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Shotgun'
+        default_value: false
 
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
