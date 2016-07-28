@@ -339,6 +339,7 @@ class MayaEngine(tank.platform.Engine):
         """
         Called when all apps have initialized
         """
+
         # detect if in batch mode
         if self.has_ui:
             self._menu_handle = pm.menu("ShotgunMenu", label=self._menu_name, parent=pm.melGlobals["gMainWindow"])
@@ -348,37 +349,59 @@ class MayaEngine(tank.platform.Engine):
             # hook things up so that the menu is created every time it is clicked
             self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
 
-        # Build a dictionary mapping app instance names to lists of commands they registered with the engine.
+        # Run a series of app instance commands at startup.
+        self._run_app_instance_commands()
+
+
+    def _run_app_instance_commands(self):
+        """
+        Runs the series of app instance commands listed in the 'run_at_startup' setting
+        of the environment configuration yaml file.
+        """
+
+        # Build a dictionary mapping app instance names to dictionaries of commands they registered with the engine.
         app_instance_commands = {}
         for (command_name, value) in self.commands.iteritems():
             app_instance = value["properties"].get("app")
             if app_instance:
-                # Add tuple (command name, command function) to the command list of this app instance.
-                command_list = app_instance_commands.setdefault(app_instance.instance_name, [])
-                command_list.append((command_name, value["callback"]))
+                # Add entry 'command name: command function' to the command dictionary of this app instance.
+                command_dict = app_instance_commands.setdefault(app_instance.instance_name, {})
+                command_dict[command_name] = value["callback"]
 
-        # Run a series of app instance commands listed in the run_at_startup setting
-        # of the environment configuration file.
+        # Run the series of app instance commands listed in the 'run_at_startup' setting.
         for app_setting_dict in self.get_setting("run_at_startup", []):
 
             app_instance_name = app_setting_dict["app_instance"]
             # Menu name of the command to run or '' to run all commands of the given app instance.
             setting_command_name = app_setting_dict["name"]
 
-            # Retrieve the command list of the given app instance.
-            command_list = app_instance_commands.get(app_instance_name)
+            # Retrieve the command dictionary of the given app instance.
+            command_dict = app_instance_commands.get(app_instance_name)
 
-            if command_list is None:
-                self.log_warning("Configuration setting 'run_at_startup' requests app '%s' that is not installed." %
-                                 app_instance_name)
+            if command_dict is None:
+                self.log_warning(
+                    "%s configuration setting 'run_at_startup' requests app '%s' that is not installed." %
+                    (self.name, app_instance_name))
             else:
-                for (command_name, command_function) in command_list:
-                    # Run the command when the run_at_startup setting requests all commands to be run
-                    # or when the command name is listed in the run_at_startup setting.
-                    if not setting_command_name or command_name == setting_command_name:
-                        self.log_debug("Engine startup running app '%s' command '%s'." %
-                                       (app_instance_name, command_name))
+                if not setting_command_name:
+                    # Run all commands of the given app instance.
+                    for (command_name, command_function) in command_dict.iteritems():
+                        self.log_debug("%s startup running app '%s' command '%s'." %
+                                       (self.name, app_instance_name, command_name))
                         command_function()
+                else:
+                    # Run the command whose name is listed in the 'run_at_startup' setting.
+                    command_function = command_dict.get(setting_command_name)
+                    if command_function:
+                        self.log_debug("%s startup running app '%s' command '%s'." %
+                                       (self.name, app_instance_name, setting_command_name))
+                        command_function()
+                    else:
+                        known_commands = ', '.join("'%s'" % name for name in command_dict)
+                        self.log_warning(
+                            "%s configuration setting 'run_at_startup' requests app '%s' unknown command '%s'. "
+                            "Known commands: %s" %
+                            (self.name, app_instance_name, setting_command_name, known_commands))
 
 
     def destroy_engine(self):
