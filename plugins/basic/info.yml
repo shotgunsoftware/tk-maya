@@ -1,0 +1,34 @@
+# Copyright (c) 2016 Shotgun Software Inc.
+#
+# CONFIDENTIAL AND PROPRIETARY
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
+# Source Code License included in this distribution package. See LICENSE.
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
+# not expressly granted therein are reserved by Shotgun Software Inc.
+
+# values required by all plugins
+base_configuration:
+  type:    app_store
+  name:    tk-config-pluginbasic
+
+entry_point: "basic"
+
+name: Shotgun Integration
+description: Short description of the plugin
+author: Shotgun Software
+organization: Autodesk, Inc
+contact: support@shotgunsoftware.com
+url: http://www.shotgunsoftware.com
+
+version: "v1.2.3"
+build_information: "{BUILD_INFO}"
+
+# plugin specific settings
+configuration:
+
+  debug_logging: true
+
+  bootstrap_command: sgBootstrapToolkit
+  shutdown_command: sgShutdownToolkit
