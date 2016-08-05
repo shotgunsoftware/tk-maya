@@ -18,14 +18,19 @@ import maya.utils
 # Maya module root directory path.
 MODULE_ROOT_PATH = os.environ.get("TK_MAYA_BASIC_ROOT")
 
+# prepend default plugin API location
+plugin_python_path = os.path.join(MODULE_ROOT_PATH, "bundle_cache", "python")
+if plugin_python_path not in sys.path:
+    sys.path.insert(0, plugin_python_path)
+
 # Prepend the plug-in python directory path to the python module search path.
 plugin_python_path = os.path.join(MODULE_ROOT_PATH, "python")
 if plugin_python_path not in sys.path:
     sys.path.insert(0, plugin_python_path)
 
 # Import the required plug-in bootstrap module.
+import sgtk_plugin
 import tk_maya_basic.plugin_bootstrap as plugin_bootstrap
-from tk_maya_basic import Manifest
 
 def maya_useNewAPI():
     """
@@ -40,7 +45,7 @@ class BootstrapToolkitCmd(OpenMaya2.MPxCommand):
     """
 
     # Custom Maya command name as known by 'maya.cmds'.
-    CMD_NAME = Manifest(MODULE_ROOT_PATH).get_setting("bootstrap_command")
+    CMD_NAME = sgtk_plugin.manifest.bootstrap_command
 
     def __init__(self):
         """
@@ -65,7 +70,7 @@ class ShutdownToolkitCmd(OpenMaya2.MPxCommand):
     """
 
     # Custom Maya command name as known by 'maya.cmds'.
-    CMD_NAME = Manifest(MODULE_ROOT_PATH).get_setting("shutdown_command")
+    CMD_NAME = sgtk_plugin.manifest.shutdown_command
 
     def __init__(self):
         """
@@ -95,13 +100,10 @@ def initializePlugin(mobject):
     :param mobject: Maya plug-in MObject.
     :raises: Exception raised by maya.api.OpenMaya.MFnPlugin registerCommand method.
     """
-    # load our manifest settings
-    manifest = Manifest(MODULE_ROOT_PATH)
-
     plugin = OpenMaya2.MFnPlugin(
         mobject,
-        vendor="%s, %s" % (manifest.author, manifest.organization),
-        version=manifest.version
+        vendor="%s, %s" % (sgtk_plugin.manifest.author, sgtk_plugin.manifest.organization),
+        version=sgtk_plugin.manifest.version
     )
 
     # Register all the plug-in custom commands.
@@ -114,7 +116,6 @@ def initializePlugin(mobject):
 
     # Automatically bootstrap the Shotgun toolkit and its Maya engine once Maya has settled.
     # This is temporary until we have a proper login workflow/menu in place.
-
     maya.utils.executeDeferred("from maya import cmds; cmds.%s()" % BootstrapToolkitCmd.CMD_NAME)
 
 

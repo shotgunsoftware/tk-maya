@@ -10,11 +10,11 @@
 
 import os
 import sys
-
 import maya.cmds
 
+import sgtk_plugin
+
 from . import plugin_logging
-from . import Manifest
 
 # Maya module root directory path.
 MODULE_ROOT_PATH = os.environ.get("TK_MAYA_BASIC_ROOT")
@@ -27,40 +27,32 @@ def bootstrap_toolkit():
     :raises: ValueError when the plug-in 'tk-core' directory does not contain a single version directory.
     :raises: KeyError when a required key is missing in the plug-in configuration file.
     """
-    # get our settings and config options
-    manifest = Manifest(MODULE_ROOT_PATH)
-
     # Use a standalone logger to display messages in Maya script editor
     # before the Shotgun toolkit has been imported and its logging enabled.
-    standalone_logger = plugin_logging.get_standalone_logger(manifest.name)
-
-    # Retrieve the Shotgun toolkit core python directory path
-    # and prepend it to the python module search path.
-    if manifest.plugin_core_path not in sys.path:
-        sys.path.insert(0, manifest.plugin_core_path)
+    standalone_logger = plugin_logging.get_standalone_logger(sgtk_plugin.manifest.name)
 
     standalone_logger.info("Importing the Shotgun toolkit.")
     import sgtk
 
     # Use a custom logging handler to display messages in Maya script editor
     # before the Maya engine takes over logging.
-    plugin_logging_handler = plugin_logging.PluginLoggingHandler(manifest.name)
+    plugin_logging_handler = plugin_logging.PluginLoggingHandler(sgtk_plugin.manifest.name)
 
     sgtk.LogManager().initialize_base_file_handler("tk-maya")
     sgtk.LogManager().initialize_custom_handler(plugin_logging_handler)
 
-    if manifest.get_setting("debug_logging"):
+    if sgtk_plugin.manifest.debug_logging:
         sgtk.LogManager().global_debug = True
 
-    sgtk_logger = sgtk.LogManager.get_logger(manifest.name)
+    sgtk_logger = sgtk.LogManager.get_logger(sgtk_plugin.manifest.name)
 
-    sgtk_logger.debug("Booting up plugin with manifest %s" % manifest)
+    sgtk_logger.debug("Booting up plugin with manifest %s" % sgtk_plugin.manifest.BUILD_INFO)
 
     # create boostrap manager
     toolkit_mgr = sgtk.bootstrap.ToolkitManager()
-    toolkit_mgr.entry_point = manifest.entry_point
-    toolkit_mgr.base_configuration = manifest.base_configuration
-    toolkit_mgr.bundle_cache_fallback_paths = [manifest.bundle_cache_root]
+    toolkit_mgr.entry_point = sgtk_plugin.manifest.entry_point
+    toolkit_mgr.base_configuration = sgtk_plugin.manifest.base_configuration
+    toolkit_mgr.bundle_cache_fallback_paths = [os.path.join(MODULE_ROOT_PATH, "bundle_cache_root")]
 
     sgtk_logger.info("Starting the Maya engine.")
 
@@ -71,21 +63,9 @@ def bootstrap_toolkit():
     maya.cmds.waitCursor(state=True)
     try:
         maya_engine = toolkit_mgr.bootstrap_engine("tk-maya", entity=None)
-        maya_engine.register_command("log out", logout_callback)
-
-
-
     finally:
         # Make sure Maya wait cursor is turned off.
         maya.cmds.waitCursor(state=False)
-
-
-def logout_callback():
-
-    # tare down the engine
-    # log out
-    # turn the simple menu back on
-
 
 
 def shutdown_toolkit():
@@ -94,10 +74,7 @@ def shutdown_toolkit():
     """
     import sgtk
 
-    # get our settings and config options
-    manifest = Manifest(MODULE_ROOT_PATH)
-
-    sgtk_logger = sgtk.LogManager.get_logger(manifest.name)
+    sgtk_logger = sgtk.LogManager.get_logger(sgtk_plugin.manifest.name)
 
     # Turn off your engine! Step away from the car!
     maya_engine = sgtk.platform.current_engine()
