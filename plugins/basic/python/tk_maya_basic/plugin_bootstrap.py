@@ -12,7 +12,7 @@ import os
 import sys
 import maya.cmds
 
-import sgtk_plugin
+from sgtk_plugin_basic import manifest
 
 from . import plugin_logging
 
@@ -29,29 +29,29 @@ def bootstrap_toolkit():
     """
     # Use a standalone logger to display messages in Maya script editor
     # before the Shotgun toolkit has been imported and its logging enabled.
-    standalone_logger = plugin_logging.get_standalone_logger(sgtk_plugin.manifest.name)
+    standalone_logger = plugin_logging.get_standalone_logger(manifest.name)
 
     standalone_logger.info("Importing the Shotgun toolkit.")
     import sgtk
 
     # Use a custom logging handler to display messages in Maya script editor
     # before the Maya engine takes over logging.
-    plugin_logging_handler = plugin_logging.PluginLoggingHandler(sgtk_plugin.manifest.name)
+    plugin_logging_handler = plugin_logging.PluginLoggingHandler(manifest.name)
 
     sgtk.LogManager().initialize_base_file_handler("tk-maya")
     sgtk.LogManager().initialize_custom_handler(plugin_logging_handler)
 
-    if sgtk_plugin.manifest.debug_logging:
+    if manifest.debug_logging:
         sgtk.LogManager().global_debug = True
 
-    sgtk_logger = sgtk.LogManager.get_logger(sgtk_plugin.manifest.name)
+    sgtk_logger = sgtk.LogManager.get_logger(manifest.name)
 
-    sgtk_logger.debug("Booting up plugin with manifest %s" % sgtk_plugin.manifest.BUILD_INFO)
+    sgtk_logger.debug("Booting up plugin with manifest %s" % manifest.BUILD_INFO)
 
     # create boostrap manager
     toolkit_mgr = sgtk.bootstrap.ToolkitManager()
-    toolkit_mgr.entry_point = sgtk_plugin.manifest.entry_point
-    toolkit_mgr.base_configuration = sgtk_plugin.manifest.base_configuration
+    toolkit_mgr.entry_point = manifest.entry_point
+    toolkit_mgr.base_configuration = manifest.base_configuration
     toolkit_mgr.bundle_cache_fallback_paths = [os.path.join(MODULE_ROOT_PATH, "bundle_cache_root")]
 
     sgtk_logger.info("Starting the Maya engine.")
@@ -74,7 +74,7 @@ def shutdown_toolkit():
     """
     import sgtk
 
-    sgtk_logger = sgtk.LogManager.get_logger(sgtk_plugin.manifest.name)
+    sgtk_logger = sgtk.LogManager.get_logger(manifest.name)
 
     # Turn off your engine! Step away from the car!
     maya_engine = sgtk.platform.current_engine()

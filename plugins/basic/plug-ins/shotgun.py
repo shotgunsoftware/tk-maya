@@ -29,7 +29,7 @@ if plugin_python_path not in sys.path:
     sys.path.insert(0, plugin_python_path)
 
 # Import the required plug-in bootstrap module.
-import sgtk_plugin
+from sgtk_plugin_basic import manifest
 import tk_maya_basic.plugin_bootstrap as plugin_bootstrap
 
 def maya_useNewAPI():
@@ -45,7 +45,7 @@ class BootstrapToolkitCmd(OpenMaya2.MPxCommand):
     """
 
     # Custom Maya command name as known by 'maya.cmds'.
-    CMD_NAME = sgtk_plugin.manifest.bootstrap_command
+    CMD_NAME = manifest.bootstrap_command
 
     def __init__(self):
         """
@@ -70,7 +70,7 @@ class ShutdownToolkitCmd(OpenMaya2.MPxCommand):
     """
 
     # Custom Maya command name as known by 'maya.cmds'.
-    CMD_NAME = sgtk_plugin.manifest.shutdown_command
+    CMD_NAME = manifest.shutdown_command
 
     def __init__(self):
         """
@@ -102,8 +102,8 @@ def initializePlugin(mobject):
     """
     plugin = OpenMaya2.MFnPlugin(
         mobject,
-        vendor="%s, %s" % (sgtk_plugin.manifest.author, sgtk_plugin.manifest.organization),
-        version=sgtk_plugin.manifest.version
+        vendor="%s, %s" % (manifest.author, manifest.organization),
+        version=manifest.version
     )
 
     # Register all the plug-in custom commands.
