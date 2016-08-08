@@ -18,6 +18,8 @@ from . import plugin_logging
 
 # Maya module root directory path.
 MODULE_ROOT_PATH = os.environ.get("TK_MAYA_BASIC_ROOT")
+# add core to the python path
+manifest.add_sgtk_to_pythonpath(MODULE_ROOT_PATH)
 
 def bootstrap_toolkit():
     """

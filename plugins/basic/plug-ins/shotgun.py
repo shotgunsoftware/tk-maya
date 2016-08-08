@@ -18,11 +18,6 @@ import maya.utils
 # Maya module root directory path.
 MODULE_ROOT_PATH = os.environ.get("TK_MAYA_BASIC_ROOT")
 
-# prepend default plugin API location
-plugin_python_path = os.path.join(MODULE_ROOT_PATH, "bundle_cache", "python")
-if plugin_python_path not in sys.path:
-    sys.path.insert(0, plugin_python_path)
-
 # Prepend the plug-in python directory path to the python module search path.
 plugin_python_path = os.path.join(MODULE_ROOT_PATH, "python")
 if plugin_python_path not in sys.path:
