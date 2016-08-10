@@ -13,13 +13,19 @@
 # expected fields in the configuration file for this engine
 configuration:
 
+    automatic_context_switch:
+        type: bool
+        description: "Controls whether toolkit should attempt to automatically adjust its
+                     context every time the currently loaded file changes. Defaults to True".
+        default_value: True
+
     compatibility_dialog_min_version:
-        type:           int
-        description:    "Specify the minimum Application major version that will prompt a warning if
-                        it isn't yet fully supported and tested with Toolkit.  To disable the warning
-                        dialog for the version you are testing, it is recomended that you set this
-                        value to the current major version + 1."
-        default_value:  2015
+        type: int
+        description: "Specify the minimum Application major version that will prompt a warning if
+                     it isn't yet fully supported and tested with Toolkit.  To disable the warning
+                     dialog for the version you are testing, it is recomended that you set this
+                     value to the current major version + 1."
+        default_value: 2015
 
     debug_logging: 
         type: bool

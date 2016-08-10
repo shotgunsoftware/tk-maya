@@ -27,7 +27,6 @@ import maya.utils
 # methods to support the state when the engine cannot start up
 # for example if a non-tank file is loaded in maya
 
-
 class SceneEventWatcher(object):
     """
     Encapsulates event handling for multiple scene events and routes them
@@ -330,10 +329,11 @@ class MayaEngine(tank.platform.Engine):
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 
-        # need to watch some scene events in case the engine needs rebuilding:
-        cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name:on_scene_event_callback(en, pc, mn)
-        self.__watcher = SceneEventWatcher(cb_fn)
-        self.log_debug("Registered open and save callbacks.")
+        if self.get_setting("automatic_context_switch", True):
+            # need to watch some scene events in case the engine needs rebuilding:
+            cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name:on_scene_event_callback(en, pc, mn)
+            self.__watcher = SceneEventWatcher(cb_fn)
+            self.log_debug("Registered open and save callbacks.")
 
     def post_app_init(self):
         """
@@ -410,8 +410,9 @@ class MayaEngine(tank.platform.Engine):
         """
         self.log_debug("%s: Destroying..." % self)
 
-        # stop watching scene events:
-        self.__watcher.stop_watching()
+        if self.get_setting("automatic_context_switch", True):
+            # stop watching scene events
+            self.__watcher.stop_watching()
 
         # clean up UI:
         if self.has_ui and pm.menu(self._menu_handle, exists=True):
