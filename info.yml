@@ -16,7 +16,7 @@ configuration:
     automatic_context_switch:
         type: bool
         description: "Controls whether toolkit should attempt to automatically adjust its
-                     context every time the currently loaded file changes. Defaults to True".
+                     context every time the currently loaded file changes. Defaults to True."
         default_value: True
 
     compatibility_dialog_min_version:
