@@ -7,3 +7,6 @@
 # By accessing, using, copying or modifying this work you indicate your
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
+
+# Plug-in root directory path constant set when the plug-in is loaded.
+PLUGIN_ROOT_PATH = None
