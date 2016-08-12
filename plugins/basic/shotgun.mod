@@ -15,10 +15,10 @@
 # to the full path of this Maya module directory.
 #
 # For example, on Linux and Mac OS X:
-#     MAYA_MODULE_PATH=$HOME/my_maya_modules/tk-maya-plugin-basic
+#     MAYA_MODULE_PATH=$HOME/my_maya_modules/tk-maya-basic
 #
 # For example, on Windows:
-#     MAYA_MODULE_PATH=%HOME%\my_maya_modules\tk-maya-plugin-basic
+#     MAYA_MODULE_PATH=%HOME%\my_maya_modules\tk-maya-basic
 #
 # Search Maya Help for details about environment variables and the Maya.env file.
 #
@@ -26,5 +26,5 @@
 # - This Maya module file can only be processed by Maya 2013 and up.
 # - No blank lines allowed between the module description line and its environment variable line.
 
-+ tk-maya-plugin-basic 0.0.5 .
-TK_MAYA_PLUGIN_BASIC_ROOT:=.
++ tk-maya-basic 0.0.5 .
+TK_MAYA_BASIC_ROOT:=.

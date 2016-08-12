@@ -16,7 +16,7 @@ import maya.utils
 
 
 # Plug-in root directory path.
-PLUGIN_ROOT_PATH = os.environ.get("TK_MAYA_PLUGIN_BASIC_ROOT")
+PLUGIN_ROOT_PATH = os.environ.get("TK_MAYA_BASIC_ROOT")
 
 # Prepend the plug-in python package path to the python module search path.
 plugin_python_path = os.path.join(PLUGIN_ROOT_PATH, "python")
@@ -24,8 +24,8 @@ if plugin_python_path not in sys.path:
     sys.path.insert(0, plugin_python_path)
 
 # Set the plug-in root directory path constant of the plug-in python package.
-import tk_maya_plugin_basic
-tk_maya_plugin_basic.PLUGIN_ROOT_PATH = PLUGIN_ROOT_PATH
+import tk_maya_basic
+tk_maya_basic.PLUGIN_ROOT_PATH = PLUGIN_ROOT_PATH
 
 # Module manifest is required later to get the sgtk python package path.
 from sgtk_plugin_basic import manifest
@@ -37,7 +37,7 @@ if tkcore_python_path not in sys.path:
     sys.path.insert(0, tkcore_python_path)
 
 # Module plugin_logic needs the sgtk python package path set previously.
-from tk_maya_plugin_basic import plugin_logic
+from tk_maya_basic import plugin_logic
 
 
 # List of all the custom Maya commands defined by the plug-in.
