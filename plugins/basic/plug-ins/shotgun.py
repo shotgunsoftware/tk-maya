@@ -69,13 +69,10 @@ def initializePlugin(mobject):
 
     # Register all the plug-in custom commands.
     for cmd_class in PLUGIN_CMD_LIST:
-        # Use the custom command class name to build its command name for 'maya.cmds'.
-        # Recipe: "sgtk" + class name without its "Cmd" suffix
-        cmd_name = "sgtk" + cmd_class.__name__[:-3]
         try:
-            plugin.registerCommand(cmd_name, createCmdFunc=cmd_class)
+            plugin.registerCommand(cmd_class.CMD_NAME, createCmdFunc=cmd_class)
         except:
-            sys.stderr.write("Failed to register command %s.\n" % cmd_name)
+            sys.stderr.write("Failed to register command %s.\n" % cmd_class.CMD_NAME)
             raise
 
     # Bootstrap the plug-in logic once Maya has settled.
@@ -97,11 +94,8 @@ def uninitializePlugin(mobject):
 
     # Deregister all the plug-in custom commands.
     for cmd_class in PLUGIN_CMD_LIST:
-        # Use the custom command class name to build its command name for 'maya.cmds'.
-        # Recipe: "sgtk" + class name without its "Cmd" suffix
-        cmd_name = "sgtk" + cmd_class.__name__[:-3]
         try:
-            plugin.deregisterCommand(cmd_name)
+            plugin.deregisterCommand(cmd_class.CMD_NAME)
         except:
-            sys.stderr.write("Failed to deregister command %s.\n" % cmd_name)
+            sys.stderr.write("Failed to deregister command %s.\n" % cmd_class.CMD_NAME)
             raise
