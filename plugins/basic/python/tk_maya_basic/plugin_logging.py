@@ -69,23 +69,3 @@ class PluginLoggingHandler(logging.Handler):
         else:
             msg = "Shotgun: %s" % msg
             maya.utils.executeInMainThreadWithResult(OpenMaya2.MGlobal.displayError, msg)
-
-
-def get_standalone_logger(plugin_name):
-    """
-    Instantiates a plug-in standalone logger to display messages in Maya script editor.
-
-    :param plugin_name: Plug-in name to include in the standard message format.
-    :returns: Standard python logger.
-    """
-
-    logger = logging.getLogger(plugin_name)
-
-    # Do not propagate messages to Maya ancestor logger to avoid duplicated logs.
-    logger.propagate = False
-    # Ignore messages less severe than the debug ones.
-    logger.setLevel(logging.DEBUG)
-
-    logger.addHandler(PluginLoggingHandler(plugin_name))
-
-    return logger

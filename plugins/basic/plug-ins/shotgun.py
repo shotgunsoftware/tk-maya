@@ -12,80 +12,43 @@ import os
 import sys
 
 import maya.api.OpenMaya as OpenMaya2  # Python API 2.0
-import maya.cmds
 import maya.utils
 
-# Maya module root directory path.
-MODULE_ROOT_PATH = os.environ.get("TK_MAYA_BASIC_ROOT")
 
-# Prepend the plug-in python directory path to the python module search path.
-plugin_python_path = os.path.join(MODULE_ROOT_PATH, "python")
+# Plug-in root directory path.
+PLUGIN_ROOT_PATH = os.environ.get("TK_MAYA_BASIC_ROOT")
+
+# Prepend the plug-in python package path to the python module search path.
+plugin_python_path = os.path.join(PLUGIN_ROOT_PATH, "python")
 if plugin_python_path not in sys.path:
     sys.path.insert(0, plugin_python_path)
 
-# Import the required plug-in bootstrap module.
+# Set the plug-in root directory path constant of the plug-in python package.
+import tk_maya_basic
+tk_maya_basic.PLUGIN_ROOT_PATH = PLUGIN_ROOT_PATH
+
+# Module manifest is required later to get the sgtk python package path.
 from sgtk_plugin_basic import manifest
-import tk_maya_basic.plugin_bootstrap as plugin_bootstrap
+
+# Retrieve the Shotgun toolkit core included with the plug-in and
+# prepend its python package path to the python module search path.
+tkcore_python_path = manifest.get_sgtk_pythonpath(PLUGIN_ROOT_PATH)
+if tkcore_python_path not in sys.path:
+    sys.path.insert(0, tkcore_python_path)
+
+# Module plugin_logic needs the sgtk python package path set previously.
+from tk_maya_basic import plugin_logic
+
+
+# List of all the custom Maya commands defined by the plug-in.
+PLUGIN_CMD_LIST = []
+
 
 def maya_useNewAPI():
     """
     The presence of this function lets Maya know that this plug-in uses Python API 2.0 objects.
     """
     pass
-
-
-class BootstrapToolkitCmd(OpenMaya2.MPxCommand):
-    """
-    Custom Maya command that bootstraps the Shotgun toolkit and its Maya engine.
-    """
-
-    # Custom Maya command name as known by 'maya.cmds'.
-    CMD_NAME = manifest.bootstrap_command
-
-    def __init__(self):
-        """
-        Initializes an instance of the bootstrap toolkit command.
-        """
-        super(BootstrapToolkitCmd, self).__init__()
-
-    def doIt(self, args):
-        """
-        Bootstraps the Shotgun toolkit and its Maya engine.
-
-        This method is the implementation override of the 'OpenMaya2.MPxCommand' base class one.
-
-        :param args: Maya MArgList of command arguments passed in by the caller.
-        """
-        plugin_bootstrap.bootstrap_toolkit()
-
-
-class ShutdownToolkitCmd(OpenMaya2.MPxCommand):
-    """
-    Custom Maya command that shutdowns the Shotgun toolkit and its Maya engine.
-    """
-
-    # Custom Maya command name as known by 'maya.cmds'.
-    CMD_NAME = manifest.shutdown_command
-
-    def __init__(self):
-        """
-        Initializes an instance of the shutdown toolkit command.
-        """
-        super(ShutdownToolkitCmd, self).__init__()
-
-    def doIt(self, args):
-        """
-        Shutdowns the Shotgun toolkit and its Maya engine.
-
-        This method is the implementation override of the 'OpenMaya2.MPxCommand' base class one.
-
-        :param args: Maya MArgList of command arguments passed in by the caller.
-        """
-        plugin_bootstrap.shutdown_toolkit()
-
-
-# List of all the custom Maya commands defined by this plug-in.
-PLUGIN_CMD_LIST = (BootstrapToolkitCmd, ShutdownToolkitCmd)
 
 
 def initializePlugin(mobject):
@@ -95,23 +58,25 @@ def initializePlugin(mobject):
     :param mobject: Maya plug-in MObject.
     :raises: Exception raised by maya.api.OpenMaya.MFnPlugin registerCommand method.
     """
-    plugin = OpenMaya2.MFnPlugin(
-        mobject,
-        vendor="%s, %s" % (manifest.author, manifest.organization),
-        version=manifest.version
-    )
+
+    # The name of this file minus its '.py' extension will be the plug-in name
+    # displayed in Maya Plug-in Information window.
+
+    # Set the plug-in vendor name and version number to display in Maya Plug-in Information window.
+    plugin = OpenMaya2.MFnPlugin(mobject,
+                                 vendor="%s, %s" % (manifest.author, manifest.organization),
+                                 version=manifest.version)
 
     # Register all the plug-in custom commands.
-    for cmdClass in PLUGIN_CMD_LIST:
+    for cmd_class in PLUGIN_CMD_LIST:
         try:
-            plugin.registerCommand(cmdClass.CMD_NAME, createCmdFunc=cmdClass)
+            plugin.registerCommand(cmd_class.CMD_NAME, createCmdFunc=cmd_class)
         except:
-            sys.stderr.write("Failed to register command %s.\n" % cmdClass.CMD_NAME)
+            sys.stderr.write("Failed to register command %s.\n" % cmd_class.CMD_NAME)
             raise
 
-    # Automatically bootstrap the Shotgun toolkit and its Maya engine once Maya has settled.
-    # This is temporary until we have a proper login workflow/menu in place.
-    maya.utils.executeDeferred("from maya import cmds; cmds.%s()" % BootstrapToolkitCmd.CMD_NAME)
+    # Bootstrap the plug-in logic once Maya has settled.
+    maya.utils.executeDeferred(plugin_logic.bootstrap)
 
 
 def uninitializePlugin(mobject):
@@ -122,15 +87,15 @@ def uninitializePlugin(mobject):
     :raises: Exception raised by maya.api.OpenMaya.MFnPlugin deregisterCommand method.
     """
 
-    # Shutdown the Shotgun toolkit and its Maya engine.
-    maya.cmds.sgShutdownToolkit()
+    # Shutdown the plug-in logic.
+    plugin_logic.shutdown()
 
     plugin = OpenMaya2.MFnPlugin(mobject)
 
     # Deregister all the plug-in custom commands.
-    for cmdClass in PLUGIN_CMD_LIST:
+    for cmd_class in PLUGIN_CMD_LIST:
         try:
-            plugin.deregisterCommand(cmdClass.CMD_NAME)
+            plugin.deregisterCommand(cmd_class.CMD_NAME)
         except:
-            sys.stderr.write("Failed to deregister command %s.\n" % cmdClass.CMD_NAME)
+            sys.stderr.write("Failed to deregister command %s.\n" % cmd_class.CMD_NAME)
             raise

@@ -8,24 +8,55 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-# values required by all plugins
+
+# This file contains the plug-in configuration data that will be packaged
+# into manifest.py by the build_plugin.py script.
+
+
+#
+# Plug-in information recommended values to specify by convention.
+#
+
+# Plug-in name that will prefix the plug-in messaqges displayed in Maya script editor.
+name: "tk-maya-basic"
+
+# Plug-in version number that will be displayed in Maya Plug-in Information window.
+# This plug-in version number and the one in the Maya module file should be synchronised.
+version: "0.0.5"
+
+description:  "Shotgun toolkit integration into a basic plug-in."
+author:       "Shotgun Software"
+organization: "Autodesk Inc."
+contact:      "support@shotgunsoftware.com"
+url:          "https://www.shotgunsoftware.com"
+
+
+#
+# Values required by all plug-ins.
+#
+
 base_configuration:
+  # Location given to 'sgtk.bootstrap.ToolkitManager().base_configuration'.
+  # The possible location descriptors are documented on the Shotgun website:
+  #     http://developer.shotgunsoftware.com/tk-core/descriptor.html
+  # ToolkitManager does not use a location version and fetches the most recent configuration.
   type: app_store
   name: tk-config-pluginbasic
+  # For convenience, the following location descriptor lines will be
+  # kept around while the plug-in is still in private development.
+  # type: "dev"
+  # path: "$TK_CONFIG_PLUGINBASIC_ROOT"
 
+# Value given to 'sgtk.bootstrap.ToolkitManager().entry_point'.
 entry_point: "basic"
 
-# recommended values that all plugins should
-# specify by convention, unless there is good reason not to
-name: Shotgun Integration
-description: Short description of the plugin
-author: Shotgun Software
-organization: Autodesk, Inc
-contact: support@shotgunsoftware.com
-url: http://www.shotgunsoftware.com
-version: "v1.2.3"
 
-# plugin specific settings
+#
+# Values specific to this plug-in.
+#
+
+# Value given to 'sgtk.LogManager().global_debug'.
 debug_logging: true
-bootstrap_command: sgBootstrapToolkit
-shutdown_command: sgShutdownToolkit
+
+# Engine used by the plug-in.
+engine_name: "tk-maya"
