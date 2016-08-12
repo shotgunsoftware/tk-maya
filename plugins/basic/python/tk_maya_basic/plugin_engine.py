@@ -17,6 +17,7 @@ import sgtk
 from sgtk_plugin_basic import manifest
 import plugin_logging
 
+from . import __name__ as PLUGIN_PACKAGE_NAME
 from . import PLUGIN_ROOT_PATH
 
 
@@ -39,7 +40,7 @@ def bootstrap(sg_user):
 
     sgtk.LogManager().global_debug = bool(manifest.debug_logging)
 
-    logger = sgtk.LogManager.get_logger(manifest.name)
+    logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
 
     logger.debug("Bootstraping with manifest '%s'." % manifest.BUILD_INFO)
 
@@ -71,7 +72,7 @@ def shutdown():
     Shuts down the running engine.
     """
 
-    logger = sgtk.LogManager.get_logger(manifest.name)
+    logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
 
     engine = sgtk.platform.current_engine()
     if engine:

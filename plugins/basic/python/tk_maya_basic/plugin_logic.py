@@ -8,13 +8,19 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
+import logging
+
 import pymel.core as pm
 
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
 import sgtk
 
+from sgtk_plugin_basic import manifest
 import plugin_engine
+import plugin_logging
+
+from . import __name__ as PLUGIN_PACKAGE_NAME
 
 
 MENU_LOGIN = "ShotgunMenuLogin"
@@ -25,6 +31,17 @@ ITEM_LABEL_LOGOUT  = "Log Out of Shotgun"
 ITEM_LABEL_WEBSITE = "Learn about Shotgun..."
 
 WEBSITE_URL = "https://shotgunsoftware.com"
+
+
+# Initialize a standalone logger to display messages in Maya script editor
+# when the engine is not running while the user is logged out of Shotgun.
+standalone_logger = logging.getLogger(PLUGIN_PACKAGE_NAME)
+# Do not propagate messages to Maya ancestor logger to avoid duplicated logs.
+standalone_logger.propagate = False
+# Ignore messages less severe than the debug ones.
+standalone_logger.setLevel(logging.DEBUG)
+# Use a custom logging handler to display messages in Maya script editor.
+standalone_logger.addHandler(plugin_logging.PluginLoggingHandler(manifest.name))
 
 
 def bootstrap():
@@ -68,6 +85,7 @@ def login_user():
 
     except sgtk.authentication.AuthenticationCancelled:
         # When the user cancelled the Shotgun login dialog, keep around the displayed login menu.
+        standalone_logger.info("Shotgun login was cancelled by the user.")
         return
 
     try:

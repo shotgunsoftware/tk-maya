@@ -17,8 +17,7 @@
 # Plug-in information recommended values to specify by convention.
 #
 
-# Plug-in name that will be passed to 'sgtk.LogManager.get_logger()'
-# and will prefix the plug-in messaqges displayed in Maya script editor.
+# Plug-in name that will prefix the plug-in messaqges displayed in Maya script editor.
 name: "tk-maya-basic"
 
 # Plug-in version number that will be displayed in Maya Plug-in Information window.
