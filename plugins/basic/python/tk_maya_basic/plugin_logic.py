@@ -12,7 +12,7 @@ import pymel.core as pm
 
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
-import sgtk as tk_core
+import sgtk
 
 import plugin_engine
 
@@ -32,7 +32,7 @@ def bootstrap():
     Bootstraps the plug-in logic handling user login and logout.
     """
 
-    if tk_core.authentication.ShotgunAuthenticator().get_default_user():
+    if sgtk.authentication.ShotgunAuthenticator().get_default_user():
         # When the user is already authenticated, automatically log him/her in.
         login_user()
     else:
@@ -45,7 +45,7 @@ def shutdown():
     Shutdowns the plug-in logic handling user login and logout.
     """
 
-    if tk_core.platform.current_engine():
+    if sgtk.platform.current_engine():
         # When the user is logged in with a running engine, shut down the engine.
         plugin_engine.shutdown()
     else:
@@ -59,14 +59,14 @@ def login_user():
     """
 
     # Needed global to re-import the toolkit core later.
-    global tk_core
+    global sgtk
 
     try:
         # When the user is not yet authenticated, pop up the Shotgun login dialog to get the user's credentials,
         # otherwise, get the cached user's credentials.
-        user = tk_core.authentication.ShotgunAuthenticator().get_user()
+        user = sgtk.authentication.ShotgunAuthenticator().get_user()
 
-    except tk_core.authentication.AuthenticationCancelled:
+    except sgtk.authentication.AuthenticationCancelled:
         # When the user cancelled the Shotgun login dialog, keep around the displayed login menu.
         return
 
@@ -83,15 +83,15 @@ def login_user():
             pm.waitCursor(state=False)
 
         # Re-import the toolkit core to ensure usage of a swapped in version.
-        import sgtk as tk_core
+        import sgtk
 
         # Get rid of the displayed login menu now that the engine menu has taken over.
         delete_login_menu()
 
         # Add a logout menu item to the engine context menu.
-        tk_core.platform.current_engine().register_command(ITEM_LABEL_LOGOUT,
-                                                           logout_user,
-                                                           {"type": "context_menu"})
+        sgtk.platform.current_engine().register_command(ITEM_LABEL_LOGOUT,
+                                                        logout_user,
+                                                        {"type": "context_menu"})
 
     except:
         # When the engine bootstrapping raised an exception, keep around the displayed login menu.
@@ -113,7 +113,7 @@ def logout_user():
         pm.waitCursor(state=False)
 
     # Clear the user's credentials to log him/her out.
-    tk_core.authentication.ShotgunAuthenticator().clear_default_user()
+    sgtk.authentication.ShotgunAuthenticator().clear_default_user()
 
     # Re-display the login menu.
     create_login_menu()

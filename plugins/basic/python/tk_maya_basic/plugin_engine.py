@@ -12,7 +12,7 @@ import os
 
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
-import sgtk as tk_core
+import sgtk
 
 from sgtk_plugin_basic import manifest
 import plugin_logging
@@ -29,17 +29,17 @@ def bootstrap(sg_user):
     """
 
     # Needed global to re-import the toolkit core later.
-    global tk_core
+    global sgtk
 
     # Use a custom logging handler to display messages in Maya script editor before the engine takes over logging.
     plugin_logging_handler = plugin_logging.PluginLoggingHandler(manifest.name)
 
-    tk_core.LogManager().initialize_base_file_handler(manifest.engine_name)
-    tk_core.LogManager().initialize_custom_handler(plugin_logging_handler)
+    sgtk.LogManager().initialize_base_file_handler(manifest.engine_name)
+    sgtk.LogManager().initialize_custom_handler(plugin_logging_handler)
 
-    tk_core.LogManager().global_debug = bool(manifest.debug_logging)
+    sgtk.LogManager().global_debug = bool(manifest.debug_logging)
 
-    logger = tk_core.LogManager.get_logger(manifest.name)
+    logger = sgtk.LogManager.get_logger(manifest.name)
 
     logger.debug("Bootstraping with manifest '%s'." % manifest.BUILD_INFO)
 
@@ -47,7 +47,7 @@ def bootstrap(sg_user):
     bundle_cache_path = os.path.join(PLUGIN_ROOT_PATH, "bundle_cache")
 
     # Create a boostrap manager for the logged in user with the plug-in configuration data.
-    toolkit_mgr = tk_core.bootstrap.ToolkitManager(sg_user)
+    toolkit_mgr = sgtk.bootstrap.ToolkitManager(sg_user)
     toolkit_mgr.entry_point                 = manifest.entry_point
     toolkit_mgr.base_configuration          = manifest.base_configuration
     toolkit_mgr.bundle_cache_fallback_paths = [bundle_cache_path]
@@ -55,7 +55,7 @@ def bootstrap(sg_user):
     logger.info("Starting the %s engine." % manifest.engine_name)
 
     # Remove the custom logging handler now that the engine will take over logging.
-    tk_core.LogManager().root_logger.removeHandler(plugin_logging_handler)
+    sgtk.LogManager().root_logger.removeHandler(plugin_logging_handler)
 
     # Ladies and Gentlemen, start your engines!
     # Before bootstrapping the engine for the first time around,
@@ -63,7 +63,7 @@ def bootstrap(sg_user):
     toolkit_mgr.bootstrap_engine(manifest.engine_name)
 
     # Re-import the toolkit core to ensure usage of a swapped in version.
-    import sgtk as tk_core
+    import sgtk
 
 
 def shutdown():
@@ -71,9 +71,9 @@ def shutdown():
     Shuts down the running engine.
     """
 
-    logger = tk_core.LogManager.get_logger(manifest.name)
+    logger = sgtk.LogManager.get_logger(manifest.name)
 
-    engine = tk_core.platform.current_engine()
+    engine = sgtk.platform.current_engine()
     if engine:
 
         logger.info("Stopping the %s engine." % manifest.engine_name)
