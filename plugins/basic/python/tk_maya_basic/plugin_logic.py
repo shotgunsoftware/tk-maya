@@ -75,45 +75,86 @@ def login_user():
     Logs in the user to Shotgun and starts the engine.
     """
 
-    # Needed global to re-import the toolkit core later.
-    global sgtk
-
     try:
-        # When the user is not yet authenticated, pop up the Shotgun login dialog to get the user's credentials,
+        # When the user is not yet authenticated,
+        # pop up the Shotgun login dialog to get the user's credentials,
         # otherwise, get the cached user's credentials.
         user = sgtk.authentication.ShotgunAuthenticator().get_user()
 
     except sgtk.authentication.AuthenticationCancelled:
-        # When the user cancelled the Shotgun login dialog, keep around the displayed login menu.
+        # When the user cancelled the Shotgun login dialog,
+        # keep around the displayed login menu.
         standalone_logger.info("Shotgun login was cancelled by the user.")
         return
 
-    try:
+    # Get rid of the displayed login menu since the engine menu will take over.
+    delete_login_menu()
 
-        try:
-            pm.waitCursor(state=True)
+    # Before bootstrapping the engine for the first time around,
+    # the toolkit manager may swap the toolkit core to its latest version.
+    plugin_engine.bootstrap(user,
+                            progress_callback=handle_bootstrap_progress,
+                            completed_callback=handle_bootstrap_completed,
+                            failed_callback=handle_bootstrap_failed)
 
-            # Before bootstrapping the engine for the first time around,
-            # the toolkit manager may swap the toolkit core to its latest version.
-            plugin_engine.bootstrap(user)
 
-        finally:
-            pm.waitCursor(state=False)
+def handle_bootstrap_progress(message, current_index, maximum_index):
+    """
+    Callback function that reports back on the toolkit and engine bootstrap progress.
 
+    :param message: Progress message to report.
+    :param current_index: Optional current item number being looped over.
+    :param maximum_index: Optional maximum item number being looped over.
+    """
+
+    if maximum_index and maximum_index > 1:
+        message = "%s (%s of %s)" % (message, current_index+1, maximum_index+1)
+
+    standalone_logger.info("Bootstrapping %s: %s" % (manifest.engine_name, message))
+
+
+def handle_bootstrap_completed(engine):
+    """
+    Callback function that handles cleanup after successful completion of the bootstrap.
+
+    :param engine: Launched :class:`sgtk.platform.Engine` instance.
+    """
+
+    # Needed global to re-import the toolkit core.
+    global sgtk
+
+    # Re-import the toolkit core to ensure usage of a swapped in version.
+    import sgtk
+
+    # Add a logout menu item to the engine context menu.
+    sgtk.platform.current_engine().register_command(ITEM_LABEL_LOGOUT,
+                                                    logout_user,
+                                                    {"type": "context_menu"})
+
+
+def handle_bootstrap_failed(step, exception):
+    """
+    Callback function that handles cleanup after failed completion of the bootstrap.
+
+    :param step: Bootstrap step ("sgtk" or "engine") that raised the exception.
+    :param exception: Python exception raised while bootstrapping.
+    """
+
+    # Needed global to re-import the toolkit core.
+    global sgtk
+
+    if step == "engine":
         # Re-import the toolkit core to ensure usage of a swapped in version.
         import sgtk
 
-        # Get rid of the displayed login menu now that the engine menu has taken over.
-        delete_login_menu()
+    # Report the encountered exception.
+    standalone_logger.info("Bootstrapping %s failed: %s" % (manifest.engine_name, exception))
 
-        # Add a logout menu item to the engine context menu.
-        sgtk.platform.current_engine().register_command(ITEM_LABEL_LOGOUT,
-                                                        logout_user,
-                                                        {"type": "context_menu"})
+    # Clear the user's credentials to log him/her out.
+    sgtk.authentication.ShotgunAuthenticator().clear_default_user()
 
-    except:
-        # When the engine bootstrapping raised an exception, keep around the displayed login menu.
-        raise
+    # Re-display the login menu.
+    create_login_menu()
 
 
 def logout_user():
@@ -121,14 +162,8 @@ def logout_user():
     Shuts down the engine and logs out the user of Shotgun.
     """
 
-    try:
-        pm.waitCursor(state=True)
-
-        # Shutting down the engine also get rid of the engine menu.
-        plugin_engine.shutdown()
-
-    finally:
-        pm.waitCursor(state=False)
+    # Shutting down the engine also get rid of the engine menu.
+    plugin_engine.shutdown()
 
     # Clear the user's credentials to log him/her out.
     sgtk.authentication.ShotgunAuthenticator().clear_default_user()
