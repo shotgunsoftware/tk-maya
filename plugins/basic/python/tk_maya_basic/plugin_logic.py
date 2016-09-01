@@ -10,6 +10,7 @@
 
 import logging
 
+from PySide import QtGui
 import pymel.core as pm
 
 # For now, import the Shotgun toolkit core included with the plug-in,
@@ -43,6 +44,9 @@ standalone_logger.setLevel(logging.DEBUG)
 # Use a custom logging handler to display messages in Maya script editor.
 standalone_logger.addHandler(plugin_logging.PluginLoggingHandler(manifest.name))
 
+# Main progress bar used when bootstrapping the toolkit and engine.
+main_progress_bar = None
+
 
 def bootstrap():
     """
@@ -75,6 +79,9 @@ def login_user():
     Logs in the user to Shotgun and starts the engine.
     """
 
+    # Needed global to create the main progress bar.
+    global main_progress_bar
+
     try:
         # When the user is not yet authenticated,
         # pop up the Shotgun login dialog to get the user's credentials,
@@ -90,6 +97,10 @@ def login_user():
     # Get rid of the displayed login menu since the engine menu will take over.
     delete_login_menu()
 
+    # Create a non-interruptable main progress bar (normally in the Help Line).
+    main_progress_bar = pm.ui.MainProgressBar(minValue=0, maxValue=100, interruptable=False)
+    main_progress_bar.beginProgress()
+
     # Before bootstrapping the engine for the first time around,
     # the toolkit manager may swap the toolkit core to its latest version.
     plugin_engine.bootstrap(user,
@@ -98,10 +109,14 @@ def login_user():
                             failed_callback=handle_bootstrap_failed)
 
 
-def handle_bootstrap_progress(message, current_index, maximum_index):
+def handle_bootstrap_progress(step_number, message, current_index, maximum_index):
     """
     Callback function that reports back on the toolkit and engine bootstrap progress.
 
+    This function is executed in the main thread by the main event loop.
+
+    :param step_number: Current progress step number,
+                        from 1 to ``sgtk.bootstrap.ToolkitManager.MAX_PROGRESS_STEP_NUMBER``.
     :param message: Progress message to report.
     :param current_index: Optional current item number being looped over.
     :param maximum_index: Optional maximum item number being looped over.
@@ -110,12 +125,24 @@ def handle_bootstrap_progress(message, current_index, maximum_index):
     if maximum_index and maximum_index > 1:
         message = "%s (%s of %s)" % (message, current_index+1, maximum_index+1)
 
-    standalone_logger.info("Bootstrapping %s: %s" % (manifest.engine_name, message))
+    message = "Bootstrapping %s: %s" % (manifest.engine_name, message)
+
+    standalone_logger.info(message)
+
+    # Update the main progress bar.
+    progress_value = int((step_number - 1.0) / sgtk.bootstrap.ToolkitManager.MAX_PROGRESS_STEP_NUMBER * 100.0)
+    main_progress_bar.setProgress(progress_value)
+    main_progress_bar.setStatus(message)
+
+    # Force Maya to process its UI events in order to refresh the main progress bar.
+    QtGui.qApp.processEvents()
 
 
 def handle_bootstrap_completed(engine):
     """
     Callback function that handles cleanup after successful completion of the bootstrap.
+
+    This function is executed in the main thread by the main event loop.
 
     :param engine: Launched :class:`sgtk.platform.Engine` instance.
     """
@@ -123,8 +150,15 @@ def handle_bootstrap_completed(engine):
     # Needed global to re-import the toolkit core.
     global sgtk
 
+    # Needed global to get rid of the main progress bar.
+    global main_progress_bar
+
     # Re-import the toolkit core to ensure usage of a swapped in version.
     import sgtk
+
+    # Get rid of the main progress bar.
+    main_progress_bar.endProgress()
+    main_progress_bar = None
 
     # Add a logout menu item to the engine context menu.
     sgtk.platform.current_engine().register_command(ITEM_LABEL_LOGOUT,
@@ -136,6 +170,8 @@ def handle_bootstrap_failed(step, exception):
     """
     Callback function that handles cleanup after failed completion of the bootstrap.
 
+    This function is executed in the main thread by the main event loop.
+
     :param step: Bootstrap step ("sgtk" or "engine") that raised the exception.
     :param exception: Python exception raised while bootstrapping.
     """
@@ -143,9 +179,16 @@ def handle_bootstrap_failed(step, exception):
     # Needed global to re-import the toolkit core.
     global sgtk
 
+    # Needed global to get rid of the main progress bar.
+    global main_progress_bar
+
     if step == "engine":
         # Re-import the toolkit core to ensure usage of a swapped in version.
         import sgtk
+
+    # Get rid of the main progress bar.
+    main_progress_bar.endProgress()
+    main_progress_bar = None
 
     # Report the encountered exception.
     standalone_logger.info("Bootstrapping %s failed: %s" % (manifest.engine_name, exception))
