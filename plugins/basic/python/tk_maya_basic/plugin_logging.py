@@ -26,7 +26,8 @@ class PluginLoggingHandler(logging.Handler):
         :param plugin_name: Plug-in name to include in the standard message format.
         """
 
-        super(PluginLoggingHandler, self).__init__()
+        # Avoid using super() in order to be compatible with old-style classes found in older versions of logging.
+        logging.Handler.__init__(self)
 
         self._plugin_name = plugin_name
 
