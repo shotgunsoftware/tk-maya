@@ -48,23 +48,37 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
 
     # Create a boostrap manager for the logged in user with the plug-in configuration data.
     toolkit_mgr = sgtk.bootstrap.ToolkitManager(sg_user)
-    toolkit_mgr.entry_point                 = manifest.entry_point
-    toolkit_mgr.base_configuration          = manifest.base_configuration
+    toolkit_mgr.entry_point = manifest.entry_point
+    toolkit_mgr.base_configuration = manifest.base_configuration
     toolkit_mgr.bundle_cache_fallback_paths = [bundle_cache_path]
+
+    if not hasattr(toolkit_mgr, "bootstrap_engine_async"):
+        # Display the warning before the custom logging handler is removed.
+        logger.warning("Cannot bootstrap asynchronously with the current version of tk-core;"
+                       " falling back on synchronous startup.")
 
     # Remove the custom logging handler now that the engine will take over logging.
     sgtk.LogManager().root_logger.removeHandler(plugin_logging_handler)
 
-    # Bootstrap a toolkit instance asynchronously in a background thread,
-    # followed by launching the engine synchronously in the main application thread.
-    toolkit_mgr.async_bootstrap = True
+    try:
 
-    # Before bootstrapping the engine for the first time around,
-    # the toolkit manager may swap the toolkit core to its latest version.
-    toolkit_mgr.bootstrap_engine(manifest.engine_name,
-                                 progress_callback=progress_callback,
-                                 completed_callback=completed_callback,
-                                 failed_callback=failed_callback)
+        # Install the bootstrap progress reporting callback.
+        toolkit_mgr.progress_callback = progress_callback
+
+        # Bootstrap a toolkit instance asynchronously in a background thread,
+        # followed by launching the engine synchronously in the main application thread.
+        # Before bootstrapping the engine for the first time around,
+        # the toolkit manager may swap the toolkit core to its latest version.
+        toolkit_mgr.bootstrap_engine_async(
+            manifest.engine_name,
+            completed_callback=completed_callback,
+            failed_callback=failed_callback
+        )
+
+    except AttributeError:
+
+        # Bootstrap a toolkit instance and launch the engine synchronously in the main application thread.
+        toolkit_mgr.bootstrap_engine(manifest.engine_name)
 
 
 def shutdown():

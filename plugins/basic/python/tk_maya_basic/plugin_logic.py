@@ -44,9 +44,6 @@ standalone_logger.setLevel(logging.DEBUG)
 # Use a custom logging handler to display messages in Maya script editor.
 standalone_logger.addHandler(plugin_logging.PluginLoggingHandler(manifest.name))
 
-# Main progress bar used when bootstrapping the toolkit and engine.
-main_progress_bar = None
-
 
 def bootstrap():
     """
@@ -55,10 +52,10 @@ def bootstrap():
 
     if sgtk.authentication.ShotgunAuthenticator().get_default_user():
         # When the user is already authenticated, automatically log him/her in.
-        login_user()
+        _login_user()
     else:
         # When the user is not yet authenticated, display a login menu.
-        create_login_menu()
+        _create_login_menu()
 
 
 def shutdown():
@@ -71,16 +68,13 @@ def shutdown():
         plugin_engine.shutdown()
     else:
         # When the user is logged out, delete the displayed login menu.
-        delete_login_menu()
+        _delete_login_menu()
 
 
-def login_user():
+def _login_user():
     """
     Logs in the user to Shotgun and starts the engine.
     """
-
-    # Needed global to create the main progress bar.
-    global main_progress_bar
 
     try:
         # When the user is not yet authenticated,
@@ -95,50 +89,43 @@ def login_user():
         return
 
     # Get rid of the displayed login menu since the engine menu will take over.
-    delete_login_menu()
+    _delete_login_menu()
 
-    # Create a non-interruptable main progress bar (normally in the Help Line).
-    main_progress_bar = pm.ui.MainProgressBar(minValue=0, maxValue=100, interruptable=False)
-    main_progress_bar.beginProgress()
+    # Show a progress bar, and set its initial value and message.
+    _show_progress_bar(0.0, "Initializing Shotgun...")
 
     # Before bootstrapping the engine for the first time around,
     # the toolkit manager may swap the toolkit core to its latest version.
-    plugin_engine.bootstrap(user,
-                            progress_callback=handle_bootstrap_progress,
-                            completed_callback=handle_bootstrap_completed,
-                            failed_callback=handle_bootstrap_failed)
+    plugin_engine.bootstrap(
+        user,
+        progress_callback=_handle_bootstrap_progress,
+        completed_callback=_handle_bootstrap_completed,
+        failed_callback=_handle_bootstrap_failed
+    )
 
 
-def handle_bootstrap_progress(step_number, message, current_index, maximum_index):
+def _handle_bootstrap_progress(progress_value, message):
     """
     Callback function that reports back on the toolkit and engine bootstrap progress.
 
     This function is executed in the main thread by the main event loop.
 
-    :param step_number: Current progress step number,
-                        from 1 to ``sgtk.bootstrap.ToolkitManager.MAX_PROGRESS_STEP_NUMBER``.
+    :param progress_value: Current progress value, ranging from 0.0 to 1.0.
     :param message: Progress message to report.
-    :param current_index: Optional current item number being looped over.
-    :param maximum_index: Optional maximum item number being looped over.
     """
 
-    if maximum_index and maximum_index > 1:
-        message = "%s (%s of %s)" % (message, current_index+1, maximum_index+1)
-
-    message = "Bootstrapping %s: %s" % (manifest.engine_name, message)
+    message = "Initializing Shotgun: %s" % message
 
     standalone_logger.info(message)
 
-    # Update the main progress bar.
-    progress_value = int((step_number - 1.0) / sgtk.bootstrap.ToolkitManager.MAX_PROGRESS_STEP_NUMBER * 100.0)
-    main_progress_bar.setProgress(progress_value)
-    main_progress_bar.setStatus(message)
+    # Show the progress bar, and update its value and message.
+    _show_progress_bar(progress_value, message)
 
     # Force Maya to process its UI events in order to refresh the main progress bar.
     QtGui.qApp.processEvents()
 
 
-def handle_bootstrap_completed(engine):
+def _handle_bootstrap_completed(engine):
     """
     Callback function that handles cleanup after successful completion of the bootstrap.
 
@@ -150,57 +137,52 @@ def handle_bootstrap_completed(engine):
     # Needed global to re-import the toolkit core.
     global sgtk
 
-    # Needed global to get rid of the main progress bar.
-    global main_progress_bar
-
     # Re-import the toolkit core to ensure usage of a swapped in version.
     import sgtk
 
-    # Get rid of the main progress bar.
-    main_progress_bar.endProgress()
-    main_progress_bar = None
+    # Hide the progress bar.
+    _hide_progress_bar()
 
     # Add a logout menu item to the engine context menu.
-    sgtk.platform.current_engine().register_command(ITEM_LABEL_LOGOUT,
-                                                    logout_user,
-                                                    {"type": "context_menu"})
+    sgtk.platform.current_engine().register_command(
+        ITEM_LABEL_LOGOUT,
+        _logout_user,
+        {"type": "context_menu"}
+    )
 
 
-def handle_bootstrap_failed(step, exception):
+def _handle_bootstrap_failed(phase, exception):
     """
     Callback function that handles cleanup after failed completion of the bootstrap.
 
     This function is executed in the main thread by the main event loop.
 
-    :param step: Bootstrap step ("sgtk" or "engine") that raised the exception.
+    :param phase: Bootstrap phase that raised the exception,
+                  ``ToolkitManager.TOOLKIT_BOOTSTRAP_PHASE`` or ``ToolkitManager.ENGINE_STARTUP_PHASE``.
     :param exception: Python exception raised while bootstrapping.
     """
 
     # Needed global to re-import the toolkit core.
     global sgtk
 
-    # Needed global to get rid of the main progress bar.
-    global main_progress_bar
-
-    if step == "engine":
+    if phase == sgtk.bootstrap.ToolkitManager.ENGINE_STARTUP_PHASE:
         # Re-import the toolkit core to ensure usage of a swapped in version.
         import sgtk
 
-    # Get rid of the main progress bar.
-    main_progress_bar.endProgress()
-    main_progress_bar = None
+    # Hide the progress bar.
+    _hide_progress_bar()
 
     # Report the encountered exception.
-    standalone_logger.info("Bootstrapping %s failed: %s" % (manifest.engine_name, exception))
+    standalone_logger.error("Bootstrapping %s failed: %s" % (manifest.engine_name, exception))
 
     # Clear the user's credentials to log him/her out.
     sgtk.authentication.ShotgunAuthenticator().clear_default_user()
 
     # Re-display the login menu.
-    create_login_menu()
+    _create_login_menu()
 
 
-def logout_user():
+def _logout_user():
     """
     Shuts down the engine and logs out the user of Shotgun.
     """
@@ -212,10 +194,38 @@ def logout_user():
     sgtk.authentication.ShotgunAuthenticator().clear_default_user()
 
     # Re-display the login menu.
-    create_login_menu()
+    _create_login_menu()
 
 
-def create_login_menu():
+def _show_progress_bar(progress_value, message):
+    """
+    Shows a non-interruptable progress bar, and sets its value and message.
+
+    :param progress_value: Current progress value, ranging from 0.0 to 1.0.
+    :param message: Progress message to report.
+    """
+
+    # Show the main progress bar (normally in the Help Line) making sure it uses
+    # the bootstrap progress configuration (since it might have been taken over by another process).
+    main_progress_bar = pm.ui.MainProgressBar(minValue=0, maxValue=100, interruptable=False)
+    main_progress_bar.beginProgress()
+
+    # Set the main progress bar value and message.
+    main_progress_bar.setProgress(int(progress_value * 100.0))
+    main_progress_bar.setStatus(message)
+
+
+def _hide_progress_bar():
+    """
+    Hides the progress bar.
+    """
+
+    # Hide the main progress bar (normally in the Help Line).
+    main_progress_bar = pm.getMainProgressBar()
+    main_progress_bar.endProgress()
+
+
+def _create_login_menu():
     """
     Creates and displays a Shotgun user login menu.
     """
@@ -224,13 +234,13 @@ def create_login_menu():
     menu = pm.menu(MENU_LOGIN, label=MENU_LABEL, parent=pm.melGlobals["gMainWindow"])
 
     # Add the login menu item.
-    pm.menuItem(parent=menu, label=ITEM_LABEL_LOGIN, command=pm.Callback(login_user))
+    pm.menuItem(parent=menu, label=ITEM_LABEL_LOGIN, command=pm.Callback(_login_user))
 
     # Add the website menu item.
-    pm.menuItem(parent=menu, label=ITEM_LABEL_WEBSITE, command=pm.Callback(jump_to_website))
+    pm.menuItem(parent=menu, label=ITEM_LABEL_WEBSITE, command=pm.Callback(_jump_to_website))
 
 
-def delete_login_menu():
+def _delete_login_menu():
     """
     Deletes the displayed Shotgun user login menu.
     """
@@ -239,7 +249,7 @@ def delete_login_menu():
         pm.deleteUI(MENU_LOGIN)
 
 
-def jump_to_website():
+def _jump_to_website():
     """
     Jumps to the Shotgun website in the defaul web browser.
     """

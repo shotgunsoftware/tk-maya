@@ -9,7 +9,6 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import logging
-import time
 
 import maya.api.OpenMaya as OpenMaya2  # Python API 2.0
 import maya.utils
@@ -29,13 +28,11 @@ class PluginLoggingHandler(logging.Handler):
 
         super(PluginLoggingHandler, self).__init__()
 
-        # Set the handler to use a standard message format similar to the one used by the Maya engine.
-        logging_format = "%s: %s" % (plugin_name, "%(message)s")
-        self.setFormatter(logging.Formatter(logging_format))
+        self._plugin_name = plugin_name
 
-        # Time stamp used when logging debug messages.
-        # Initialized with the current time for lack of a better value.
-        self._last_debug_msg_time = time.time()
+        # Set the handler to use a standard message format similar to the one used by the engine.
+        logging_format = "Shotgun [%(levelname)s %(basename)s]: %(message)s"
+        self.setFormatter(logging.Formatter(logging_format))
 
     def emit(self, record):
         """
@@ -46,26 +43,19 @@ class PluginLoggingHandler(logging.Handler):
         :param record: Logging record to display in Maya script editor.
         """
 
+        # Set the logging format basename to be the plug-in name.
+        record.basename = self._plugin_name
+
         # Give a standard format to the message.
         msg = self.format(record)
 
         # Display the message in Maya script editor in a thread safe manner.
-        # The overall message format is similar to the one used by the Maya engine.
-        if record.levelno < logging.INFO:
-            # Time stamp the messagde with the elapsed time since the last display debug call.
-            current_time = time.time()
-            msg = "Shotgun Debug [%0.3fs]: %s" % (current_time-self._last_debug_msg_time, msg)
-            maya.utils.executeInMainThreadWithResult(OpenMaya2.MGlobal.displayInfo, msg)
-            self._last_debug_msg_time = current_time
 
-        elif record.levelno < logging.WARNING:
-            msg = "Shotgun: %s" % msg
-            maya.utils.executeInMainThreadWithResult(OpenMaya2.MGlobal.displayInfo, msg)
-
+        if record.levelno < logging.WARNING:
+            fct = OpenMaya2.MGlobal.displayInfo
         elif record.levelno < logging.ERROR:
-            msg = "Shotgun: %s" % msg
-            maya.utils.executeInMainThreadWithResult(OpenMaya2.MGlobal.displayWarning, msg)
-
+            fct = OpenMaya2.MGlobal.displayWarning
         else:
-            msg = "Shotgun: %s" % msg
-            maya.utils.executeInMainThreadWithResult(OpenMaya2.MGlobal.displayError, msg)
+            fct = OpenMaya2.MGlobal.displayError
+
+        maya.utils.executeInMainThreadWithResult(fct, msg)
