@@ -11,7 +11,7 @@
 import os
 
 from sgtk_plugin_basic import manifest
-import plugin_logging
+from . import plugin_logging
 
 from . import __name__ as PLUGIN_PACKAGE_NAME
 from . import PLUGIN_ROOT_PATH
@@ -52,15 +52,17 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     toolkit_mgr.base_configuration = manifest.base_configuration
     toolkit_mgr.bundle_cache_fallback_paths = [bundle_cache_path]
 
-    if not hasattr(toolkit_mgr, "bootstrap_engine_async"):
+    can_bootstrap_engine_async = hasattr(toolkit_mgr, "bootstrap_engine_async")
+
+    if not can_bootstrap_engine_async:
         # Display the warning before the custom logging handler is removed.
-        logger.warning("Cannot bootstrap asynchronously with the current version of tk-core;"
+        logger.warning("Cannot initialize Shotgun asynchronously with the loaded toolkit core version;"
                        " falling back on synchronous startup.")
 
     # Remove the custom logging handler now that the engine will take over logging.
     sgtk.LogManager().root_logger.removeHandler(plugin_logging_handler)
 
-    try:
+    if can_bootstrap_engine_async:
 
         # Install the bootstrap progress reporting callback.
         toolkit_mgr.progress_callback = progress_callback
@@ -75,10 +77,27 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
             failed_callback=failed_callback
         )
 
-    except AttributeError:
+    else:
 
-        # Bootstrap a toolkit instance and launch the engine synchronously in the main application thread.
-        toolkit_mgr.bootstrap_engine(manifest.engine_name)
+        # The imported version of the toolkit core is too old to provide asynchronous bootstrapping.
+        # Fall back on synchronous bootstrapping of the engine in the main application thread,
+        # while still calling the provided callbacks in order for the plug-in to work as expected.
+        # Note that the provided progress reporting callback cannot be used since
+        # this older version of the toolkit core expects a differend callback signature.
+
+        try:
+
+            engine = toolkit_mgr.bootstrap_engine(manifest.engine_name)
+
+        except Exception, exception:
+
+            # Handle cleanup after failed completion of the engine bootstrap.
+            failed_callback(None, exception)
+
+            return
+
+        # Handle cleanup after successful completion of the engine bootstrap.
+        completed_callback(engine)
 
 
 def shutdown():

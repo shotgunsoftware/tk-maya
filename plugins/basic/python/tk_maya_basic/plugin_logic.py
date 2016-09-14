@@ -18,8 +18,8 @@ import pymel.core as pm
 import sgtk
 
 from sgtk_plugin_basic import manifest
-import plugin_engine
-import plugin_logging
+from . import plugin_engine
+from . import plugin_logging
 
 from . import __name__ as PLUGIN_PACKAGE_NAME
 
@@ -143,6 +143,9 @@ def _handle_bootstrap_completed(engine):
     # Hide the progress bar.
     _hide_progress_bar()
 
+    # Report completion of the bootstrap.
+    standalone_logger.info("Shotgun initialization completed.")
+
     # Add a logout menu item to the engine context menu.
     sgtk.platform.current_engine().register_command(
         ITEM_LABEL_LOGOUT,
@@ -165,7 +168,7 @@ def _handle_bootstrap_failed(phase, exception):
     # Needed global to re-import the toolkit core.
     global sgtk
 
-    if phase == sgtk.bootstrap.ToolkitManager.ENGINE_STARTUP_PHASE:
+    if phase is None or phase == sgtk.bootstrap.ToolkitManager.ENGINE_STARTUP_PHASE:
         # Re-import the toolkit core to ensure usage of a swapped in version.
         import sgtk
 
@@ -173,7 +176,7 @@ def _handle_bootstrap_failed(phase, exception):
     _hide_progress_bar()
 
     # Report the encountered exception.
-    standalone_logger.error("Bootstrapping %s failed: %s" % (manifest.engine_name, exception))
+    standalone_logger.error("Shotgun initialization failed: %s" % exception)
 
     # Clear the user's credentials to log him/her out.
     sgtk.authentication.ShotgunAuthenticator().clear_default_user()
