@@ -10,27 +10,26 @@
 
 import os
 
-# For now, import the Shotgun toolkit core included with the plug-in,
-# but also re-import it later to ensure usage of a swapped in version.
-import sgtk
-
 from sgtk_plugin_basic import manifest
-import plugin_logging
+from . import plugin_logging
 
 from . import __name__ as PLUGIN_PACKAGE_NAME
 from . import PLUGIN_ROOT_PATH
 
 
-def bootstrap(sg_user):
+def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     """
-    Bootstraps the engine using the plug-in configuration data to drive some bootstrap options.
+    Bootstraps the engine using the plug-in manifest data to drive some bootstrap options.
 
     :param sg_user: A :class:`sgtk.authentication.ShotgunUser` instance providing the logged in user credentials.
-    :raises: KeyError when a required key is missing in the plug-in configuration file.
+    :param progress_callback: Callback function that reports back on the toolkit and engine bootstrap progress.
+    :param completed_callback: Callback function that handles cleanup after successful completion of the bootstrap.
+    :param failed_callback: Callback function that handles cleanup after failed completion of the bootstrap.
     """
 
-    # Needed global to re-import the toolkit core later.
-    global sgtk
+    # The first time around, import the toolkit core included with the plug-in,
+    # but also re-import it later to ensure usage of a swapped in version.
+    import sgtk
 
     # Use a custom logging handler to display messages in Maya script editor before the engine takes over logging.
     plugin_logging_handler = plugin_logging.PluginLoggingHandler(manifest.name)
@@ -49,28 +48,65 @@ def bootstrap(sg_user):
 
     # Create a boostrap manager for the logged in user with the plug-in configuration data.
     toolkit_mgr = sgtk.bootstrap.ToolkitManager(sg_user)
-    toolkit_mgr.entry_point                 = manifest.entry_point
-    toolkit_mgr.base_configuration          = manifest.base_configuration
+    toolkit_mgr.entry_point = manifest.entry_point
+    toolkit_mgr.base_configuration = manifest.base_configuration
     toolkit_mgr.bundle_cache_fallback_paths = [bundle_cache_path]
 
-    logger.info("Starting the %s engine." % manifest.engine_name)
+    can_bootstrap_engine_async = hasattr(toolkit_mgr, "bootstrap_engine_async")
+
+    if not can_bootstrap_engine_async:
+        # Display the warning before the custom logging handler is removed.
+        logger.warning("Cannot initialize Shotgun asynchronously with the loaded toolkit core version;"
+                       " falling back on synchronous startup.")
 
     # Remove the custom logging handler now that the engine will take over logging.
     sgtk.LogManager().root_logger.removeHandler(plugin_logging_handler)
 
-    # Ladies and Gentlemen, start your engines!
-    # Before bootstrapping the engine for the first time around,
-    # the toolkit manager may swap the toolkit core to its latest version.
-    toolkit_mgr.bootstrap_engine(manifest.engine_name)
+    if can_bootstrap_engine_async:
 
-    # Re-import the toolkit core to ensure usage of a swapped in version.
-    import sgtk
+        # Install the bootstrap progress reporting callback.
+        toolkit_mgr.progress_callback = progress_callback
+
+        # Bootstrap a toolkit instance asynchronously in a background thread,
+        # followed by launching the engine synchronously in the main application thread.
+        # Before bootstrapping the engine for the first time around,
+        # the toolkit manager may swap the toolkit core to its latest version.
+        toolkit_mgr.bootstrap_engine_async(
+            manifest.engine_name,
+            completed_callback=completed_callback,
+            failed_callback=failed_callback
+        )
+
+    else:
+
+        # The imported version of the toolkit core is too old to provide asynchronous bootstrapping.
+        # Fall back on synchronous bootstrapping of the engine in the main application thread,
+        # while still calling the provided callbacks in order for the plug-in to work as expected.
+        # Note that the provided progress reporting callback cannot be used since
+        # this older version of the toolkit core expects a differend callback signature.
+
+        try:
+
+            engine = toolkit_mgr.bootstrap_engine(manifest.engine_name)
+
+        except Exception, exception:
+
+            # Handle cleanup after failed completion of the engine bootstrap.
+            failed_callback(None, exception)
+
+            return
+
+        # Handle cleanup after successful completion of the engine bootstrap.
+        completed_callback(engine)
 
 
 def shutdown():
     """
     Shuts down the running engine.
     """
+
+    # Re-import the toolkit core to ensure usage of a swapped in version.
+    import sgtk
 
     logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
 

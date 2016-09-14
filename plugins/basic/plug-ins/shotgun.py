@@ -63,9 +63,11 @@ def initializePlugin(mobject):
     # displayed in Maya Plug-in Information window.
 
     # Set the plug-in vendor name and version number to display in Maya Plug-in Information window.
-    plugin = OpenMaya2.MFnPlugin(mobject,
-                                 vendor="%s, %s" % (manifest.author, manifest.organization),
-                                 version=manifest.version)
+    plugin = OpenMaya2.MFnPlugin(
+                 mobject,
+                 vendor="%s, %s" % (manifest.author, manifest.organization),
+                 version=manifest.version
+             )
 
     # Register all the plug-in custom commands.
     for cmd_class in PLUGIN_CMD_LIST:
