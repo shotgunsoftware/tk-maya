@@ -105,8 +105,14 @@ class CloseEventFilter(QtCore.QObject):
         """
         # peek at the message
         if event.type() == QtCore.QEvent.Close:
-            # re-broadcast the close event
-            self.parent_closed.emit(self._widget_id)
+            # make sure the associated widget is still a descendant of the object
+            parent = _find_widget(self._widget_id)
+            while parent:
+                if parent == obj:
+                    # re-broadcast the close event
+                    self.parent_closed.emit(self._widget_id)
+                    break
+                parent = parent.parent()
         
         if event.type() == QtCore.QEvent.LayoutRequest:
             # this event seems to be fairly representatative
