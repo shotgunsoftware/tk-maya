@@ -10,7 +10,7 @@
 
 import os
 
-from sgtk_plugin_basic import manifest
+from sgtk_plugin_basic_maya import manifest
 from . import plugin_logging
 
 from . import __name__ as PLUGIN_PACKAGE_NAME
@@ -43,17 +43,14 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
 
     logger.debug("Bootstraping with manifest '%s'." % manifest.BUILD_INFO)
 
-    # Retrieve the plug-in bundle cache path in order to set a fallback path for the bootstrap.
-    bundle_cache_path = os.path.join(PLUGIN_ROOT_PATH, "bundle_cache")
-
     # Create a boostrap manager for the logged in user with the plug-in configuration data.
     toolkit_mgr = sgtk.bootstrap.ToolkitManager(sg_user)
-    toolkit_mgr.entry_point = manifest.entry_point
-    toolkit_mgr.base_configuration = manifest.base_configuration
-    toolkit_mgr.bundle_cache_fallback_paths = [bundle_cache_path]
 
+    # pass the manager to the manifest for basic init
+    manifest.initialize_manager(toolkit_mgr, PLUGIN_ROOT_PATH)
+
+    # check if the target core supports async init
     can_bootstrap_engine_async = hasattr(toolkit_mgr, "bootstrap_engine_async")
-
     if not can_bootstrap_engine_async:
         # Display the warning before the custom logging handler is removed.
         logger.warning("Cannot initialize Shotgun asynchronously with the loaded toolkit core version;"

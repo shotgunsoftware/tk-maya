@@ -28,7 +28,7 @@ import tk_maya_basic
 tk_maya_basic.PLUGIN_ROOT_PATH = PLUGIN_ROOT_PATH
 
 # Module manifest is required later to get the sgtk python package path.
-from sgtk_plugin_basic import manifest
+from sgtk_plugin_basic_maya import manifest
 
 # Retrieve the Shotgun toolkit core included with the plug-in and
 # prepend its python package path to the python module search path.

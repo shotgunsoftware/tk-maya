@@ -48,7 +48,7 @@ base_configuration:
   # path: "$TK_CONFIG_PLUGINBASIC_ROOT"
 
 # Value given to 'sgtk.bootstrap.ToolkitManager().entry_point'.
-entry_point: "basic"
+plugin_id: "basic.maya"
 
 
 #
