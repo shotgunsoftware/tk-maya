@@ -1,4 +1,4 @@
-# 3dsmax Basic Toolkit workflow plugin
+# Maya Basic Toolkit workflow plugin
 
 This is a Shotgun Pipeline Toolkit plugin, 
 embedding the Shotgun Pipeline Toolkit and allowing
