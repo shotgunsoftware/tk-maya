@@ -10,7 +10,14 @@
 
 import logging
 
-from PySide import QtGui
+# Knowing that the plug-in is only loaded for Maya 2014 and later, import the proper Qt packages.
+try:
+    # PySide is readily available in Maya 2014-2015-2016.
+    from PySide import QtCore, QtGui
+except:
+    # PySide2 is readily available in Maya 2017 and later.
+    from PySide2 import QtCore, QtGui
+
 import pymel.core as pm
 
 # For now, import the Shotgun toolkit core included with the plug-in,
@@ -256,8 +263,5 @@ def _jump_to_website():
     """
     Jumps to the Shotgun website in the defaul web browser.
     """
-
-    # Import Qt locally from PySide since sgtk.platform.qt only works after engine initialization.
-    from PySide import QtCore, QtGui
 
     QtGui.QDesktopServices.openUrl(QtCore.QUrl(WEBSITE_URL))
