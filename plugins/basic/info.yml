@@ -36,19 +36,34 @@ url:          "https://www.shotgunsoftware.com"
 #
 
 base_configuration:
-  # Location given to 'sgtk.bootstrap.ToolkitManager().base_configuration'.
-  # The possible location descriptors are documented on the Shotgun website:
-  #     http://developer.shotgunsoftware.com/tk-core/descriptor.html
-  # ToolkitManager does not use a location version and fetches the most recent configuration.
+  # The default configuration that the plugin should use.
+  # For documentation and details, see
+  # http://developer.shotgunsoftware.com/tk-core/bootstrap.html#sgtk.bootstrap.ToolkitManager.base_configuration
+  #
+  # This is expressed in the form of a Toolkit Descriptor. For more
+  # information about Toolkit descriptors, see
+  # http://developer.shotgunsoftware.com/tk-core/descriptor.html
+  #
+  # If your descriptor supports a version token and you want it to
+  # always use the latest version available, simply omit the version token.
   type: app_store
   name: tk-config-pluginbasic
+
   # For convenience, the following location descriptor lines will be
   # kept around while the plug-in is still in private development.
   # type: "dev"
   # path: "$TK_CONFIG_PLUGINBASIC_ROOT"
 
-# Value given to 'sgtk.bootstrap.ToolkitManager().entry_point'.
-entry_point: "basic"
+# The Plugin Id helps uniquely identify this plugin and can be
+# used to override and customize it. For more information, see
+# http://developer.shotgunsoftware.com/tk-core/bootstrap.html#sgtk.bootstrap.ToolkitManager.plugin_id
+#
+# When the plugin is built, this file will be converted into a manifest.py file
+# and located in a python module named based on the plugin id in order to ensure
+# uniqueness. If your plugin_id is set to 'review.maya', the python module
+# will be called sgtk_plugin_review_maya and will be located in a python subfolder
+# once the plugin has been built.
+plugin_id: "basic.maya"
 
 
 #

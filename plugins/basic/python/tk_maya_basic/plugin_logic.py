@@ -24,7 +24,7 @@ import pymel.core as pm
 # but also re-import it later to ensure usage of a swapped in version.
 import sgtk
 
-from sgtk_plugin_basic import manifest
+from sgtk_plugin_basic_maya import manifest
 from . import plugin_engine
 from . import plugin_logging
 
