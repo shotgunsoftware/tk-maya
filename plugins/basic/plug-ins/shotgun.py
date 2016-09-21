@@ -12,7 +12,16 @@ import os
 import sys
 
 import maya.api.OpenMaya as OpenMaya2  # Python API 2.0
+import maya.mel as mel
 import maya.utils
+
+
+# Make sure the plug-in is running in Maya 2014 or later.
+maya_version = mel.eval("getApplicationVersionAsFloat()")
+if maya_version < 2014:
+    msg = "Shotgun plug-in is not compatible with version %s of Maya; it requires Maya 2014 or later."
+    OpenMaya2.MGlobal.displayError(msg % maya_version)
+    sys.exit()
 
 
 # Plug-in root directory path.
@@ -74,8 +83,7 @@ def initializePlugin(mobject):
         try:
             plugin.registerCommand(cmd_class.CMD_NAME, createCmdFunc=cmd_class)
         except:
-            sys.stderr.write("Failed to register command %s.\n" % cmd_class.CMD_NAME)
-            raise
+            OpenMaya2.MGlobal.displayError("Failed to register command %s." % cmd_class.CMD_NAME)
 
     # Bootstrap the plug-in logic once Maya has settled.
     maya.utils.executeDeferred(plugin_logic.bootstrap)
@@ -99,5 +107,4 @@ def uninitializePlugin(mobject):
         try:
             plugin.deregisterCommand(cmd_class.CMD_NAME)
         except:
-            sys.stderr.write("Failed to deregister command %s.\n" % cmd_class.CMD_NAME)
-            raise
+            OpenMaya2.MGlobal.displayError("Failed to deregister command %s." % cmd_class.CMD_NAME)
