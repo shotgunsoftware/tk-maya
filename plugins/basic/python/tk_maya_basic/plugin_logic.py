@@ -10,19 +10,19 @@
 
 import logging
 
-# Knowing that the plug-in is only loaded for Maya 2014 and later, import the proper Qt packages.
-try:
-    # PySide is readily available in Maya 2014-2015-2016.
-    from PySide import QtCore, QtGui
-except:
-    # PySide2 is readily available in Maya 2017 and later.
-    from PySide2 import QtCore, QtGui
-
 import pymel.core as pm
 
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
 import sgtk
+
+# Knowing that the plug-in is only loaded for Maya 2014 and later,
+# import PySide packages without having to worry about the version to use
+# (PySide in Maya 2014-2015-2016 and PySide2 in Maya 2017 and later).
+from sgtk.util.qt_importer import QtImporter
+qt_importer = QtImporter()
+QtCore = qt_importer.QtCore
+QtGui = qt_importer.QtGui
 
 from sgtk_plugin_basic_maya import manifest
 from . import plugin_engine
@@ -98,6 +98,9 @@ def _login_user():
     # Get rid of the displayed login menu since the engine menu will take over.
     _delete_login_menu()
 
+    # Report starting of the bootstrap.
+    standalone_logger.info("Shotgun initialization starting.")
+
     # Show a progress bar, and set its initial value and message.
     _show_progress_bar(0.0, "Initializing Shotgun...")
 
@@ -129,7 +132,8 @@ def _handle_bootstrap_progress(progress_value, message):
     _show_progress_bar(progress_value, message)
 
     # Force Maya to process its UI events in order to refresh the main progress bar.
-    QtGui.qApp.processEvents()
+    #qApp = QtCore.QCoreApplication.instance()
+    #qApp.processEvents()
 
 
 def _handle_bootstrap_completed(engine):
