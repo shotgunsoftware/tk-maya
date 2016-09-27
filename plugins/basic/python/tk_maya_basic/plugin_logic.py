@@ -10,6 +10,7 @@
 
 import logging
 
+import maya.utils
 import pymel.core as pm
 
 # For now, import the Shotgun toolkit core included with the plug-in,
@@ -96,7 +97,9 @@ def _login_user():
         return
 
     # Get rid of the displayed login menu since the engine menu will take over.
-    _delete_login_menu()
+    # We need to make sure the Shotgun login dialog closing events have been
+    # processed before deleting the menu to avoid a crash in Maya 2017.
+    maya.utils.executeDeferred(_delete_login_menu)
 
     # Report starting of the bootstrap.
     standalone_logger.info("Shotgun initialization starting.")
