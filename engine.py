@@ -279,7 +279,7 @@ class MayaEngine(tank.platform.Engine):
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
-        if maya_ver.startswith(("2012", "2013", "2014", "2015", "2016")):
+        if maya_ver.startswith(("2014", "2015", "2016")):
             self.log_debug("Running Maya version %s" % maya_ver)
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
@@ -449,16 +449,6 @@ class MayaEngine(tank.platform.Engine):
             pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_mac", "python")
             self.log_debug("Adding pyside to sys.path: %s" % pyside_path)
             sys.path.append(pyside_path)
-
-        elif sys.platform == "win32" and self._maya_version.startswith("2013"):
-            # special 2013 version of pyside
-            pyside_path = os.path.join(self.disk_location, "resources","pyside113_py26_qt471maya2013_win64", "python")
-            self.log_debug("Adding pyside to sys.path: %s" % pyside_path)
-            sys.path.append(pyside_path)
-            dll_path = os.path.join(self.disk_location, "resources","pyside113_py26_qt471maya2013_win64", "lib")
-            path = os.environ.get("PATH", "")
-            path += ";%s" % dll_path
-            os.environ["PATH"] = path
 
         elif sys.platform == "win32":
             # default windows version of pyside for 2011 and 2012
