@@ -281,6 +281,13 @@ class MayaEngine(tank.platform.Engine):
             maya_ver = maya_ver[5:]
         if maya_ver.startswith(("2014", "2015", "2016")):
             self.log_debug("Running Maya version %s" % maya_ver)
+        elif maya_ver.startswith(("2012", "2013")):
+            # We won't be able to rely on the warning dialog below, because Maya
+            # older than 2014 doesn't ship with PySide. Instead, we just have to
+            # raise an exception so that we bail out here with an error message
+            # that will hopefully make sense for the user.
+            msg = "Shotgun integration is not compatible with Maya versions older than 2014."
+            raise tank.TankError(msg)
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
             msg = ("The Shotgun Pipeline Toolkit has not yet been fully tested with Maya %s.  "
