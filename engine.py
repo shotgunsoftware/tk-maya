@@ -16,12 +16,11 @@ A Maya engine for Tank.
 import tank
 import sys
 import traceback
-import time
 import os
+import logging
 import maya.OpenMaya as OpenMaya
 import pymel.core as pm
 import maya.cmds as cmds
-import maya.utils
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
@@ -239,10 +238,6 @@ def remove_sgtk_disabled_menu():
 
 ###############################################################################################
 # The Tank Maya engine
-
-# for debug logging with time stamps
-g_last_message_time = 0
-
 
 class MayaEngine(tank.platform.Engine):
     """
@@ -515,52 +510,112 @@ class MayaEngine(tank.platform.Engine):
     ##########################################################################################
     # logging
 
+    def _emit_log_message_FUTURE(self, handler, record):
+        """
+        Called by the engine to log messages in Maya script editor.
+        All log messages from the toolkit logging namespace will be passed to this method.
+
+        .. note:: This method will be called by the new logging system introduced in core v0.18.
+                  It will be enabled in January 2017 by removing the method name suffix "_FUTURE".
+
+        :param handler: Log handler that this message was dispatched from.
+        :type handler: :class:`~python.logging.LogHandler`
+        :param record: Standard python logging record.
+        :type record: :class:`~python.logging.LogRecord`
+        """
+
+        # Do not log debug messages when debug logging setting is off.
+        if record.levelno < logging.INFO and not self.get_setting("debug_logging", False):
+            return
+
+        # Give a standard format to the message.
+        msg = "Shotgun %s" % handler.format(record)
+
+        # Select Maya display function to use according to the logging record level.
+        if record.levelno < logging.WARNING:
+            fct = OpenMaya.MGlobal.displayInfo
+        elif record.levelno < logging.ERROR:
+            fct = OpenMaya.MGlobal.displayWarning
+        else:
+            fct = OpenMaya.MGlobal.displayError
+
+        # Display the message in Maya script editor in a thread safe manner.
+        self.async_execute_in_main_thread(fct, msg)
+
     def log_debug(self, msg):
         """
-        Log debug to the Maya script editor
+        Logs debug messages in Maya script editor.
 
-        :param msg: The message to log
+        .. note:: This method is called by the legacy logging system.
+                  It will be removecd in January 2017.
+
+        :param msg: Debug message to log.
         """
-        global g_last_message_time
 
-        # get the time stamps
-        prev_time = g_last_message_time
-        current_time = time.time()
-
-        # update global counter
-        g_last_message_time = current_time
-
+        # Do not log debug messages when debug logging setting is off.
         if not self.get_setting("debug_logging", False):
             return
 
-        msg = "Shotgun Debug [%0.3fs]: %s" % ((current_time-prev_time), msg)
+        # Give a standard format to the message.
+        # The message parameter uses legacy format "%(basename)s: %(message)s".
+        # Make it look like core v0.18 format "[%(levelname)s %(basename)s] %(message)s"
+        msg = "Shotgun DEBUG %s" % msg
+
+        # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
 
     def log_info(self, msg):
         """
-        Log info to the Maya script editor
+        Logs info messages in Maya script editor.
 
-        :param msg: The message to log
+        .. note:: This method is called by the legacy logging system.
+                  It will be removecd in January 2017.
+
+        :param msg: Info message to log.
         """
-        msg = "Shotgun: %s" % msg
+
+        # Give a standard format to the message.
+        # The message parameter uses legacy format "%(basename)s: %(message)s".
+        # Make it look like core v0.18 format "[%(levelname)s %(basename)s] %(message)s"
+        msg = "Shotgun INFO %s" % msg
+
+        # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
 
     def log_warning(self, msg):
         """
-        Log warning to the Maya script editor
+        Logs warning messages in Maya script editor.
 
-        :param msg: The message to log
+        .. note:: This method is called by the legacy logging system.
+                  It will be removecd in January 2017.
+
+        :param msg: Warning message to log.
         """
-        msg = "Shotgun: %s" % msg
+
+        # Give a standard format to the message.
+        # The message parameter uses legacy format "%(basename)s: %(message)s".
+        # Make it look like core v0.18 format "[%(levelname)s %(basename)s] %(message)s"
+        msg = "Shotgun WARNING %s" % msg
+
+        # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayWarning, msg)
 
     def log_error(self, msg):
         """
-        Log error to the Maya script editor
+        Logs error messages in Maya script editor.
 
-        :param msg: The message to log
+        .. note:: This method is called by the legacy logging system.
+                  It will be removecd in January 2017.
+
+        :param msg: Error message to log.
         """
-        msg = "Shotgun: %s" % msg
+
+        # Give a standard format to the message.
+        # The message parameter uses legacy format "%(basename)s: %(message)s".
+        # Make it look like core v0.18 format "[%(levelname)s %(basename)s] %(message)s"
+        msg = "Shotgun ERROR %s" % msg
+
+        # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayError, msg)
 
     ##########################################################################################
@@ -605,34 +660,24 @@ class MayaEngine(tank.platform.Engine):
         # The general approach below is as follows:
         #
         # 1. First create our qt tk app widget using QT.
-        #    parent it to the maya main window to give it
+        #    parent it to the Maya main window to give it
         #    a well established parent. If the widget already
         #    exists, don't create it again, just retrieve its
-        #    handle
+        #    handle.
         #
-        # 2. Now create a native maya window and layout and
-        #    attach our QT control to this. For this, we use
-        #    the QT objectname property to do the bind. Note that
-        #    the window won't show in the UI, this is all just
-        #    setting up the hiearchy.
+        # 2. Now dock our QT control in a new panel tab of
+        #    Maya Channel Box dock area. We use the
+        #    Qt object name property to do the bind.
         #
-        # 3. If a panel already exists, delete it. The panel
-        #    no longer has the tk widget inside it, since that is
-        #    parented to the window that was just created
-        #
-        # 4. Create a new panel using the dockControl command and
-        #    pass our maya window in as the object to dock.
-        #
-        # 5. Lastly, since our widgets won't get notified about
+        # 3. Lastly, since our widgets won't get notified about
         #    when the parent dock is closed (and sometimes when it
         #    needs redrawing), attach some QT event watchers to it
-        #
         #
         # Note: It is possible that the close event and some of the
         #       refresh doesn't propagate down to the widget because
         #       of a misaligned parenting: The tk widget exists inside
         #       the pane layout but is still parented to the main
-        #       maya window. It's possible that by setting up the parenting
+        #       Maya window. It's possible that by setting up the parenting
         #       explicitly, the missing signals we have to compensate for
         #       may start to work. I tried a bunch of stuff but couldn't get
         #       it to work and instead resorted to the event watcher setup.
@@ -640,58 +685,34 @@ class MayaEngine(tank.platform.Engine):
         # make a unique id for the app widget based off of the panel id
         widget_id = "wdgt_%s" % panel_id
 
-        # create a maya window and layout
-        window = pm.window()
-        self.log_debug("Created window: %s" % window)
-        maya_layout = pm.formLayout(parent=window)
-        self.log_debug("Created layout %s" % maya_layout)
-
         if pm.control(widget_id, query=1, exists=1):
-            self.log_debug("Toolkit widget already exists. Reparenting it...")
+            self.log_debug("Reparent existing toolkit widget %s." % widget_id)
             # find the widget for later use
             for widget in QtGui.QApplication.allWidgets():
                 if widget.objectName() == widget_id:
                     widget_instance = widget
+                    # Reparent the Shotgun app panel widget under Maya main window
+                    # to prevent it from being deleted with the existing Maya panel.
+                    self.log_debug("Reparenting widget %s under Maya main window." % widget_id)
+                    parent = self._get_dialog_parent()
+                    widget_instance.setParent(parent)
                     break
 
         else:
-            self.log_debug("Toolkit widget does not exist - creating it...")
+            self.log_debug("Create toolkit widget %s" % widget_id)
             # parent the UI to the main maya window
             parent = self._get_dialog_parent()
             widget_instance = widget_class(*args, **kwargs)
             widget_instance.setParent(parent)
             # set its name - this means that it can also be found via the maya API
             widget_instance.setObjectName(widget_id)
-            self.log_debug("Created %s (Object Name '%s')" % (widget_instance, widget_id))
+            self.log_debug("Created widget %s: %s" % (widget_id, widget_instance))
             # apply external stylesheet
             self._apply_external_styleshet(bundle, widget_instance)
 
-        # now reparent the widget instance to the layout
-        # we can now refer to the QT widget via the widget name
-        self.log_debug("Parenting widget %s to temporary window %s..." % (widget_id, maya_layout))
-        pm.control(widget_id, edit=True, parent=maya_layout)
 
-        # now attach our widget in all four corners to the maya layout so that it fills
-        # the entire panel space
-        pm.formLayout(maya_layout,
-                      edit=True,
-                      attachForm=[(widget_id, 'top', 1),
-                                  (widget_id, 'left', 1),
-                                  (widget_id, 'bottom', 1),
-                                  (widget_id, 'right', 1)] )
-
-        if pm.control(panel_id, query=1, exists=1):
-            # exists already - delete it
-            self.log_debug("Panel exists. Deleting it.")
-            pm.deleteUI(panel_id)
-
-        # lastly, move the maya window into a dock
-        pm.dockControl(panel_id, area="right", content=window, label=title)
-        self.log_debug("Created panel %s" % panel_id)
-
-        # Once Maya will have completed its UI update and be idle,
-        # raise (with "r=True") the docked panel window to the top dock tab.
-        maya.utils.executeDeferred("cmds.dockControl('%s', edit=True, r=True)" % panel_id)
+        # Dock the app panel widget in a new panel tab of Maya Channel Box dock area.
+        tk_maya.dock_panel(self, panel_id, widget_id, title)
 
         # just like nuke, maya doesn't give us any hints when a panel is being closed.
         # QT widgets contained within this panel are just unparented and the floating
