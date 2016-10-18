@@ -14,7 +14,9 @@ def dock_panel(engine, panel_id, widget_id, title):
 
     :param engine: :class:`MayaEngine` instance running in Maya.
     :param panel_id: Unique string identifier for the Shotgun app panel.
-    :param widget_id: Unique string identifier for the Shotgun app panel widget instance.
+    :param widget_id: Unique string identifier naming the Qt widget at the root of the Shotgun app panel.
+                      This Qt widget is assumed to be child of Maya main window.
+                      Its name can be used in standard Maya commands to reparent it under a Maya panel.
     :param title: Title to give to the new dock tab.
     """
 
@@ -27,7 +29,7 @@ def dock_panel(engine, panel_id, widget_id, title):
     # Create the Maya panel name.
     maya_panel_id = "panel_%s" % panel_id
 
-    # When the Maya panel already exists, it can be delete safely since its embedded
+    # When the Maya panel already exists, it can be deleted safely since its embedded
     # Shotgun app panel widget has already been reparented under Maya main window.
     if pm.control(maya_panel_id, query=True, exists=True):
         engine.log_debug("Deleting existing Maya panel %s." % maya_panel_id)
@@ -73,15 +75,15 @@ def dock_panel(engine, panel_id, widget_id, title):
             engine.log_debug("Deleting existing Maya workspace panel state %s." % maya_panel_id)
             pm.workspaceControlState(maya_panel_id, remove=True)
 
-        # Retrieve the Channel Box dock area, with error reporting turned on.
+        # Retrieve the Channel Box dock area, with error reporting turned off.
         # This MEL function is declared in Maya startup script file UIComponents.mel.
-        dock_area = mel.eval('getUIComponentDockControl("Channel Box / Layer Editor", true)')
+        # It returns an empty string when this dock area cannot be found in the active Maya workspace.
+        dock_area = mel.eval('getUIComponentDockControl("Channel Box / Layer Editor", false)')
         engine.log_debug("Retrieved Maya dock area %s." % dock_area)
 
         # This UI script will be called to build the UI of the new dock tab.
         # It will embed the Shotgun app panel widget into a Maya workspace control.
-        # Maya 2017 expects this script to be passed in as a string, not as a function pointer
-        # according to C++ source code method TelfWorkspaceControlCmd::handleScriptFlag().
+        # Maya 2017 expects this script to be passed in as a string, not as a function pointer.
         # See function _build_workspace_control_ui() below for a commented version of this script.
         ui_script = "import pymel.core as pm\n" \
                     "workspace_control = pm.setParent(query=True)\n" \
@@ -97,6 +99,9 @@ def dock_panel(engine, panel_id, widget_id, title):
         #             % (__name__, __file__.replace(".pyc", ".py"), widget_id)
 
         # Dock the Shotgun app panel widget into a new tab of the Channel Box dock area.
+        # When this dock area was not found in the active Maya workspace,
+        # the Shotgun app panel widget is embedded into a floating workspace control window.
+        # This floating workspace control can then be docked into an existing dock area by the user.
         engine.log_debug("Creating Maya workspace panel %s." % maya_panel_id)
         dock_tab = pm.workspaceControl(maya_panel_id,
                                        tabToControl=(dock_area, -1),  # -1 to append a new tab
@@ -132,13 +137,14 @@ def _build_workspace_control_ui(widget_id):
     """
     Embed a Shotgun app panel widget into the calling Maya workspace control.
 
-    :param widget_id: Unique string identifier for the Shotgun app panel widget instance.
+    :param widget_id: Unique string identifier naming the Qt widget at the root of the Shotgun app panel.
+                      This Qt widget is assumed to be child of Maya main window.
+                      Its name can be used in standard Maya commands to reparent it under a Maya panel.
     """
 
     import pymel.core as pm
 
-    # In the context of this function, setParent() returns the calling workspace control
-    # according to C++ source code method TiceSetParentCmd::doQuery().
+    # In the context of this function, setParent() returns the calling workspace control.
     workspace_control = pm.setParent(query=True)
 
     # Reparent the Shotgun app panel widget under the workspace control.

@@ -519,17 +519,19 @@ class MayaEngine(tank.platform.Engine):
                   It will be enabled in January 2017 by removing the method name suffix "_FUTURE".
 
         :param handler: Log handler that this message was dispatched from.
+                        Its default format is "[%(levelname)s %(basename)s] %(message)s".
         :type handler: :class:`~python.logging.LogHandler`
         :param record: Standard python logging record.
         :type record: :class:`~python.logging.LogRecord`
         """
 
-        # Do not log debug messages when debug logging setting is off.
-        if record.levelno < logging.INFO and not self.get_setting("debug_logging", False):
-            return
-
-        # Give a standard format to the message.
-        msg = "Shotgun %s" % handler.format(record)
+        # Give a standard format to the message:
+        #     Shotgun DEBUG <basename>: <message>
+        # or
+        #     Shotgun <basename>: <message>
+        msg = "Shotgun %s%s: %s" % ("DEBUG " if record.levelno < logging.INFO else "",
+                                    record.basename,
+                                    record.message)
 
         # Select Maya display function to use according to the logging record level.
         if record.levelno < logging.WARNING:
@@ -547,18 +549,19 @@ class MayaEngine(tank.platform.Engine):
         Logs debug messages in Maya script editor.
 
         .. note:: This method is called by the legacy logging system.
-                  It will be removecd in January 2017.
+                  The new logging method will take over in January 2017
+                  while preserving backward compatibility.
 
         :param msg: Debug message to log.
+                    This message has legacy format "%(basename)s: %(message)s".
         """
 
         # Do not log debug messages when debug logging setting is off.
         if not self.get_setting("debug_logging", False):
             return
 
-        # Give a standard format to the message.
-        # The message parameter uses legacy format "%(basename)s: %(message)s".
-        # Make it look like core v0.18 format "[%(levelname)s %(basename)s] %(message)s"
+        # Give a standard format to the message:
+        #     Shotgun DEBUG <basename>: <message>
         msg = "Shotgun DEBUG %s" % msg
 
         # Display the message in Maya script editor in a thread safe manner.
@@ -569,15 +572,16 @@ class MayaEngine(tank.platform.Engine):
         Logs info messages in Maya script editor.
 
         .. note:: This method is called by the legacy logging system.
-                  It will be removecd in January 2017.
+                  The new logging method will take over in January 2017
+                  while preserving backward compatibility.
 
         :param msg: Info message to log.
+                    This message has legacy format "%(basename)s: %(message)s".
         """
 
-        # Give a standard format to the message.
-        # The message parameter uses legacy format "%(basename)s: %(message)s".
-        # Make it look like core v0.18 format "[%(levelname)s %(basename)s] %(message)s"
-        msg = "Shotgun INFO %s" % msg
+        # Give a standard format to the message:
+        #     Shotgun <basename>: <message>
+        msg = "Shotgun %s" % msg
 
         # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
@@ -587,15 +591,16 @@ class MayaEngine(tank.platform.Engine):
         Logs warning messages in Maya script editor.
 
         .. note:: This method is called by the legacy logging system.
-                  It will be removecd in January 2017.
+                  The new logging method will take over in January 2017
+                  while preserving backward compatibility.
 
         :param msg: Warning message to log.
+                    This message has legacy format "%(basename)s: %(message)s".
         """
 
-        # Give a standard format to the message.
-        # The message parameter uses legacy format "%(basename)s: %(message)s".
-        # Make it look like core v0.18 format "[%(levelname)s %(basename)s] %(message)s"
-        msg = "Shotgun WARNING %s" % msg
+        # Give a standard format to the message:
+        #     Shotgun <basename>: <message>
+        msg = "Shotgun %s" % msg
 
         # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayWarning, msg)
@@ -605,15 +610,16 @@ class MayaEngine(tank.platform.Engine):
         Logs error messages in Maya script editor.
 
         .. note:: This method is called by the legacy logging system.
-                  It will be removecd in January 2017.
+                  The new logging method will take over in January 2017
+                  while preserving backward compatibility.
 
         :param msg: Error message to log.
+                    This message has legacy format "%(basename)s: %(message)s".
         """
 
-        # Give a standard format to the message.
-        # The message parameter uses legacy format "%(basename)s: %(message)s".
-        # Make it look like core v0.18 format "[%(levelname)s %(basename)s] %(message)s"
-        msg = "Shotgun ERROR %s" % msg
+        # Give a standard format to the message:
+        #     Shotgun <basename>: <message>
+        msg = "Shotgun %s" % msg
 
         # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayError, msg)
@@ -709,7 +715,6 @@ class MayaEngine(tank.platform.Engine):
             self.log_debug("Created widget %s: %s" % (widget_id, widget_instance))
             # apply external stylesheet
             self._apply_external_styleshet(bundle, widget_instance)
-
 
         # Dock the app panel widget in a new panel tab of Maya Channel Box dock area.
         tk_maya.dock_panel(self, panel_id, widget_id, title)
