@@ -9,4 +9,5 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 from .menu_generation import MenuGenerator
-from .panels import install_callbacks
+from .panel_generation import dock_panel
+from .panel_util import install_callbacks
