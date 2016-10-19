@@ -16,6 +16,7 @@ A Maya engine for Tank.
 import tank
 import sys
 import traceback
+import time
 import os
 import logging
 import maya.OpenMaya as OpenMaya
@@ -243,6 +244,10 @@ class MayaEngine(tank.platform.Engine):
     """
     Toolkit engine for Maya.
     """
+
+    # Time stamp of the last debug message logged.
+    # Initialize it with the current time for lack of a better value.
+    _debug_msg_time_stamp = time.time()
 
     ##########################################################################################
     # init and destroy
@@ -519,7 +524,7 @@ class MayaEngine(tank.platform.Engine):
                   It will be enabled in January 2017 by removing the method name suffix "_FUTURE".
 
         :param handler: Log handler that this message was dispatched from.
-                        Its default format is "[%(levelname)s %(basename)s] %(message)s".
+                        Its default format is "[levelname basename] message".
         :type handler: :class:`~python.logging.LogHandler`
         :param record: Standard python logging record.
         :type record: :class:`~python.logging.LogRecord`
@@ -553,19 +558,25 @@ class MayaEngine(tank.platform.Engine):
                   while preserving backward compatibility.
 
         :param msg: Debug message to log.
-                    This message has legacy format "%(basename)s: %(message)s".
+                    This message usually has the format "basename: text" where
+                    "basename" is the leaf part of the logging record name,
+                    for example "tk-multi-shotgunpanel" or "qt_importer".
         """
 
         # Do not log debug messages when debug logging setting is off.
         if not self.get_setting("debug_logging", False):
             return
 
-        # Give a standard format to the message:
-        #     Shotgun DEBUG <basename>: <message>
-        msg = "Shotgun DEBUG %s" % msg
+        current_time_stamp = time.time()
+
+        # Give a standard format to the message.
+        msg = "Shotgun DEBUG (%0.3fs): %s" % (current_time_stamp-self._debug_msg_time_stamp, msg)
 
         # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
+
+        # Update the debug message time stamp.
+        self._debug_msg_time_stamp = current_time_stamp
 
     def log_info(self, msg):
         """
@@ -576,12 +587,13 @@ class MayaEngine(tank.platform.Engine):
                   while preserving backward compatibility.
 
         :param msg: Info message to log.
-                    This message has legacy format "%(basename)s: %(message)s".
+                    This message usually has the format "basename: text" where
+                    "basename" is the leaf part of the logging record name,
+                    for example "tk-multi-shotgunpanel" or "qt_importer".
         """
 
-        # Give a standard format to the message:
-        #     Shotgun <basename>: <message>
-        msg = "Shotgun %s" % msg
+        # Give a standard format to the message.
+        msg = "Shotgun: %s" % msg
 
         # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
@@ -595,12 +607,13 @@ class MayaEngine(tank.platform.Engine):
                   while preserving backward compatibility.
 
         :param msg: Warning message to log.
-                    This message has legacy format "%(basename)s: %(message)s".
+                    This message usually has the format "basename: text" where
+                    "basename" is the leaf part of the logging record name,
+                    for example "tk-multi-shotgunpanel" or "qt_importer".
         """
 
-        # Give a standard format to the message:
-        #     Shotgun <basename>: <message>
-        msg = "Shotgun %s" % msg
+        # Give a standard format to the message.
+        msg = "Shotgun: %s" % msg
 
         # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayWarning, msg)
@@ -614,12 +627,13 @@ class MayaEngine(tank.platform.Engine):
                   while preserving backward compatibility.
 
         :param msg: Error message to log.
-                    This message has legacy format "%(basename)s: %(message)s".
+                    This message usually has the format "basename: text" where
+                    "basename" is the leaf part of the logging record name,
+                    for example "tk-multi-shotgunpanel" or "qt_importer".
         """
 
-        # Give a standard format to the message:
-        #     Shotgun <basename>: <message>
-        msg = "Shotgun %s" % msg
+        # Give a standard format to the message.
+        msg = "Shotgun: %s" % msg
 
         # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(OpenMaya.MGlobal.displayError, msg)
