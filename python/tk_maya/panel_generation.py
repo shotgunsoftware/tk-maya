@@ -98,6 +98,11 @@ def dock_panel(engine, panel_id, widget_id, title):
         #             "panel_generation._build_workspace_control_ui('%s')" \
         #             % (__name__, __file__.replace(".pyc", ".py"), widget_id)
 
+        # Give an initial width to the docked Shotgun app panel widget when first shown.
+        # This value is the default width of the widget when it is embedded
+        # into a floating workspace control window.
+        panel_width = 412
+
         # Dock the Shotgun app panel widget into a new tab of the Channel Box dock area.
         # When this dock area was not found in the active Maya workspace,
         # the Shotgun app panel widget is embedded into a floating workspace control window.
@@ -109,6 +114,8 @@ def dock_panel(engine, panel_id, widget_id, title):
                                        loadImmediately=True,
                                        retain=False,  # delete the dock tab when it is closed
                                        label=title,
+                                       initialWidth=panel_width,
+                                       minimumWidth=True,  # set the minimum width to the initial width
                                        r=True  # raise the new dock tab to the top
                    )
 
