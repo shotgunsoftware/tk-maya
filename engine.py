@@ -731,7 +731,7 @@ class MayaEngine(tank.platform.Engine):
             self._apply_external_styleshet(bundle, widget_instance)
 
         # Dock the app panel widget in a new panel tab of Maya Channel Box dock area.
-        tk_maya.dock_panel(self, panel_id, widget_id, title)
+        tk_maya.dock_panel(self, panel_id, widget_instance, title)
 
         # just like nuke, maya doesn't give us any hints when a panel is being closed.
         # QT widgets contained within this panel are just unparented and the floating

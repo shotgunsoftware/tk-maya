@@ -8,15 +8,15 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-def dock_panel(engine, panel_id, widget_id, title):
+def dock_panel(engine, panel_id, widget_instance, title):
     """
     Docks a Shotgun app panel widget in a new panel tab of Maya Channel Box dock area.
 
     :param engine: :class:`MayaEngine` instance running in Maya.
     :param panel_id: Unique string identifier for the Shotgun app panel.
-    :param widget_id: Unique string identifier naming the Qt widget at the root of the Shotgun app panel.
-                      This Qt widget is assumed to be child of Maya main window.
-                      Its name can be used in standard Maya commands to reparent it under a Maya panel.
+    :param widget_instance: Qt widget at the root of the Shotgun app panel.
+                            This Qt widget is assumed to be child of Maya main window.
+                            Its name can be used in standard Maya commands to reparent it under a Maya panel.
     :param title: Title to give to the new dock tab.
     """
 
@@ -25,6 +25,9 @@ def dock_panel(engine, panel_id, widget_id, title):
     import maya.mel as mel
     import maya.utils
     import pymel.core as pm
+
+    # Retrieve the unique string identifier naming the Qt widget.
+    widget_id = widget_instance.objectName()
 
     # Create the Maya panel name.
     maya_panel_id = "panel_%s" % panel_id
@@ -99,9 +102,15 @@ def dock_panel(engine, panel_id, widget_id, title):
         #             % (__name__, __file__.replace(".pyc", ".py"), widget_id)
 
         # Give an initial width to the docked Shotgun app panel widget when first shown.
-        # This value is the default width of the widget when it is embedded
-        # into a floating workspace control window.
-        panel_width = 412
+        # Otherwise, the workspace control would use the width of the currently displayed tab.
+        size_hint = widget_instance.sizeHint()
+        if size_hint.isValid():
+            # Use the widget layout preferred size.
+            widget_width = size_hint.width()
+        else:
+            # Since no size is recommended for the widget, use its current width.
+            widget_width = widget_instance.width()
+        engine.log_debug("Widget %s width: %s" % (widget_id, widget_width))
 
         # Dock the Shotgun app panel widget into a new tab of the Channel Box dock area.
         # When this dock area was not found in the active Maya workspace,
@@ -114,7 +123,7 @@ def dock_panel(engine, panel_id, widget_id, title):
                                        loadImmediately=True,
                                        retain=False,  # delete the dock tab when it is closed
                                        label=title,
-                                       initialWidth=panel_width,
+                                       initialWidth=widget_width,
                                        minimumWidth=True,  # set the minimum width to the initial width
                                        r=True  # raise the new dock tab to the top
                    )
