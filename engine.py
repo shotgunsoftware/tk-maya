@@ -249,6 +249,13 @@ class MayaEngine(tank.platform.Engine):
     # Initialize it with the current time for lack of a better value.
     _debug_msg_time_stamp = time.time()
 
+    @property
+    def context_change_allowed(self):
+        """
+        Whether the engine allows a context change without the need for a restart.
+        """
+        return True
+
     ##########################################################################################
     # init and destroy
 
