@@ -41,8 +41,6 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
 
     logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
 
-    logger.debug("Bootstraping with manifest '%s'." % manifest.BUILD_INFO)
-
     # Create a boostrap manager for the logged in user with the plug-in configuration data.
     toolkit_mgr = sgtk.bootstrap.ToolkitManager(sg_user)
 
