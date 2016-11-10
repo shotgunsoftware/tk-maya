@@ -19,7 +19,7 @@ a `/Users/john.smith/Documents/toolkit_maya_plugin`, simply execute
 
 ```
 export MAYA_MODULE_PATH=$MAYA_MODULE_PATH:/Users/john.smith/Documents/toolkit_maya_plugin
-``
+```
 
 in a shell and then launch maya from that shell. On windows, you can set up the 
 environment variable in your computer preferences.
