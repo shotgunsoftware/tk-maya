@@ -318,6 +318,10 @@ class MayaEngine(tank.platform.Engine):
             self.__watcher = SceneEventWatcher(cb_fn)
             self.log_debug("Registered open and save callbacks.")
 
+        # Initialize a dictionary of Maya panels that have been created by the engine.
+        # Each panel entry has a Maya panel name key and an app widget instance value.
+        self._maya_panel_dict = {}
+
     def post_app_init(self):
         """
         Called when all apps have initialized
@@ -392,6 +396,9 @@ class MayaEngine(tank.platform.Engine):
         Stops watching scene events and tears down menu.
         """
         self.log_debug("%s: Destroying..." % self)
+
+        # Clear the dictionary of Maya panels to keep the garbage collector happy.
+        self._maya_panel_dict = {}
 
         if self.get_setting("automatic_context_switch", True):
             # stop watching scene events
@@ -707,7 +714,15 @@ class MayaEngine(tank.platform.Engine):
             self._apply_external_styleshet(bundle, widget_instance)
 
         # Dock the app panel widget in a new panel tab of Maya Channel Box dock area.
-        tk_maya.dock_panel(self, panel_id, widget_instance, title)
+        maya_panel_name = tk_maya.dock_panel(self, panel_id, widget_instance, title)
+
+        # Add the new panel to the dictionary of Maya panels that have been created by the engine.
+        # The panel entry has a Maya panel name key and an app widget instance value.
+        # Note that the panel entry will not be removed from the dictionary when the panel is
+        # later deleted since the added complexity of updating the dictionary from our panel
+        # close callback is outweighed by the limited length of the dictionary that will never
+        # be longer than the number of apps configured to be runnable by the engine.
+        self._maya_panel_dict[maya_panel_name] = widget_instance
 
         # just like nuke, maya doesn't give us any hints when a panel is being closed.
         # QT widgets contained within this panel are just unparented and the floating
@@ -724,6 +739,45 @@ class MayaEngine(tank.platform.Engine):
         # resolved by looking at the stream of event and force triggering refreshes at the
         # right locations
         #
-        tk_maya.install_callbacks(panel_id, widget_id)
+        tk_maya.install_callbacks(maya_panel_name, widget_id)
 
         return widget_instance
+
+    def close_windows(self):
+        """
+        Closes the various windows (dialogs, panels, etc.) opened by the engine.
+        """
+
+        # Make a copy of the list of Tank dialogs that have been created by the engine and
+        # are still opened since the original list will be updated when each dialog is closed.
+        opened_dialog_list = self.created_qt_dialogs[:]
+
+        # Loop through the list of opened Tank dialogs.
+        for dialog in opened_dialog_list:
+            dialog_window_title = dialog.windowTitle()
+            try:
+                # Close the dialog and let its close callback remove it from the original dialog list.
+                self.log_debug("Closing dialog %s." % dialog_window_title)
+                dialog.close()
+            except Exception, exception:
+                self.log_error("Cannot close dialog %s: %s" % (dialog_window_title, exception))
+
+        # Loop through the dictionary of Maya panels that have been created by the engine.
+        for (maya_panel_name, widget_instance) in self._maya_panel_dict.iteritems():
+            # Make sure the Maya panel is still opened.
+            if pm.control(maya_panel_name, query=True, exists=True):
+                try:
+                    # Reparent the Shotgun app panel widget under Maya main window
+                    # to prevent it from being deleted with the existing Maya panel.
+                    self.log_debug("Reparenting widget %s under Maya main window." %
+                                   widget_instance.objectName())
+                    parent = self._get_dialog_parent()
+                    widget_instance.setParent(parent)
+                    # The Maya panel can now be deleted safely.
+                    self.log_debug("Deleting Maya panel %s." % maya_panel_name)
+                    pm.deleteUI(maya_panel_name)
+                except Exception, exception:
+                    self.log_error("Cannot delete Maya panel %s: %s" % (maya_panel_name, exception))
+
+        # Clear the dictionary of Maya panels now that they were deleted.
+        self._maya_panel_dict = {}
