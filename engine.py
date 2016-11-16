@@ -397,6 +397,9 @@ class MayaEngine(tank.platform.Engine):
         """
         self.log_debug("%s: Destroying..." % self)
 
+        # Clear the dictionary of Maya panels to keep the garbage collector happy.
+        self._maya_panel_dict = {}
+
         if self.get_setting("automatic_context_switch", True):
             # stop watching scene events
             self.__watcher.stop_watching()
@@ -740,9 +743,9 @@ class MayaEngine(tank.platform.Engine):
 
         return widget_instance
 
-    def close_dialogs_and_panels(self):
+    def close_windows(self):
         """
-        Closes the dialogs and panels opened by the engine.
+        Closes the various windows (dialogs, panels, etc.) opened by the engine.
         """
 
         # Make a copy of the list of Tank dialogs that have been created by the engine and
@@ -751,20 +754,30 @@ class MayaEngine(tank.platform.Engine):
 
         # Loop through the list of opened Tank dialogs.
         for dialog in opened_dialog_list:
-            # Close the dialog and let its close callback remove it from the original dialog list.
-            self.log_debug("Closing dialog %s." % dialog.windowTitle())
-            dialog.close()
+            dialog_window_title = dialog.windowTitle()
+            try:
+                # Close the dialog and let its close callback remove it from the original dialog list.
+                self.log_debug("Closing dialog %s." % dialog_window_title)
+                dialog.close()
+            except Exception, exception:
+                self.log_error("Cannot close dialog %s: %s" % (dialog_window_title, exception))
 
         # Loop through the dictionary of Maya panels that have been created by the engine.
         for (maya_panel_name, widget_instance) in self._maya_panel_dict.iteritems():
             # Make sure the Maya panel is still opened.
             if pm.control(maya_panel_name, query=True, exists=True):
-                # Reparent the Shotgun app panel widget under Maya main window
-                # to prevent it from being deleted with the existing Maya panel.
-                self.log_debug("Reparenting widget %s under Maya main window." %
-                               widget_instance.objectName())
-                parent = self._get_dialog_parent()
-                widget_instance.setParent(parent)
-                # The Maya panel can now be deleted safely.
-                self.log_debug("Deleting existing Maya panel %s." % maya_panel_name)
-                pm.deleteUI(maya_panel_name)
+                try:
+                    # Reparent the Shotgun app panel widget under Maya main window
+                    # to prevent it from being deleted with the existing Maya panel.
+                    self.log_debug("Reparenting widget %s under Maya main window." %
+                                   widget_instance.objectName())
+                    parent = self._get_dialog_parent()
+                    widget_instance.setParent(parent)
+                    # The Maya panel can now be deleted safely.
+                    self.log_debug("Deleting Maya panel %s." % maya_panel_name)
+                    pm.deleteUI(maya_panel_name)
+                except Exception, exception:
+                    self.log_error("Cannot delete Maya panel %s: %s" % (maya_panel_name, exception))
+
+        # Clear the dictionary of Maya panels now that they were deleted.
+        self._maya_panel_dict = {}
