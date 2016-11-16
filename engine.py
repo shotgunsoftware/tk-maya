@@ -109,19 +109,19 @@ def refresh_engine(engine_name, prev_context, menu_name):
     """
     current_engine = tank.platform.current_engine()
 
-    # first make sure that the disabled menu is removed, if it exists...
-    menu_was_disabled = remove_sgtk_disabled_menu()
+    if not current_engine:
+        # If we don't have an engine for some reason then we don't have
+        # anything to do.
+        return
 
-    # determine the tk instance and ctx to use:
-    tk = current_engine.sgtk
-    ctx = prev_context
     if pm.sceneName() == "":
-        # if the scene opened is actually a file->new, then maintain the current
-        # context/engine.
-        if not menu_was_disabled:
-            # just return the current engine - no need to restart it!
-            return current_engine
+        # This is a File->New call, so we just leave the engine in the current
+        # context and move on.
+        return
     else:
+        # determine the tk instance and ctx to use:
+        tk = current_engine.sgtk
+
         # loading a scene file
         new_path = pm.sceneName().abspath()
 
@@ -133,60 +133,29 @@ def refresh_engine(engine_name, prev_context, menu_name):
             OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
             # build disabled menu
             create_sgtk_disabled_menu(menu_name)
-            return current_engine
+            return
 
         # and construct the new context for this path:
         ctx = tk.context_from_path(new_path, prev_context)
 
-    if current_engine:
-        # if context is unchanged and the menu was not previously disabled
-        # then no need to rebuild the same engine again!
-        if ctx == prev_context and not menu_was_disabled:
-            return current_engine
-
-        # tear down existing engine
-        current_engine.log_debug("Ready to switch to context because of scene event !")
-        current_engine.log_debug("Prev context: %s" % prev_context)
-        current_engine.log_debug("New context: %s" % ctx)
-        current_engine.destroy()
-
-    # start new engine
-    new_engine = None
-    try:
-        new_engine = tank.platform.start_engine(engine_name, tk, ctx)
-    except tank.TankEngineInitError, e:
-        OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
-        # build disabled menu
-        create_sgtk_disabled_menu(menu_name)
-    else:
-        new_engine.log_debug("Launched new engine for context!")
-
-    return new_engine
+    current_engine.change_context(ctx)
 
 
 def on_scene_event_callback(engine_name, prev_context, menu_name):
     """
     Callback that's run whenever a scene is saved or opened.
     """
-    new_engine = None
     try:
-        new_engine = refresh_engine(engine_name, prev_context, menu_name)
+        refresh_engine(engine_name, prev_context, menu_name)
     except Exception:
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         message = ""
-        message += "Message: Shotgun encountered a problem starting the Engine.\n"
+        message += "Message: Shotgun encountered a problem changing the Engine's context.\n"
         message += "Please contact support@shotgunsoftware.com\n\n"
         message += "Exception: %s - %s\n" % (exc_type, exc_value)
         message += "Traceback (most recent call last):\n"
         message += "\n".join( traceback.format_tb(exc_traceback))
         OpenMaya.MGlobal.displayError(message)
-        new_engine = None
-
-    if not new_engine:
-        # don't have an engine but still want to watch for
-        # future scene events:
-        cb_fn = lambda en=engine_name, pc=prev_context, mn=menu_name:on_scene_event_callback(en, pc, mn)
-        SceneEventWatcher(cb_fn, run_once=True)
 
 
 def sgtk_disabled_message():
