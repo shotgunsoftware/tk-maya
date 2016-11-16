@@ -18,6 +18,7 @@ def dock_panel(engine, panel_id, widget_instance, title):
                             This Qt widget is assumed to be child of Maya main window.
                             Its name can be used in standard Maya commands to reparent it under a Maya panel.
     :param title: Title to give to the new dock tab.
+    :returns: Name of the new Maya panel.
     """
 
     # The imports are done here rather than at the module level to avoid spurious imports
@@ -147,6 +148,8 @@ def dock_panel(engine, panel_id, widget_instance, title):
 
         # Update the workspace dock tab UI script.
         pm.workspaceControl(maya_panel_id, edit=True, uiScript=ui_script)
+
+    return maya_panel_id
 
 
 def _build_workspace_control_ui(widget_id):
