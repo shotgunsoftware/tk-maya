@@ -106,9 +106,13 @@ def shutdown():
     logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
 
     engine = sgtk.platform.current_engine()
+
     if engine:
 
         logger.info("Stopping the %s engine." % manifest.engine_name)
+
+        # Close the various windows (dialogs, panels, etc.) opened by the engine.
+        engine.close_windows()
 
         # Turn off your engine! Step away from the car!
         engine.destroy()
