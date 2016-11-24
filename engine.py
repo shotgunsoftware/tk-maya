@@ -255,7 +255,7 @@ class MayaEngine(tank.platform.Engine):
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
-        if maya_ver.startswith(("2014", "2015", "2016")):
+        if maya_ver.startswith(("2014", "2015", "2016", "2017")):
             self.log_debug("Running Maya version %s" % maya_ver)
         elif maya_ver.startswith(("2012", "2013")):
             # We won't be able to rely on the warning dialog below, because Maya
