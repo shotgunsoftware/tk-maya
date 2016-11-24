@@ -44,10 +44,36 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     # Create a boostrap manager for the logged in user with the plug-in configuration data.
     toolkit_mgr = sgtk.bootstrap.ToolkitManager(sg_user)
 
-    # pass the manager to the manifest for basic init
+    # Pass the boostrap manager to the manifest for basic initialization.
     manifest.initialize_manager(toolkit_mgr, PLUGIN_ROOT_PATH)
 
-    # check if the target core supports async init
+    # Retrieve the Shotgun entity type and id when they exist in the environment.
+    entity_type = os.environ.get("SHOTGUN_ENTITY_TYPE")
+    entity_id = os.environ.get("SHOTGUN_ENTITY_ID")
+
+    if (entity_type and not entity_id) or (not entity_type and entity_id):
+        logger.error("Both environment variables SHOTGUN_ENTITY_TYPE and SHOTGUN_ENTITY_ID must be provided "
+                     "to set a context entity. Shotgun will be initialized in site context.")
+
+    if entity_id:
+        # The entity id must be an integer number.
+        try:
+            entity_id = int(entity_id)
+        except ValueError:
+            logger.error("Environment variable SHOTGUN_ENTITY_ID value '%s' is not an integer number. "
+                         "Shotgun will be initialized in site context." % entity_id)
+            entity_id = None
+
+    if entity_type and entity_id:
+        # Set the entity to launch the engine for.
+        entity = {"type": entity_type, "id": entity_id}
+    else:
+        # Set the entity to launch the engine in site context.
+        entity = None
+
+    logger.debug("Will launch the engine with entity: %s" % entity)
+
+    # Check if the target core supports asynchronous Shotgun initialization.
     can_bootstrap_engine_async = hasattr(toolkit_mgr, "bootstrap_engine_async")
     if not can_bootstrap_engine_async:
         # Display the warning before the custom logging handler is removed.
@@ -68,6 +94,7 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
         # the toolkit manager may swap the toolkit core to its latest version.
         toolkit_mgr.bootstrap_engine_async(
             manifest.engine_name,
+            entity,
             completed_callback=completed_callback,
             failed_callback=failed_callback
         )
@@ -82,7 +109,7 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
 
         try:
 
-            engine = toolkit_mgr.bootstrap_engine(manifest.engine_name)
+            engine = toolkit_mgr.bootstrap_engine(manifest.engine_name, entity)
 
         except Exception, exception:
 
