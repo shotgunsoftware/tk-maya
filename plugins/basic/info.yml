@@ -47,7 +47,7 @@ base_configuration:
   # If your descriptor supports a version token and you want it to
   # always use the latest version available, simply omit the version token.
   type: app_store
-  name: tk-config-pluginbasic
+  name: tk-config-basic
 
   # For convenience, the following location descriptor lines will be
   # kept around while the plug-in is still in private development.
