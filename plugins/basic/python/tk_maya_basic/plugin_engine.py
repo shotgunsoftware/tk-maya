@@ -57,9 +57,10 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     # TODO: Handle this correctly and pop up a login dialog in case of a site mismatch
     if shotgun_site and sg_user.host != shotgun_site:
         logger.warning("You are currently logged in to site %s but the plugin has been "
-                       "requested to launch with context %s %s on site %s. "
-                       "This will be ignored and plugin will start up in site context "
-                       "for site %s" % (sg_user.host, entity_type, entity_id, shotgun_site, sg_user.host)
+                       "requested to launch with context %s %s at %s. The plugin does not "
+                       "currently support switching between sites and the contents of "
+                       "SHOTGUN_ENTITY_TYPE and SHOTGUN_ENTITY_ID will therefore "
+                       "be ignored." % (sg_user.host, entity_type, entity_id, shotgun_site)
                        )
 
     if (entity_type and not entity_id) or (not entity_type and entity_id):
