@@ -48,8 +48,19 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     manifest.initialize_manager(toolkit_mgr, PLUGIN_ROOT_PATH)
 
     # Retrieve the Shotgun entity type and id when they exist in the environment.
+    shotgun_site = os.environ.get("SHOTGUN_SITE")
     entity_type = os.environ.get("SHOTGUN_ENTITY_TYPE")
     entity_id = os.environ.get("SHOTGUN_ENTITY_ID")
+
+    # Check that the shotgun site (if set) matches the site we are currently
+    # logged in to. If not, issue a warning and ignore the entity type/id variables
+    # TODO: Handle this correctly and pop up a login dialog in case of a site mismatch
+    if shotgun_site and sg_user.host != shotgun_site:
+        logger.warning("You are currently logged in to site %s but the plugin has been "
+                       "requested to launch with context %s %s on site %s. "
+                       "This will be ignored and plugin will start up in site context "
+                       "for site %s" % (sg_user.host, entity_type, entity_id, shotgun_site, sg_user.host)
+                       )
 
     if (entity_type and not entity_id) or (not entity_type and entity_id):
         logger.error("Both environment variables SHOTGUN_ENTITY_TYPE and SHOTGUN_ENTITY_ID must be provided "
