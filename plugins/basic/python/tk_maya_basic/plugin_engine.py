@@ -62,6 +62,8 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
                        "SHOTGUN_ENTITY_TYPE and SHOTGUN_ENTITY_ID will therefore "
                        "be ignored." % (sg_user.host, entity_type, entity_id, shotgun_site)
                        )
+        entity_type = None
+        entity_id = None
 
     if (entity_type and not entity_id) or (not entity_type and entity_id):
         logger.error("Both environment variables SHOTGUN_ENTITY_TYPE and SHOTGUN_ENTITY_ID must be provided "
