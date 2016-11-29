@@ -118,27 +118,28 @@ def refresh_engine(engine_name, prev_context, menu_name):
         # This is a File->New call, so we just leave the engine in the current
         # context and move on.
         return
-    else:
-        # determine the tk instance and ctx to use:
-        tk = current_engine.sgtk
 
-        # loading a scene file
-        new_path = pm.sceneName().abspath()
+    # determine the tk instance and ctx to use:
+    tk = current_engine.sgtk
 
-        # this file could be in another project altogether, so create a new
-        # API instance.
-        try:
-            tk = tank.tank_from_path(new_path)
-        except tank.TankError, e:
-            OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
-            # build disabled menu
-            create_sgtk_disabled_menu(menu_name)
-            return
+    # loading a scene file
+    new_path = pm.sceneName().abspath()
 
-        # and construct the new context for this path:
-        ctx = tk.context_from_path(new_path, prev_context)
+    # this file could be in another project altogether, so create a new
+    # API instance.
+    try:
+        tk = tank.tank_from_path(new_path)
+    except tank.TankError, e:
+        OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
+        # build disabled menu
+        create_sgtk_disabled_menu(menu_name)
+        return
 
-    current_engine.change_context(ctx)
+    # and construct the new context for this path:
+    ctx = tk.context_from_path(new_path, prev_context)
+
+    if ctx != tank.platform.current_engine().context:
+        current_engine.change_context(ctx)
 
 
 def on_scene_event_callback(engine_name, prev_context, menu_name):
@@ -339,6 +340,29 @@ class MayaEngine(tank.platform.Engine):
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
 
+    def pre_context_change(self, old_context, new_context):
+        """
+        Runs before a context change. The Maya event watching will be stopped
+        and new callbacks registered containing the new context information.
+
+        :param old_context: The context being changed away from.
+        :param new_contexT: The new context being changed to.
+        """
+        if self.get_setting("automatic_context_switch", True):
+            # We need to stop watching, and then replace with a new watcher
+            # that has a callback registered with the new context baked in.
+            # This will ensure that the context_from_path call that occurs
+            # after a File->Open receives an up-to-date "previous" context.
+            self.__watcher.stop_watching()
+            cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name:on_scene_event_callback(
+                engine_name=en, 
+                prev_context=pc,
+                menu_name=mn,
+            )
+            self.__watcher = SceneEventWatcher(cb_fn)
+            self.log_debug(
+                "Registered new open and save callbacks before changing context."
+            )
 
     def _run_app_instance_commands(self):
         """
