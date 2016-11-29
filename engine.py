@@ -340,13 +340,13 @@ class MayaEngine(tank.platform.Engine):
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
 
-    def pre_context_change(self, old_context, new_context):
+    def post_context_change(self, old_context, new_context):
         """
-        Runs before a context change. The Maya event watching will be stopped
+        Runs after a context change. The Maya event watching will be stopped
         and new callbacks registered containing the new context information.
 
         :param old_context: The context being changed away from.
-        :param new_contexT: The new context being changed to.
+        :param new_context: The new context being changed to.
         """
         if self.get_setting("automatic_context_switch", True):
             # We need to stop watching, and then replace with a new watcher
@@ -363,6 +363,9 @@ class MayaEngine(tank.platform.Engine):
             self.log_debug(
                 "Registered new open and save callbacks before changing context."
             )
+
+        # Set the Maya project to match the new context.
+        self._set_project()
 
     def _run_app_instance_commands(self):
         """
