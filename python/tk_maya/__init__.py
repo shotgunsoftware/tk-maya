@@ -10,4 +10,3 @@
 
 from .menu_generation import MenuGenerator
 from .panel_generation import dock_panel
-from .panel_util import install_callbacks

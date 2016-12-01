@@ -11,29 +11,48 @@
 """
 Panel support utilities for Maya
 """
-import os
-import sys
-import sgtk
+
+import maya.mel as mel
+import maya.OpenMayaUI as OpenMayaUI
+
 from sgtk.platform.qt import QtCore, QtGui
 
-def install_callbacks(panel_id, widget_id):
+try:
+    import shiboken2 as shiboken
+except ImportError:
+    import shiboken
+
+
+def install_event_filter_by_name(maya_panel_name, shotgun_panel_name):
     """
-    Helper method to assist in the panel creation process.
-    This will iterate over all QT widgets and look for a panel_id
-    widget. Once found, it will install an event filter on this panel
-    to monitor its close event, so that we can gracefully handle close,
-    refresh and deallocation of the embedded tk widget when this happens.
-    
-    :param panel_id: Object name for panel
-    :param widget_id: Object name for tk widget
+    Retreives a Maya panel widget using its name and installs an event filter on it
+    to monitor some of its events in order to gracefully handle refresh, close and
+    deallocation of the embedded Shotgun app panel widget.
+
+    :param maya_panel_name: Name of the Qt widget of a Maya panel.
+    :param shotgun_panel_name: Name of the Qt widget at the root of a Shotgun app panel.
     """
-    widget = _find_widget(panel_id)
-    if widget:
-        filter = CloseEventFilter(widget)
-        filter.set_associated_widget(widget_id)
-        filter.parent_closed.connect(_on_parent_closed_callback)
-        filter.parent_dirty.connect(_on_parent_refresh_callback)
-        widget.installEventFilter(filter)
+
+    maya_panel = _find_widget(maya_panel_name)
+
+    if maya_panel:
+        install_event_filter_by_widget(maya_panel, shotgun_panel_name)
+
+def install_event_filter_by_widget(maya_panel, shotgun_panel_name):
+    """
+    Installs an event filter on a Maya panel widget to monitor some of its events in order
+    to gracefully handle refresh, close and deallocation of the embedded Shotgun app panel widget.
+
+    :param maya_panel: Qt widget of a Maya panel.
+    :param shotgun_panel_name: Name of the Qt widget at the root of a Shotgun app panel.
+    """
+
+    filter = CloseEventFilter(maya_panel)
+    filter.set_associated_widget(shotgun_panel_name)
+    filter.parent_dirty.connect(_on_parent_refresh_callback)
+    filter.parent_closed.connect(_on_parent_closed_callback)
+
+    maya_panel.installEventFilter(filter)
 
 def _find_widget(widget_name):
     """
@@ -42,7 +61,7 @@ def _find_widget(widget_name):
     
     :param widget_name: QT object name to look for
     :returns: QWidget object or None if nothing was found
-    """ 
+    """
     for widget in QtGui.QApplication.allWidgets():
         if widget.objectName() == widget_name:
             return widget
@@ -58,10 +77,18 @@ def _on_parent_closed_callback(widget_id):
     """
     widget = _find_widget(widget_id)
     if widget:
-        widget.close()
-        # delete later since we are inside a slot
-        widget.deleteLater()
-    
+        # Use the proper close logic according to the Maya version.
+        if mel.eval("getApplicationVersionAsFloat()") < 2017:
+            # Close and delete the Shotgun app panel widget.
+            # It needs to be deleted later since we are inside a slot.
+            widget.close()
+            widget.deleteLater()
+        else:  # Maya 2017 and later
+            # Reparent the Shotgun app panel widget under Maya main window for later use.
+            ptr = OpenMayaUI.MQtUtil.mainWindow()
+            main_window = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+            widget.setParent(main_window)
+
 def _on_parent_refresh_callback(widget_id):
     """
     Callback which fires when a UI refresh is needed.
@@ -113,7 +140,7 @@ class CloseEventFilter(QtCore.QObject):
                     self.parent_closed.emit(self._widget_id)
                     break
                 parent = parent.parent()
-        
+
         if event.type() == QtCore.QEvent.LayoutRequest:
             # this event seems to be fairly representatative
             # (without too many false positives) of when a tab
@@ -122,4 +149,3 @@ class CloseEventFilter(QtCore.QObject):
         
         # pass it on!
         return False
-
