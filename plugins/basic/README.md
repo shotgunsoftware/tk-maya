@@ -1,0 +1,1 @@
+every plugin should have a readme file with info.
