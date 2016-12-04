@@ -10,6 +10,7 @@
 
 import os
 import sys
+import re
 import glob
 import subprocess
 import xml.etree.ElementTree as XML_ET
@@ -46,7 +47,7 @@ class MayaLauncher(SoftwareLauncher):
             # Look for executables in paths formerly specified by the
             # default configuration paths.yml file.
             sw_versions = _default_path_software_versions(
-                self._logger, versions, display_name, icon
+                self.logger, versions, display_name, icon
             )
         if not sw_versions:
             self.logger.info(
@@ -156,7 +157,6 @@ def _synergy_config_files():
 
     return synergy_configs
 
-
 def _synergy_software_versions(logger, versions=None, display_name=None, icon=None):
     """
     Creates SoftwareVersion instances based on the Synergy configuration
@@ -214,7 +214,7 @@ def _synergy_software_versions(logger, versions=None, display_name=None, icon=No
 
         if versions and synergy_data["NumericVersion"] not in versions:
             # If this version isn't in the list of requested versions, skip it.
-            logger.debug("Skipping Maya version %s ..." % synergy_data["NumericVersion"])
+            logger.debug("Skipping Maya Synergy version %s ..." % synergy_data["NumericVersion"])
             continue
 
         exec_path = synergy_data["ExecutablePath"]
@@ -314,6 +314,11 @@ def _default_path_software_versions(logger, versions=None, display_name=None, ic
                 # Parse the default version from the display name determined from
                 # the version output.
                 default_version = default_display.lower().replace("maya", "").strip()
+
+            if versions and default_version not in versions:
+                # If this version isn't in the list of requested versions, skip it.
+                logger.debug("Skipping Maya default version %s ..." % default_version)
+                continue
 
             if sys.platform == "darwin" and "Maya.app" in exec_path:
                 # There seems to be an anomoly with launching Maya from the
