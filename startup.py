@@ -71,15 +71,65 @@ class MayaLauncher(SoftwareLauncher):
         :returns: LaunchInformation instance
         """
         required_env = {}
+
+        # Run the engine's userSetup.py file when Maya starts up
+        # by appending it to the env PYTHONPATH.
         startup_path = os.path.join(self.disk_location, "startup")
         sgtk.util.append_path_to_env_var("PYTHONPATH", startup_path)
         required_env["PYTHONPATH"] = os.environ["PYTHONPATH"]
-        required_env["TANK_ENGINE"] = self.engine_name
-        required_env["TANK_CONTEXT"] = sgtk.context.serialize(self.context)
+
+        launch_plugins = self.get_setting("launch_builtin_plugin") or None
+        if launch_plugins:
+            find_plugins = [p.strip() for p in launch_plugins.split(",") if p.strip()]
+            for find_plugin in find_plugins:
+                load_plugin = os.path.join(
+                    self.disk_location, "plugins", find_plugin
+                )
+                if os.path.exists(load_plugin):
+                    self.logger.info("Loading builtin plugin '%s'" % load_plugin)
+                    sgtk.util.append_path_to_env_var("MAYA_MODULE_PATH", load_plugin)
+                    sgtk.util.append_path_to_env_var("TANK_LOAD_MAYA_PLUGINS", load_plugin)
+                    
+
+            required_env["MAYA_MODULE_PATH"] = os.environ["MAYA_MODULE_PATH"]
+            required_env["TANK_LOAD_MAYA_PLUGINS"] = os.environ["TANK_LOAD_MAYA_PLUGINS"]
+
+            (entity_type, entity_id) = _context_entity_type_id(self.context)
+            required_env["SHOTGUN_SITE"] = self.sgtk.shotgun_url
+            required_env["SHOTGUN_ENTITY_TYPE"] = entity_type
+            required_env["SHOTGUN_ENTITY_ID"] = entity_id
+        else:
+            self._tk_app.log_info("Preparing Maya Launch via Toolkit Classic methodology ...")
+            required_env["TANK_ENGINE"] = self.engine_name
+            required_env["TANK_CONTEXT"] = sgtk.context.serialize(self.context)
+
         if file_to_open:
             required_env["TANK_FILE_TO_OPEN"] = file_to_open
 
         return LaunchInformation(exec_path, args, required_env)
+
+def _context_entity_type_id(context):
+    """
+    Extract an entity type and id from the context.
+
+    :param context:
+    :returns: Tuple (entity_type_str, entity_id_int)
+    """
+    # Use the Project by default
+    entity_type = context.project["type"]
+    entity_id = context.project["id"]
+
+    # if there is an entity then that takes precedence
+    if context.entity:
+        entity_type = context.entity["type"]
+        entity_id = context.entity["id"]
+
+    # and if there is a Task that is even better
+    if context.task:
+        entity_type = context.task["type"]
+        entity_id = context.task["id"]
+
+    return (entity_type, entity_id)
 
 
 def _icon_from_executable(exec_path):
@@ -93,15 +143,16 @@ def _icon_from_executable(exec_path):
     """
     icon_base_path = ""
     if sys.platform == "darwin" and "Maya.app" in exec_path:
-        # e.g. /Applications/Autodesk/maya2016.5/Maya.app/Contents
+        # e.g. /Applications/Autodesk/maya2016.5/Maya.app or
+        #      /Applications/Autodesk/maya2017/Maya.app/Contents/bin/maya
         icon_base_path = os.path.join(
             "".join(exec_path.partition("Maya.app")[0:2]),
             "Contents"
         )
 
     elif sys.platform in ["win32", "linux2"] and "bin" in exec_path:
-        # e.g. C:\Program Files\Autodesk\Maya2017\  or
-        #      /usr/autodesk/maya2017/
+        # e.g. C:\Program Files\Autodesk\Maya2017\bin\maya.exe  or
+        #      /usr/autodesk/maya2017/bin/maya
         icon_base_path = "".join(exec_path.partition("bin")[0:1])
 
     if not icon_base_path:

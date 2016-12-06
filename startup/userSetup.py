@@ -53,6 +53,11 @@ def bootstrap_tank():
         if var in os.environ:
             del os.environ[var]
 
+def start_toolkit():
+    if os.environ.get("TANK_LOAD_MAYA_PLUGINS"):
 
-cmds.evalDeferred("bootstrap_tank()")
+    else:
+        bootstrap_tank()
 
+
+cmds.evalDeferred("start_toolkit()")
