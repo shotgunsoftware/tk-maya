@@ -19,7 +19,7 @@ import maya.cmds as cmds
 
 print "Sourcing /shotgun/gitrepos/tk-maya/startup/userSetup.py"
 
-def bootstrap_sgtk():
+def bootstrap_sgtk_from_env():
     """
     Parse enviornment variables for an engine name and
     serialized Context to use to startup a Toolkit Engine
@@ -72,10 +72,10 @@ def load_sgtk_plugins():
     for plugin_path in os.environ["SGTK_LOAD_MAYA_PLUGINS"].split(os.pathsep):
         # Find the appropriate "plugin" sub directory. Maya will not be
         # able to find any plugins under the base directory without this.
-        if os.path.isdir(os.join(plugin_path, "plug-ins")):
-            load_path = os.join(plugin_path, "plug-ins")
-        elif os.path.isdir(os.join(plugin_path, "plugins")):
-            load_path = os.join(plugin_path, "plugins")
+        if os.path.isdir(os.path.join(plugin_path, "plug-ins")):
+            load_path = os.path.join(plugin_path, "plug-ins")
+        elif os.path.isdir(os.path.join(plugin_path, "plugins")):
+            load_path = os.path.join(plugin_path, "plugins")
         else:
             load_path = plugin_path
 
@@ -109,9 +109,9 @@ def start_toolkit():
         load_sgtk_plugins()
     else:
         OpenMaya.MGlobal.displayInfo(
-            "Shotgun: Bootstrapping Toolkit ..."
+            "Shotgun: Bootstrapping Toolkit from environmment variables ..."
         )
-        bootstrap_sgtk()
+        bootstrap_sgtk_from_env()
 
     file_to_open = os.environ.get("SGTK_FILE_TO_OPEN")
     if file_to_open:
@@ -128,7 +128,7 @@ def start_toolkit():
     ]
     for var in del_vars:
         if var in os.environ:
-            del os.environ(var)
+            del os.environ[var]
 
 
 # Fire up Toolkit and the environment engine when there's time.

@@ -97,7 +97,7 @@ class MayaLauncher(SoftwareLauncher):
             (entity_type, entity_id) = _context_entity_type_id(self.context)
             required_env["SHOTGUN_SITE"] = self.sgtk.shotgun_url
             required_env["SHOTGUN_ENTITY_TYPE"] = entity_type
-            required_env["SHOTGUN_ENTITY_ID"] = entity_id
+            required_env["SHOTGUN_ENTITY_ID"] = str(entity_id)
         else:
             self.logger.info("Preparing Maya Launch via Toolkit Classic methodology ...")
             required_env["SGTK_ENGINE"] = self.engine_name
