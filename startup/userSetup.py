@@ -17,13 +17,12 @@ import os
 import maya.OpenMaya as OpenMaya
 import maya.cmds as cmds
 
-print "Sourcing /shotgun/gitrepos/tk-maya/startup/userSetup.py"
 
 def bootstrap_sgtk_from_env():
     """
     Parse enviornment variables for an engine name and
-    serialized Context to use to startup a Toolkit Engine
-    and environment.
+    serialized Context to use to startup Toolkit and
+    the tk-maya engine and environment.
     """
     # Verify sgtk can be loaded.
     try:
@@ -68,7 +67,12 @@ def bootstrap_sgtk_from_env():
         )
         return
 
+
 def load_sgtk_plugins():
+    """
+    Parse environment variables for a list of plugins to load that will
+    ultimately startup Toolkit and the tk-maya engine and environment.
+    """
     for plugin_path in os.environ["SGTK_LOAD_MAYA_PLUGINS"].split(os.pathsep):
         # Find the appropriate "plugin" sub directory. Maya will not be
         # able to find any plugins under the base directory without this.
@@ -99,29 +103,35 @@ def load_sgtk_plugins():
 
 
 def start_toolkit():
+    """
+    Import Toolkit and start up a tk-maya engine based on
+    environment variables.
+    """
     OpenMaya.MGlobal.displayInfo(
         "Shotgun: Starting up Toolkit"
     )
     if os.environ.get("SGTK_LOAD_MAYA_PLUGINS"):
+        # Plugins will take care of initalizing everything
         OpenMaya.MGlobal.displayInfo(
             "Shotgun: Loading Toolkit plugins ..."
         )
         load_sgtk_plugins()
     else:
+        # Rely on the classic boostrapping method
         OpenMaya.MGlobal.displayInfo(
             "Shotgun: Bootstrapping Toolkit from environmment variables ..."
         )
         bootstrap_sgtk_from_env()
 
+    # Check if a file was specified to open and open it.
     file_to_open = os.environ.get("SGTK_FILE_TO_OPEN")
     if file_to_open:
-        # finally open the file
         OpenMaya.MGlobal.displayInfo(
             "Shotgun: Opening '%s' ..." % file_to_open
         )
         cmds.file(file_to_open, force=True, open=True)
 
-    # clean up temp env vars
+    # Clean up temp env variables.
     del_vars = [
         "SGTK_ENGINE", "SGTK_CONTEXT", "SGTK_FILE_TO_OPEN",
         "SGTK_LOAD_MAYA_PLUGINS",
