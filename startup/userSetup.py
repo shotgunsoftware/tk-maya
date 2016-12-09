@@ -17,7 +17,6 @@ import os
 import maya.OpenMaya as OpenMaya
 import maya.cmds as cmds
 
-
 def bootstrap_sgtk_from_env():
     """
     Parse enviornment variables for an engine name and
