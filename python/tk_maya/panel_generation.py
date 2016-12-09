@@ -88,6 +88,7 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
 
     else:  # Maya 2017 and later
 
+        import uuid
         import maya.cmds as cmds
 
         # Create a Maya panel name in the current Maya workspace.
@@ -116,9 +117,10 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
                 # In Maya 2017, switching to another workspace then back is the only straightforward
                 # way to make Maya automatically recreate the workspace control and call its UI script.
                 engine.log_debug("Making Maya recreate workspace panel %s." % maya_panel_name)
-                cmds.workspaceLayoutManager(saveAs="Shotgun")
+                temp_workspace_name = "W%s" % uuid.uuid4().hex
+                cmds.workspaceLayoutManager(saveAs=temp_workspace_name)
                 cmds.workspaceLayoutManager(setCurrent=current_workspace)
-                cmds.workspaceLayoutManager(delete="Shotgun")
+                cmds.workspaceLayoutManager(delete=temp_workspace_name)
                 return maya_panel_name
             else:
                 # When the Shotgun app panel was retrieved from under an existing Maya panel,
@@ -142,11 +144,22 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
         # in the Maya layout preference file when the user quits Maya, and will be executed
         # automatically when Maya is restarted later by the user.
         ui_script = "import sys\n" \
+                    "import maya.api.OpenMaya\n" \
+                    "import maya.utils\n" \
                     "for m in sys.modules:\n" \
                     "    if 'tk_maya.panel_generation' in m:\n" \
-                    "        sys.modules[m].build_workspace_control_ui('%s')\n" \
-                    "        break" \
-                    % shotgun_panel_name
+                    "        try:\n" \
+                    "            sys.modules[m].build_workspace_control_ui('%(panel_name)s')\n" \
+                    "        except Exception, e:\n" \
+                    "            msg = 'Shotgun: Cannot restore %(panel_name)s: %%s' %% e\n" \
+                    "            fct = maya.api.OpenMaya.MGlobal.displayError\n" \
+                    "            maya.utils.executeInMainThreadWithResult(fct, msg)\n" \
+                    "        break\n" \
+                    "else:\n" \
+                    "    msg = 'Shotgun: Cannot restore %(panel_name)s: Shotgun is not currently running'\n" \
+                    "    fct = maya.api.OpenMaya.MGlobal.displayError\n" \
+                    "    maya.utils.executeInMainThreadWithResult(fct, msg)\n" \
+                    % {"panel_name": shotgun_panel_name}
 
         # Give an initial width to the docked Shotgun app panel when first shown.
         # Otherwise, the workspace control would use the width of the currently displayed tab.
@@ -196,9 +209,13 @@ def build_workspace_control_ui(shotgun_panel_name):
     - When the workspace control is being restored from a workspace control state
       created by Maya when this workspace control was previously closed and deleted.
 
+    .. note:: This function is only for Maya 2017 and later.
+
     :param shotgun_panel_name: Name of the Qt widget at the root of a Shotgun app panel.
     """
 
+    import maya.api.OpenMaya
+    import maya.utils
     from maya.OpenMayaUI import MQtUtil
 
     # In the context of this function, we know that we are running in Maya 2017 and later
@@ -223,3 +240,7 @@ def build_workspace_control_ui(shotgun_panel_name):
             panel_util.install_event_filter_by_widget(workspace_control, shotgun_panel_name)
 
             break
+    else:
+        msg = "Shotgun: Cannot restore %s: Shotgun app panel not found" % shotgun_panel_name
+        fct = maya.api.OpenMaya.MGlobal.displayError
+        maya.utils.executeInMainThreadWithResult(fct, msg)
