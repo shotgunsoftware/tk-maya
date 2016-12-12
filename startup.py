@@ -86,6 +86,22 @@ class MayaLauncher(SoftwareLauncher):
         if load_plugins:
             # Parse the specified comma-separated list of plugins
             find_plugins = [p.strip() for p in load_plugins.split(",") if p.strip()]
+            self.logger.debug(
+                "Plugins found from 'launch_builtin_plugins' string value "
+                "split by ',': %s" % find_plugins
+            )
+
+            # Keep track of the specific list of Toolkit plugins to load when
+            # launching Maya. This list is passed through the environment and
+            # used by the startup/userSetup.py file.
+            load_maya_plugins = []
+
+            # Add Toolkit plugins to load to the MAYA_MODULE_PATH environment
+            # variable so the Maya loadPlugin command can find them.
+            maya_module_paths = os.environ.get("MAYA_MODULE_PATH") or []
+            if maya_module_paths:
+                maya_module_paths = maya_module_paths.split(os.pathsep)
+
             for find_plugin in find_plugins:
                 load_plugin = os.path.join(
                     self.disk_location, "plugins", find_plugin
@@ -95,22 +111,23 @@ class MayaLauncher(SoftwareLauncher):
                     # so Maya can find it and to the list of SGTK_LOAD_MAYA_PLUGINS so
                     # the startup's userSetup.py file knows what plugins to load.
                     self.logger.info("Loading builtin plugin '%s'" % load_plugin)
-                    sgtk.util.append_path_to_env_var("MAYA_MODULE_PATH", load_plugin)
-                    sgtk.util.append_path_to_env_var("SGTK_LOAD_MAYA_PLUGINS", load_plugin)
+                    load_maya_plugins.append(load_plugin)
+                    if load_plugin not in maya_module_paths:
+                        maya_module_paths.append(load_plugin)
                 else:
                     # Report the missing plugin directory
-                    self.logger.debug("Resolved plugin path '%s' does not exist!" %
+                    self.logger.warning("Resolved plugin path '%s' does not exist!" %
                         load_plugin
                     )
 
-            # Add the MAYA_MODULE_PATH and SGTK_LOAD_MAYA_PLUGINS to the launch
+            # Add MAYA_MODULE_PATH and SGTK_LOAD_MAYA_PLUGINS to the launch
             # environment.
-            required_env["MAYA_MODULE_PATH"] = os.environ["MAYA_MODULE_PATH"]
-            required_env["SGTK_LOAD_MAYA_PLUGINS"] = os.environ["SGTK_LOAD_MAYA_PLUGINS"]
+            required_env["MAYA_MODULE_PATH"] = os.pathsep.join(maya_module_paths)
+            required_env["SGTK_LOAD_MAYA_PLUGINS"] = os.pathsep.join(load_maya_plugins)
 
             # Add additional variables required by the plugins to the launch
             # environment
-            (entity_type, entity_id) = _context_entity_type_id(self.context)
+            (entity_type, entity_id) = _extract_entity_from_context(self.context)
             required_env["SHOTGUN_SITE"] = self.sgtk.shotgun_url
             required_env["SHOTGUN_ENTITY_TYPE"] = entity_type
             required_env["SHOTGUN_ENTITY_ID"] = str(entity_id)
@@ -452,7 +469,7 @@ def _synergy_config_files(config_match=None):
 
     return synergy_configs
 
-def _context_entity_type_id(context):
+def _extract_entity_from_context(context):
     """
     Extract an entity type and id from the context.
 

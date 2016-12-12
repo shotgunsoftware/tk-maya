@@ -76,7 +76,11 @@ configuration:
 
     launch_builtin_plugin:
         type: str
-        description: Comma-separated list of tk-maya plugins to load when launching Maya
+        description: Comma-separated list of tk-maya plugins to load when launching Maya. Use
+                     of this feature disables the classic mechanism for bootstrapping Toolkit
+                     when Maya is launched. Therefore, if any plugins are specified using this
+                     setting, the first one in the list must be responsible for starting Toolkit
+                     when Maya is launched.
         default_value: ""
 
 # the Shotgun fields that this engine needs in order to operate correctly

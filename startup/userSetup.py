@@ -17,7 +17,7 @@ import os
 import maya.OpenMaya as OpenMaya
 import maya.cmds as cmds
 
-def bootstrap_sgtk_from_env():
+def start_toolkit_classic():
     """
     Parse enviornment variables for an engine name and
     serialized Context to use to startup Toolkit and
@@ -67,7 +67,7 @@ def bootstrap_sgtk_from_env():
         return
 
 
-def load_sgtk_plugins():
+def start_toolkit_with_plugins():
     """
     Parse environment variables for a list of plugins to load that will
     ultimately startup Toolkit and the tk-maya engine and environment.
@@ -82,7 +82,7 @@ def load_sgtk_plugins():
         else:
             load_path = plugin_path
 
-        # Display a message indicating what path plugins are 
+        # Display a message indicating what path plugins are
         # being loaded from.
         OpenMaya.MGlobal.displayInfo(
             "Shotgun: Loading plugins from '%s'" % load_path
@@ -95,10 +95,6 @@ def load_sgtk_plugins():
                 "Shotgun: No plugins loaded from '%s'" % load_path
             )
             continue
-
-        # Set the newly loaded plugins to autoload.
-        for loaded_plugin in loaded_plugins:
-            cmds.pluginInfo(loaded_plugin, e=True, autoload=True)
 
 
 def start_toolkit():
@@ -114,13 +110,13 @@ def start_toolkit():
         OpenMaya.MGlobal.displayInfo(
             "Shotgun: Loading Toolkit plugins ..."
         )
-        load_sgtk_plugins()
+        start_toolkit_with_plugins()
     else:
         # Rely on the classic boostrapping method
         OpenMaya.MGlobal.displayInfo(
             "Shotgun: Bootstrapping Toolkit from environmment variables ..."
         )
-        bootstrap_sgtk_from_env()
+        start_toolkit_classic()
 
     # Check if a file was specified to open and open it.
     file_to_open = os.environ.get("SGTK_FILE_TO_OPEN")
