@@ -64,20 +64,82 @@ class MayaLauncher(SoftwareLauncher):
 
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
-        Prepares the given software for launch.
+        Prepares an environment to launch Maya in that will automatically
+        load Toolkit and the tk-maya engine when Maya starts.
 
-        :param str exec_path: Path to DCC executable to launch.
+        :param str exec_path: Path to Maya executable to launch.
         :param str args: Command line arguments as strings.
         :param str file_to_open: (optional) Full path name of a file to open on launch.
         :returns: :class:`LaunchInformation` instance
         """
         required_env = {}
+
+        # Run the engine's userSetup.py file when Maya starts up
+        # by appending it to the env PYTHONPATH.
         startup_path = os.path.join(self.disk_location, "startup")
         sgtk.util.append_path_to_env_var("PYTHONPATH", startup_path)
         required_env["PYTHONPATH"] = os.environ["PYTHONPATH"]
-        required_env["SGTK_ENGINE"] = self.engine_name
-        required_env["SGTK_CONTEXT"] = sgtk.context.serialize(self.context)
+
+        # Check the engine settings to see whether any plugins have been
+        # specified to load.
+        load_plugins = self.get_setting("launch_builtin_plugin") or None
+        if load_plugins:
+            # Parse the specified comma-separated list of plugins
+            find_plugins = [p.strip() for p in load_plugins.split(",") if p.strip()]
+            self.logger.debug(
+                "Plugins found from 'launch_builtin_plugins' string value "
+                "split by ',': %s" % find_plugins
+            )
+
+            # Keep track of the specific list of Toolkit plugins to load when
+            # launching Maya. This list is passed through the environment and
+            # used by the startup/userSetup.py file.
+            load_maya_plugins = []
+
+            # Add Toolkit plugins to load to the MAYA_MODULE_PATH environment
+            # variable so the Maya loadPlugin command can find them.
+            maya_module_paths = os.environ.get("MAYA_MODULE_PATH") or []
+            if maya_module_paths:
+                maya_module_paths = maya_module_paths.split(os.pathsep)
+
+            for find_plugin in find_plugins:
+                load_plugin = os.path.join(
+                    self.disk_location, "plugins", find_plugin
+                )
+                if os.path.exists(load_plugin):
+                    # If the plugin path exists, add it to the list of MAYA_MODULE_PATHS
+                    # so Maya can find it and to the list of SGTK_LOAD_MAYA_PLUGINS so
+                    # the startup's userSetup.py file knows what plugins to load.
+                    self.logger.info("Loading builtin plugin '%s'" % load_plugin)
+                    load_maya_plugins.append(load_plugin)
+                    if load_plugin not in maya_module_paths:
+                        maya_module_paths.append(load_plugin)
+                else:
+                    # Report the missing plugin directory
+                    self.logger.warning("Resolved plugin path '%s' does not exist!" %
+                        load_plugin
+                    )
+
+            # Add MAYA_MODULE_PATH and SGTK_LOAD_MAYA_PLUGINS to the launch
+            # environment.
+            required_env["MAYA_MODULE_PATH"] = os.pathsep.join(maya_module_paths)
+            required_env["SGTK_LOAD_MAYA_PLUGINS"] = os.pathsep.join(load_maya_plugins)
+
+            # Add additional variables required by the plugins to the launch
+            # environment
+            (entity_type, entity_id) = _extract_entity_from_context(self.context)
+            required_env["SHOTGUN_SITE"] = self.sgtk.shotgun_url
+            required_env["SHOTGUN_ENTITY_TYPE"] = entity_type
+            required_env["SHOTGUN_ENTITY_ID"] = str(entity_id)
+        else:
+            # Prepare the launch environment with variables required by the
+            # classic bootstrap approach.
+            self.logger.info("Preparing Maya Launch via Toolkit Classic methodology ...")
+            required_env["SGTK_ENGINE"] = self.engine_name
+            required_env["SGTK_CONTEXT"] = sgtk.context.serialize(self.context)
+
         if file_to_open:
+            # Add the file name to open to the launch environment
             required_env["SGTK_FILE_TO_OPEN"] = file_to_open
 
         return LaunchInformation(exec_path, args, required_env)
@@ -406,3 +468,26 @@ def _synergy_config_files(config_match=None):
                     synergy_configs.append(search_path)
 
     return synergy_configs
+
+def _extract_entity_from_context(context):
+    """
+    Extract an entity type and id from the context.
+
+    :param context:
+    :returns: Tuple (entity_type_str, entity_id_int)
+    """
+    # Use the Project by default
+    entity_type = context.project["type"]
+    entity_id = context.project["id"]
+
+    # if there is an entity then that takes precedence
+    if context.entity:
+        entity_type = context.entity["type"]
+        entity_id = context.entity["id"]
+
+    # and if there is a Task that is even better
+    if context.task:
+        entity_type = context.task["type"]
+        entity_id = context.task["id"]
+
+    return (entity_type, entity_id)
