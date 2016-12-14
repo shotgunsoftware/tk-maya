@@ -161,17 +161,6 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
                     "    maya.utils.executeInMainThreadWithResult(fct, msg)\n" \
                     % {"panel_name": shotgun_panel_name}
 
-        # Give an initial width to the docked Shotgun app panel when first shown.
-        # Otherwise, the workspace control would use the width of the currently displayed tab.
-        size_hint = shotgun_panel.sizeHint()
-        if size_hint.isValid():
-            # Use the widget layout preferred width.
-            widget_width = size_hint.width()
-        else:
-            # Since no size is recommended, use the current width.
-            widget_width = shotgun_panel.width()
-        engine.log_debug("Widget %s size: %s" % (shotgun_panel_name, widget_width))
-
         # Dock the Shotgun app panel into a new workspace control in the active Maya workspace.
         engine.log_debug("Creating Maya workspace panel %s." % maya_panel_name)
 
@@ -179,8 +168,6 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
                   "loadImmediately": True,
                   "retain": False,  # delete the dock tab when it is closed
                   "label": title,
-                  "initialWidth": widget_width,
-                  "minimumWidth": True,  # set the minimum width to the initial width
                   "r": True}  # raise at the top of its workspace area
 
         if current_workspace == "Maya Classic":
@@ -188,12 +175,9 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
             # Dock the Shotgun app panel into a new tab of this Channel Box dock area,
             # since the user was used to this behaviour in previous versions of Maya.
             kwargs["tabToControl"] = (dock_area, -1)  # -1 to append a new tab
-        else:
-            # We are in a new Maya 2017 workspace where the Channel Box dock area might not be found.
-            # Dock the Shotgun app panel into a new Maya panel at the right of Maya main window.
-            # Trying to dock in a missing Channel Box dock area would make Maya embed the Shotgun
-            # app panel into a floating workspace control window reduced to its title bar in size.
-            kwargs["dockToMainWindow"] = ("right", False)
+
+        # When we are in a new Maya 2017 workspace where the Channel Box dock area might not be found,
+        # let Maya embed the Shotgun app panel into a floating workspace control window.
 
         cmds.workspaceControl(maya_panel_name, **kwargs)
 
@@ -233,6 +217,9 @@ def build_workspace_control_ui(shotgun_panel_name):
 
             # Reparent the Shotgun app panel widget under Maya workspace control.
             widget.setParent(workspace_control)
+
+            # Add the Shotgun app panel widget to the Maya workspace control layout.
+            workspace_control.layout().addWidget(widget)
 
             # Install an event filter on Maya workspace control to monitor
             # its close event in order to reparent the Shotgun app panel widget
