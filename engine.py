@@ -355,7 +355,7 @@ class MayaEngine(tank.platform.Engine):
             # after a File->Open receives an up-to-date "previous" context.
             self.__watcher.stop_watching()
             cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name:on_scene_event_callback(
-                engine_name=en, 
+                engine_name=en,
                 prev_context=pc,
                 menu_name=mn,
             )
@@ -713,11 +713,11 @@ class MayaEngine(tank.platform.Engine):
         #       it to work and instead resorted to the event watcher setup.
 
         # make a unique id for the app widget based off of the panel id
-        widget_id = "wdgt_%s" % panel_id
+        widget_id = "panel_%s" % panel_id
 
         if pm.control(widget_id, query=1, exists=1):
             self.log_debug("Reparent existing toolkit widget %s." % widget_id)
-            # find the widget for later use
+            # Find the Shotgun app panel widget for later use.
             for widget in QtGui.QApplication.allWidgets():
                 if widget.objectName() == widget_id:
                     widget_instance = widget
@@ -726,8 +726,9 @@ class MayaEngine(tank.platform.Engine):
                     self.log_debug("Reparenting widget %s under Maya main window." % widget_id)
                     parent = self._get_dialog_parent()
                     widget_instance.setParent(parent)
+                    # The Shotgun app panel was retrieved from under an existing Maya panel.
+                    new_panel = False
                     break
-
         else:
             self.log_debug("Create toolkit widget %s" % widget_id)
             # parent the UI to the main maya window
@@ -739,9 +740,11 @@ class MayaEngine(tank.platform.Engine):
             self.log_debug("Created widget %s: %s" % (widget_id, widget_instance))
             # apply external stylesheet
             self._apply_external_styleshet(bundle, widget_instance)
+            # The Shotgun app panel was just created.
+            new_panel = True
 
-        # Dock the app panel widget in a new panel tab of Maya Channel Box dock area.
-        maya_panel_name = tk_maya.dock_panel(self, panel_id, widget_instance, title)
+        # Dock the Shotgun app panel into a new Maya panel in the active Maya window.
+        maya_panel_name = tk_maya.dock_panel(self, widget_instance, title, new_panel)
 
         # Add the new panel to the dictionary of Maya panels that have been created by the engine.
         # The panel entry has a Maya panel name key and an app widget instance value.
@@ -750,23 +753,6 @@ class MayaEngine(tank.platform.Engine):
         # close callback is outweighed by the limited length of the dictionary that will never
         # be longer than the number of apps configured to be runnable by the engine.
         self._maya_panel_dict[maya_panel_name] = widget_instance
-
-        # just like nuke, maya doesn't give us any hints when a panel is being closed.
-        # QT widgets contained within this panel are just unparented and the floating
-        # around, taking up memory.
-        #
-        # the visibleChangeCommand callback offered by the dockControl command
-        # doesn't seem to work
-        #
-        # instead, install a QT event watcher to track when the parent
-        # is closed and make sure that the tk widget payload is closed and
-        # deallocated at the same time.
-        #
-        # Also, there are some obscure issues relating to UI refresh. These are also
-        # resolved by looking at the stream of event and force triggering refreshes at the
-        # right locations
-        #
-        tk_maya.install_callbacks(maya_panel_name, widget_id)
 
         return widget_instance
 
