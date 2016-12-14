@@ -118,27 +118,28 @@ def refresh_engine(engine_name, prev_context, menu_name):
         # This is a File->New call, so we just leave the engine in the current
         # context and move on.
         return
-    else:
-        # determine the tk instance and ctx to use:
-        tk = current_engine.sgtk
 
-        # loading a scene file
-        new_path = pm.sceneName().abspath()
+    # determine the tk instance and ctx to use:
+    tk = current_engine.sgtk
 
-        # this file could be in another project altogether, so create a new
-        # API instance.
-        try:
-            tk = tank.tank_from_path(new_path)
-        except tank.TankError, e:
-            OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
-            # build disabled menu
-            create_sgtk_disabled_menu(menu_name)
-            return
+    # loading a scene file
+    new_path = pm.sceneName().abspath()
 
-        # and construct the new context for this path:
-        ctx = tk.context_from_path(new_path, prev_context)
+    # this file could be in another project altogether, so create a new
+    # API instance.
+    try:
+        tk = tank.tank_from_path(new_path)
+    except tank.TankError, e:
+        OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
+        # build disabled menu
+        create_sgtk_disabled_menu(menu_name)
+        return
 
-    current_engine.change_context(ctx)
+    # and construct the new context for this path:
+    ctx = tk.context_from_path(new_path, prev_context)
+
+    if ctx != tank.platform.current_engine().context:
+        current_engine.change_context(ctx)
 
 
 def on_scene_event_callback(engine_name, prev_context, menu_name):
@@ -255,7 +256,7 @@ class MayaEngine(tank.platform.Engine):
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
-        if maya_ver.startswith(("2014", "2015", "2016")):
+        if maya_ver.startswith(("2014", "2015", "2016", "2017")):
             self.log_debug("Running Maya version %s" % maya_ver)
         elif maya_ver.startswith(("2012", "2013")):
             # We won't be able to rely on the warning dialog below, because Maya
@@ -318,6 +319,10 @@ class MayaEngine(tank.platform.Engine):
             self.__watcher = SceneEventWatcher(cb_fn)
             self.log_debug("Registered open and save callbacks.")
 
+        # Initialize a dictionary of Maya panels that have been created by the engine.
+        # Each panel entry has a Maya panel name key and an app widget instance value.
+        self._maya_panel_dict = {}
+
     def post_app_init(self):
         """
         Called when all apps have initialized
@@ -335,6 +340,32 @@ class MayaEngine(tank.platform.Engine):
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
 
+    def post_context_change(self, old_context, new_context):
+        """
+        Runs after a context change. The Maya event watching will be stopped
+        and new callbacks registered containing the new context information.
+
+        :param old_context: The context being changed away from.
+        :param new_context: The new context being changed to.
+        """
+        if self.get_setting("automatic_context_switch", True):
+            # We need to stop watching, and then replace with a new watcher
+            # that has a callback registered with the new context baked in.
+            # This will ensure that the context_from_path call that occurs
+            # after a File->Open receives an up-to-date "previous" context.
+            self.__watcher.stop_watching()
+            cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name:on_scene_event_callback(
+                engine_name=en,
+                prev_context=pc,
+                menu_name=mn,
+            )
+            self.__watcher = SceneEventWatcher(cb_fn)
+            self.log_debug(
+                "Registered new open and save callbacks before changing context."
+            )
+
+        # Set the Maya project to match the new context.
+        self._set_project()
 
     def _run_app_instance_commands(self):
         """
@@ -392,6 +423,9 @@ class MayaEngine(tank.platform.Engine):
         Stops watching scene events and tears down menu.
         """
         self.log_debug("%s: Destroying..." % self)
+
+        # Clear the dictionary of Maya panels to keep the garbage collector happy.
+        self._maya_panel_dict = {}
 
         if self.get_setting("automatic_context_switch", True):
             # stop watching scene events
@@ -679,11 +713,11 @@ class MayaEngine(tank.platform.Engine):
         #       it to work and instead resorted to the event watcher setup.
 
         # make a unique id for the app widget based off of the panel id
-        widget_id = "wdgt_%s" % panel_id
+        widget_id = "panel_%s" % panel_id
 
         if pm.control(widget_id, query=1, exists=1):
             self.log_debug("Reparent existing toolkit widget %s." % widget_id)
-            # find the widget for later use
+            # Find the Shotgun app panel widget for later use.
             for widget in QtGui.QApplication.allWidgets():
                 if widget.objectName() == widget_id:
                     widget_instance = widget
@@ -692,8 +726,9 @@ class MayaEngine(tank.platform.Engine):
                     self.log_debug("Reparenting widget %s under Maya main window." % widget_id)
                     parent = self._get_dialog_parent()
                     widget_instance.setParent(parent)
+                    # The Shotgun app panel was retrieved from under an existing Maya panel.
+                    new_panel = False
                     break
-
         else:
             self.log_debug("Create toolkit widget %s" % widget_id)
             # parent the UI to the main maya window
@@ -705,25 +740,57 @@ class MayaEngine(tank.platform.Engine):
             self.log_debug("Created widget %s: %s" % (widget_id, widget_instance))
             # apply external stylesheet
             self._apply_external_styleshet(bundle, widget_instance)
+            # The Shotgun app panel was just created.
+            new_panel = True
 
-        # Dock the app panel widget in a new panel tab of Maya Channel Box dock area.
-        tk_maya.dock_panel(self, panel_id, widget_instance, title)
+        # Dock the Shotgun app panel into a new Maya panel in the active Maya window.
+        maya_panel_name = tk_maya.dock_panel(self, widget_instance, title, new_panel)
 
-        # just like nuke, maya doesn't give us any hints when a panel is being closed.
-        # QT widgets contained within this panel are just unparented and the floating
-        # around, taking up memory.
-        #
-        # the visibleChangeCommand callback offered by the dockControl command
-        # doesn't seem to work
-        #
-        # instead, install a QT event watcher to track when the parent
-        # is closed and make sure that the tk widget payload is closed and
-        # deallocated at the same time.
-        #
-        # Also, there are some obscure issues relating to UI refresh. These are also
-        # resolved by looking at the stream of event and force triggering refreshes at the
-        # right locations
-        #
-        tk_maya.install_callbacks(panel_id, widget_id)
+        # Add the new panel to the dictionary of Maya panels that have been created by the engine.
+        # The panel entry has a Maya panel name key and an app widget instance value.
+        # Note that the panel entry will not be removed from the dictionary when the panel is
+        # later deleted since the added complexity of updating the dictionary from our panel
+        # close callback is outweighed by the limited length of the dictionary that will never
+        # be longer than the number of apps configured to be runnable by the engine.
+        self._maya_panel_dict[maya_panel_name] = widget_instance
 
         return widget_instance
+
+    def close_windows(self):
+        """
+        Closes the various windows (dialogs, panels, etc.) opened by the engine.
+        """
+
+        # Make a copy of the list of Tank dialogs that have been created by the engine and
+        # are still opened since the original list will be updated when each dialog is closed.
+        opened_dialog_list = self.created_qt_dialogs[:]
+
+        # Loop through the list of opened Tank dialogs.
+        for dialog in opened_dialog_list:
+            dialog_window_title = dialog.windowTitle()
+            try:
+                # Close the dialog and let its close callback remove it from the original dialog list.
+                self.log_debug("Closing dialog %s." % dialog_window_title)
+                dialog.close()
+            except Exception, exception:
+                self.log_error("Cannot close dialog %s: %s" % (dialog_window_title, exception))
+
+        # Loop through the dictionary of Maya panels that have been created by the engine.
+        for (maya_panel_name, widget_instance) in self._maya_panel_dict.iteritems():
+            # Make sure the Maya panel is still opened.
+            if pm.control(maya_panel_name, query=True, exists=True):
+                try:
+                    # Reparent the Shotgun app panel widget under Maya main window
+                    # to prevent it from being deleted with the existing Maya panel.
+                    self.log_debug("Reparenting widget %s under Maya main window." %
+                                   widget_instance.objectName())
+                    parent = self._get_dialog_parent()
+                    widget_instance.setParent(parent)
+                    # The Maya panel can now be deleted safely.
+                    self.log_debug("Deleting Maya panel %s." % maya_panel_name)
+                    pm.deleteUI(maya_panel_name)
+                except Exception, exception:
+                    self.log_error("Cannot delete Maya panel %s: %s" % (maya_panel_name, exception))
+
+        # Clear the dictionary of Maya panels now that they were deleted.
+        self._maya_panel_dict = {}
