@@ -116,10 +116,12 @@ class MenuGenerator(object):
         pm.menuItem(label="Jump to Shotgun", 
                     parent=ctx_menu, 
                     command=Callback(self._jump_to_sg))
-        pm.menuItem(label="Jump to File System", 
-                    parent=ctx_menu, 
-                    command=Callback(self._jump_to_fs))
 
+        # Add the menu item only when there are some file system locations.
+        if ctx.filesystem_locations:
+            pm.menuItem(label="Jump to File System",
+                        parent=ctx_menu,
+                        command=Callback(self._jump_to_fs))
 
         # divider (apps may register entries below this divider)
         pm.menuItem(divider=True, parent=ctx_menu)
