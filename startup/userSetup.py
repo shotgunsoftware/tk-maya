@@ -88,13 +88,34 @@ def start_toolkit_with_plugins():
             "Shotgun: Loading plugins from '%s'" % load_path
         )
 
-        # Load the plugins from the resolved path
-        loaded_plugins = cmds.loadPlugin("%s/*" % load_path)
-        if not loaded_plugins:
-            OpenMaya.MGlobal.displayWarning(
-                "Shotgun: No plugins loaded from '%s'" % load_path
+        # Load the plugins from the resolved path individually,
+        # as the loadPlugin Maya command has difficulties loading
+        # a plugin that has v.#.# in its path :
+        #   loadPlugin "/shotgun/site/project/install/app_store/tk-maya/v0.7.10/plugins/basic/plug-ins/*";
+        #   // Error: line 1: Plug-in, "/shotgun/site/project/install/app_store/tk-maya/v0.7.10/plugins/basic/plug-ins/*", was not found on MAYA_PLUG_IN_PATH. //
+        #   loadPlugin "/shotgun/site/project/install/app_store/tk-maya-no_version/plugins/basic/plug-ins/*";
+        #   // Result: shotgun //
+        for plugin in os.listdir(load_path):
+            if not plugin.endswith(".py"):
+                # Skip files/directories that are not plugins
+                continue
+
+            # Construct the OS agnostic full path to the plugin
+            # and attempt to load the plugin.
+            load_plugin = os.path.join(load_path, plugin)
+            OpenMaya.MGlobal.displayInfo(
+                "Attempting to load plugin : %s" % load_plugin
             )
-            continue
+
+            # Note that the loadPlugin command always returns
+            # a list, even when loading a single plugin.
+            loaded_plugins = cmds.loadPlugin(load_plugin)
+            if not loaded_plugins:
+                # Warn the user the plugin could not be loaded.
+                OpenMaya.MGlobal.displayWarning(
+                    "Shotgun: Could not load plugin: %s" % load_plugin
+                )
+                continue
 
 
 def start_toolkit():
