@@ -197,6 +197,37 @@ class MayaLauncher(SoftwareLauncher):
         )
         return icon_path
 
+    def _resolve_path_for_platform(self, exec_path):
+        """
+        In some cases, the resolved path to an executable won't launch properly
+        as is. Identify those cases here and modify the input executable path
+        into something that will launch correctly on the current platform.
+
+        :param str exec_path: Full path to a Maya executable
+
+        :returns: Full path to a Maya executable that will properly launch
+                  on the current platform.
+        """
+        if not exec_path:
+            # Nothing to check
+            return exec_path
+
+        if sys.platform == "darwin" and "Maya.app" in exec_path:
+            # There seems to be an anomoly with launching Maya from the
+            # full executable path on MacOS. Everything behaves nicer if
+            # Maya is launched from the bundle Maya.app directory instead.
+            exec_path = "".join(exec_path.partition("Maya.app")[0:2])
+
+        elif sys.platform == "linux2" and exec_path.endswith("maya.bin"):
+            # Specifying the .bin suffix when launching sometimes results
+            # in linked libraries not getting loaded correctly. Stripping
+            # off the .bin suffix seems to resolve that issue.
+            path_parts = exec_path.split(os.path.sep)
+            path_parts[-1] = path_parts[-1].replace("maya.bin", "maya")
+            exec_path = os.path.sep.join(path_parts)
+
+        return exec_path
+
     def _synergy_software_versions(
             self, versions=None, display_name=None, icon=None
         ):
@@ -221,7 +252,7 @@ class MayaLauncher(SoftwareLauncher):
         configs = _synergy_config_files("Maya")
         if not configs:
             self.logger.debug(
-                "Unable to determine Autodesk Synergy paths for platform "%
+                "Unable to determine Autodesk Synergy paths for %s platform." %
                 sys.platform
             )
             return []
@@ -270,12 +301,9 @@ class MayaLauncher(SoftwareLauncher):
                 )
                 continue
 
-            exec_path = synergy_data["ExecutablePath"]
-            if sys.platform == "darwin" and "Maya.app" in exec_path:
-                # There seems to be an anomoly with launching Maya from the
-                # full executable path on MacOS. Everything behaves nicer if
-                # Maya is launched from the bundle Maya.app directory instead.
-                exec_path = "".join(exec_path.partition("Maya.app")[0:2])
+            exec_path = self._resolve_path_for_platform(
+                synergy_data.get("StartWrapperPath") or synergy_data["ExecutablePath"]
+            )
 
             # Create a SoftwareVersion from input and config data.
             self.logger.debug("Creating SoftwareVersion for '%s'" % exec_path)
@@ -387,14 +415,9 @@ class MayaLauncher(SoftwareLauncher):
                     )
                     continue
 
-                if sys.platform == "darwin" and "Maya.app" in exec_path:
-                    # There seems to be an anomoly with launching Maya from the
-                    # full executable path on MacOS. Everything behaves nicer if
-                    # Maya is launched from the bundle Maya.app directory instead.
-                    exec_path = "".join(exec_path.partition("Maya.app")[0:2])
-
                 # Create a SoftwareVersion using the information from executable
                 # path(s) found in default locations.
+                exec_path = self._resolve_path_for_platform(exec_path)
                 self.logger.debug("Creating SoftwareVersion for executable '%s'." %
                     exec_path
                 )
