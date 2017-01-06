@@ -88,45 +88,27 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
 
     else:  # Maya 2017 and later
 
-        import uuid
         import maya.cmds as cmds
 
-        # Create a Maya panel name in the current Maya workspace.
-        # We need to use different names for different workspaces in order for
-        # each workspace control location to be saved and restored properly
-        # when the user swithces from one workspace to another.
-        current_workspace = cmds.workspaceLayoutManager(query=True, current=True)
-        maya_panel_name = "maya_%s_%s" % (current_workspace, shotgun_panel_name)
-        # Make sure the name is a valid Maya object name.
-        maya_panel_name = mel.eval('formValidObjectName("%s")' % maya_panel_name)
+        # Create a Maya panel name.
+        maya_panel_name = "maya_%s" % shotgun_panel_name
 
-        # When the Maya panel already exists, it can be deleted safely since its embedded
-        # Shotgun app panel has already been reparented under Maya main window.
-        if cmds.workspaceControl(maya_panel_name, query=True, exists=True):
-            engine.log_debug("Deleting existing Maya panel %s." % maya_panel_name)
-            cmds.deleteUI(maya_panel_name)
+        # When the current Maya workspace contains our Maya panel workspace control,
+        # embed the Shotgun app panel into this workspace control.
+        # This can happen when the engine has just been started and the Shotgun app panel is
+        # displayed for the first time around, or when the user reinvokes a displayed panel.
+        if cmds.workspaceControl(maya_panel_name, exists=True) and \
+           cmds.workspaceControl(maya_panel_name, query=True, visible=True):
 
-        if cmds.workspaceControlState(maya_panel_name, exists=True):
-            # We have a saved workspace control state created by Maya from a workspace control that was
-            # previously closed and deleted when the user swithced to another workspace or exited Maya.
-            if new_panel:
-                # When the Shotgun app panel was just created by the calling function, let Maya
-                # embed it into a workspace control restored from the workspace control state.
-                # This case happens when the engine has just been started and the Shotgun app panel
-                # is displayed for the first time around.
-                # In Maya 2017, switching to another workspace then back is the only straightforward
-                # way to make Maya automatically recreate the workspace control and call its UI script.
-                engine.log_debug("Making Maya recreate workspace panel %s." % maya_panel_name)
-                temp_workspace_name = "W%s" % uuid.uuid4().hex
-                cmds.workspaceLayoutManager(saveAs=temp_workspace_name)
-                cmds.workspaceLayoutManager(setCurrent=current_workspace)
-                cmds.workspaceLayoutManager(delete=temp_workspace_name)
-                return maya_panel_name
-            else:
-                # When the Shotgun app panel was retrieved from under an existing Maya panel,
-                # delete the workspace control state since we want to recreate our default workspace control.
-                engine.log_debug("Deleting existing Maya workspace panel state %s." % maya_panel_name)
-                cmds.workspaceControlState(maya_panel_name, remove=True)
+            engine.log_debug("Restoring Maya workspace panel %s." % maya_panel_name)
+
+            # Set the Maya default parent to be our Maya panel workspace control.
+            cmds.setParent(maya_panel_name)
+
+            # Embed the Shotgun app panel into the Maya panel workspace control.
+            build_workspace_control_ui(shotgun_panel_name)
+
+            return maya_panel_name
 
         # Retrieve the Channel Box dock area, with error reporting turned off.
         # This MEL function is declared in Maya startup script file UIComponents.mel.
@@ -165,19 +147,16 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
         engine.log_debug("Creating Maya workspace panel %s." % maya_panel_name)
 
         kwargs = {"uiScript": ui_script,
-                  "loadImmediately": True,
                   "retain": False,  # delete the dock tab when it is closed
                   "label": title,
                   "r": True}  # raise at the top of its workspace area
 
-        if current_workspace == "Maya Classic":
-            # We are in the default Maya workspace where the Channel Box dock area can be found.
-            # Dock the Shotgun app panel into a new tab of this Channel Box dock area,
-            # since the user was used to this behaviour in previous versions of Maya.
-            kwargs["tabToControl"] = (dock_area, -1)  # -1 to append a new tab
-
-        # When we are in a new Maya 2017 workspace where the Channel Box dock area might not be found,
+        # When we are in a Maya workspace where the Channel Box dock area can be found,
+        # dock the Shotgun app panel into a new tab of this Channel Box dock area
+        # since the user was used to this behaviour in previous versions of Maya.
+        # When we are in a Maya workspace where the Channel Box dock area can not be found,
         # let Maya embed the Shotgun app panel into a floating workspace control window.
+        kwargs["tabToControl"] = (dock_area, -1)  # -1 to append a new tab
 
         cmds.workspaceControl(maya_panel_name, **kwargs)
 
