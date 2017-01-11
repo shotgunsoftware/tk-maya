@@ -88,6 +88,7 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
 
     else:  # Maya 2017 and later
 
+        import uuid
         import maya.cmds as cmds
 
         # Create a Maya panel name.
@@ -107,6 +108,20 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
 
             # Embed the Shotgun app panel into the Maya panel workspace control.
             build_workspace_control_ui(shotgun_panel_name)
+
+            # Use a workaround to force Maya 2017 to refresh the panel size.
+            try:
+                # Create a new empty workspace control tab.
+                name = cmds.workspaceControl(uuid.uuid4().hex,
+                                             tabToControl=(maya_panel_name, -1),  # -1 to append a new tab
+                                             uiScript="",
+                                             r=True)  # raise at the top of its workspace area
+                # Delete the empty workspace control.
+                cmds.deleteUI(name)
+                # Delete the empty workspace control state.
+                cmds.workspaceControlState(name, remove=True)
+            except:
+                pass
 
             return maya_panel_name
 
@@ -193,6 +208,16 @@ def build_workspace_control_ui(shotgun_panel_name):
     # Search for the Shotgun app panel widget.
     for widget in QtWidgets.QApplication.allWidgets():
         if widget.objectName() == shotgun_panel_name:
+
+            # When possible, give a minimum width to the workspace control;
+            # otherwise, it will use the width of the currently displayed tab.
+            # Note that we did not use the workspace control "initialWidth" and "minimumWidth"
+            # to set the minimum width to the initial width since these values are not
+            # properly saved by Maya 2017 in its layout preference files.
+            size_hint = widget.sizeHint()
+            if size_hint.isValid():
+                minimum_width = size_hint.width()
+                workspace_control.setMinimumWidth(minimum_width)
 
             # Reparent the Shotgun app panel widget under Maya workspace control.
             widget.setParent(workspace_control)
