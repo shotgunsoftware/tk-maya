@@ -88,6 +88,7 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
 
     else:  # Maya 2017 and later
 
+        import uuid
         import maya.cmds as cmds
 
         # Create a Maya panel name.
@@ -107,6 +108,25 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
 
             # Embed the Shotgun app panel into the Maya panel workspace control.
             build_workspace_control_ui(shotgun_panel_name)
+
+            # Use a workaround to force Maya 2017 to refresh the panel size.
+            # We encased this workaround in a try/except since we cannot be sure
+            # that it will still work without errors in future versions of Maya.
+            try:
+                engine.log_debug("Forcing Maya to refresh workspace panel %s size." % maya_panel_name)
+
+                # Create a new empty workspace control tab.
+                name = cmds.workspaceControl(uuid.uuid4().hex,
+                                             tabToControl=(maya_panel_name, -1),  # -1 to append a new tab
+                                             uiScript="",
+                                             r=True)  # raise at the top of its workspace area
+                # Delete the empty workspace control.
+                cmds.deleteUI(name)
+                # Delete the empty workspace control state that was created
+                # when deleting the empty workspace control.
+                cmds.workspaceControlState(name, remove=True)
+            except:
+                engine.log_debug("Cannot force Maya to refresh workspace panel %s size." % maya_panel_name)
 
             return maya_panel_name
 
@@ -177,14 +197,17 @@ def build_workspace_control_ui(shotgun_panel_name):
     :param shotgun_panel_name: Name of the Qt widget at the root of a Shotgun app panel.
     """
 
-    import maya.api.OpenMaya
-    import maya.utils
     from maya.OpenMayaUI import MQtUtil
 
     # In the context of this function, we know that we are running in Maya 2017 and later
     # with the newer versions of PySide and shiboken.
     from PySide2 import QtWidgets
     from shiboken2 import wrapInstance
+
+    import sgtk.platform
+
+    # Retrieve the Maya engine.
+    engine = sgtk.platform.current_engine()
 
     # Retrieve the calling Maya workspace control.
     ptr = MQtUtil.getCurrentParent()
@@ -193,6 +216,28 @@ def build_workspace_control_ui(shotgun_panel_name):
     # Search for the Shotgun app panel widget.
     for widget in QtWidgets.QApplication.allWidgets():
         if widget.objectName() == shotgun_panel_name:
+
+            maya_panel_name = workspace_control.objectName()
+
+            engine.log_debug("Reparenting Shotgun app panel %s under Maya workspace panel %s." % \
+                             (shotgun_panel_name, maya_panel_name))
+
+            # When possible, give a minimum width to the workspace control;
+            # otherwise, it will use the width of the currently displayed tab.
+            # Note that we did not use the workspace control "initialWidth" and "minimumWidth"
+            # to set the minimum width to the initial width since these values are not
+            # properly saved by Maya 2017 in its layout preference files.
+            # This minimum width behaviour is consistent with Maya standard panels.
+            size_hint = widget.sizeHint()
+            if size_hint.isValid():
+                # Use the widget recommended width as the workspace control minimum width.
+                minimum_width = size_hint.width()
+                engine.log_debug("Setting Maya workspace panel %s minimum width to %s." % \
+                                 (maya_panel_name, minimum_width))
+                workspace_control.setMinimumWidth(minimum_width)
+            else:
+                # The widget has no recommended size.
+                engine.log_debug("Cannot set Maya workspace panel %s minimum width." % maya_panel_name)
 
             # Reparent the Shotgun app panel widget under Maya workspace control.
             widget.setParent(workspace_control)
@@ -203,10 +248,9 @@ def build_workspace_control_ui(shotgun_panel_name):
             # Install an event filter on Maya workspace control to monitor
             # its close event in order to reparent the Shotgun app panel widget
             # under Maya main window for later use.
+            engine.log_debug("Installing a close event filter on Maya workspace panel %s." % maya_panel_name)
             panel_util.install_event_filter_by_widget(workspace_control, shotgun_panel_name)
 
             break
     else:
-        msg = "Shotgun: Cannot restore %s: Shotgun app panel not found" % shotgun_panel_name
-        fct = maya.api.OpenMaya.MGlobal.displayError
-        maya.utils.executeInMainThreadWithResult(fct, msg)
+        engine.log_error("Cannot restore %s: Shotgun app panel not found" % shotgun_panel_name)
