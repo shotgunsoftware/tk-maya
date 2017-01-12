@@ -330,12 +330,16 @@ class MayaEngine(tank.platform.Engine):
 
         # detect if in batch mode
         if self.has_ui:
+
             self._menu_handle = pm.menu("ShotgunMenu", label=self._menu_name, parent=pm.melGlobals["gMainWindow"])
             # create our menu handler
             tk_maya = self.import_module("tk_maya")
             self._menu_generator = tk_maya.MenuGenerator(self, self._menu_handle)
             # hook things up so that the menu is created every time it is clicked
             self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
+
+            # Restore the persisted Shotgun app panels.
+            tk_maya.panel_generation.restore_panels(self)
 
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
@@ -713,7 +717,7 @@ class MayaEngine(tank.platform.Engine):
         #       it to work and instead resorted to the event watcher setup.
 
         # make a unique id for the app widget based off of the panel id
-        widget_id = "panel_%s" % panel_id
+        widget_id = tk_maya.panel_generation.SHOTGUN_APP_PANEL_PREFIX + panel_id
 
         if pm.control(widget_id, query=1, exists=1):
             self.log_debug("Reparent existing toolkit widget %s." % widget_id)
@@ -727,7 +731,6 @@ class MayaEngine(tank.platform.Engine):
                     parent = self._get_dialog_parent()
                     widget_instance.setParent(parent)
                     # The Shotgun app panel was retrieved from under an existing Maya panel.
-                    new_panel = False
                     break
         else:
             self.log_debug("Create toolkit widget %s" % widget_id)
@@ -741,10 +744,9 @@ class MayaEngine(tank.platform.Engine):
             # apply external stylesheet
             self._apply_external_styleshet(bundle, widget_instance)
             # The Shotgun app panel was just created.
-            new_panel = True
 
         # Dock the Shotgun app panel into a new Maya panel in the active Maya window.
-        maya_panel_name = tk_maya.dock_panel(self, widget_instance, title, new_panel)
+        maya_panel_name = tk_maya.panel_generation.dock_panel(self, widget_instance, title)
 
         # Add the new panel to the dictionary of Maya panels that have been created by the engine.
         # The panel entry has a Maya panel name key and an app widget instance value.
