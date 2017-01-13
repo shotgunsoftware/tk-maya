@@ -8,10 +8,55 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
+import maya.cmds as cmds
+import maya.mel as mel
+import maya.utils
+
 from . import panel_util
 
 
-def dock_panel(engine, shotgun_panel, title, new_panel):
+# Prefix prepended to the Shotgun app panel unique identifier to create
+# the name given to the Qt widget at the root of the Shotgun app panel.
+SHOTGUN_APP_PANEL_PREFIX = "panel_"
+
+# Prefix prepended to the Shotgun app panel name to create the name
+# given to the Maya panel embedding the Shotgun app panel widget.
+MAYA_PANEL_PREFIX = "maya_"
+
+
+def restore_panels(engine):
+    """
+    Restores the persisted Shotgun app panels into their visible
+    Maya workspace controls in the active Maya window.
+
+    .. note:: This function is only meaningful for Maya 2017 and later,
+              and does nothing for previous versions of Maya.
+
+    :param engine: :class:`MayaEngine` instance running in Maya.
+    """
+
+    # Only restore Shotgun app panels in Maya 2017 and later.
+    if mel.eval("getApplicationVersionAsFloat()") < 2017:
+        return
+
+    # Search for the Shotgun app panels that need to be restored
+    # among the panels registered with the engine.
+    for panel_id in engine.panels:
+
+        # Recreate a Maya panel name with the Shotgun app panel unique identifier.
+        maya_panel_name = MAYA_PANEL_PREFIX + SHOTGUN_APP_PANEL_PREFIX + panel_id
+
+        # When the current Maya workspace contains the Maya panel workspace control,
+        # the Shotgun app panel needs to be recreated and docked.
+        if cmds.workspaceControl(maya_panel_name, exists=True) and \
+           not cmds.control(maya_panel_name, query=True, isObscured=True):
+
+            # Once Maya will have completed its UI update and be idle,
+            # recreate and dock the Shotgun app panel.
+            maya.utils.executeDeferred(engine.panels[panel_id]["callback"])
+
+
+def dock_panel(engine, shotgun_panel, title):
     """
     Docks a Shotgun app panel into a new Maya panel in the active Maya window.
 
@@ -23,26 +68,19 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
                           This Qt widget is assumed to be child of Maya main window.
                           Its name can be used in standard Maya commands to reparent it under a Maya panel.
     :param title: Title to give to the new dock tab.
-    :param new_panel: True when the Shotgun app panel was just created by the calling function.
-                      False when the Shotgun app panel was retrieved from under an existing Maya panel.
     :returns: Name of the newly created Maya panel.
     """
-
-    # The imports are done here rather than at the module level to avoid spurious imports
-    # when this module is reloaded in the context of a workspace control UI script.
-    import maya.mel as mel
 
     # Retrieve the Shotgun app panel name.
     shotgun_panel_name = shotgun_panel.objectName()
 
+    # Create a Maya panel name.
+    maya_panel_name = MAYA_PANEL_PREFIX + shotgun_panel_name
+
     # Use the proper Maya panel docking method according to the Maya version.
     if mel.eval("getApplicationVersionAsFloat()") < 2017:
 
-        import maya.utils
         import pymel.core as pm
-
-        # Create a Maya panel name.
-        maya_panel_name = "maya_%s" % shotgun_panel_name
 
         # When the Maya panel already exists, it can be deleted safely since its embedded
         # Shotgun app panel has already been reparented under Maya main window.
@@ -89,17 +127,13 @@ def dock_panel(engine, shotgun_panel, title, new_panel):
     else:  # Maya 2017 and later
 
         import uuid
-        import maya.cmds as cmds
-
-        # Create a Maya panel name.
-        maya_panel_name = "maya_%s" % shotgun_panel_name
 
         # When the current Maya workspace contains our Maya panel workspace control,
         # embed the Shotgun app panel into this workspace control.
         # This can happen when the engine has just been started and the Shotgun app panel is
         # displayed for the first time around, or when the user reinvokes a displayed panel.
         if cmds.workspaceControl(maya_panel_name, exists=True) and \
-           cmds.workspaceControl(maya_panel_name, query=True, visible=True):
+           not cmds.control(maya_panel_name, query=True, isObscured=True):
 
             engine.log_debug("Restoring Maya workspace panel %s." % maya_panel_name)
 
@@ -253,4 +287,22 @@ def build_workspace_control_ui(shotgun_panel_name):
 
             break
     else:
-        engine.log_error("Cannot restore %s: Shotgun app panel not found" % shotgun_panel_name)
+        # The Shotgun app panel widget was not found and needs to be recreated.
+
+        # Search for the Shotgun app panel that needs to be restored
+        # among the panels registered with the engine.
+        for panel_id in engine.panels:
+
+            # The name of the Qt widget at the root of the Shotgun app panel
+            # was constructed by prepending to the panel unique identifier.
+            if shotgun_panel_name.endswith(panel_id):
+
+                # Once Maya will have completed its UI update and be idle,
+                # recreate and dock the Shotgun app panel.
+                maya.utils.executeDeferred(engine.panels[panel_id]["callback"])
+
+                break
+        else:
+            # The Shotgun app panel that needs to be restored is not in the context configuration.
+            engine.log_error("Cannot restore %s: Shotgun app panel not found. " \
+                             "Make sure the app is in the context configuration. "% shotgun_panel_name)

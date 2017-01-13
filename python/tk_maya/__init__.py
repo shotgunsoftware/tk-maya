@@ -9,4 +9,4 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 from .menu_generation import MenuGenerator
-from .panel_generation import dock_panel
+from . import panel_generation
