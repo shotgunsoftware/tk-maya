@@ -22,6 +22,7 @@ import logging
 import maya.OpenMaya as OpenMaya
 import pymel.core as pm
 import maya.cmds as cmds
+import maya.utils
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
@@ -403,17 +404,21 @@ class MayaEngine(tank.platform.Engine):
             else:
                 if not setting_command_name:
                     # Run all commands of the given app instance.
+                    # Run these commands once Maya will have completed its UI update and be idle
+                    # in order to run them after the ones that restore the persisted Shotgun app panels.
                     for (command_name, command_function) in command_dict.iteritems():
                         self.log_debug("%s startup running app '%s' command '%s'." %
                                        (self.name, app_instance_name, command_name))
-                        command_function()
+                        maya.utils.executeDeferred(command_function)
                 else:
                     # Run the command whose name is listed in the 'run_at_startup' setting.
+                    # Run this command once Maya will have completed its UI update and be idle
+                    # in order to run it after the ones that restore the persisted Shotgun app panels.
                     command_function = command_dict.get(setting_command_name)
                     if command_function:
                         self.log_debug("%s startup running app '%s' command '%s'." %
                                        (self.name, app_instance_name, setting_command_name))
-                        command_function()
+                        maya.utils.executeDeferred(command_function)
                     else:
                         known_commands = ', '.join("'%s'" % name for name in command_dict)
                         self.log_warning(
