@@ -285,6 +285,14 @@ def build_workspace_control_ui(shotgun_panel_name):
             engine.log_debug("Installing a close event filter on Maya workspace panel %s." % maya_panel_name)
             panel_util.install_event_filter_by_widget(workspace_control, shotgun_panel_name)
 
+            # Delete any leftover workspace control state to avoid a spurious deletion
+            # of our workspace control when the user switches to another workspace and back.
+            if cmds.workspaceControlState(maya_panel_name, exists=True):
+                # Once Maya will have completed its UI update and be idle,
+                # delete the leftover workspace control state.
+                engine.log_debug("Deleting leftover Maya workspace control state %s." % maya_panel_name)
+                maya.utils.executeDeferred(cmds.workspaceControlState, maya_panel_name, remove=True)
+
             break
     else:
         # The Shotgun app panel widget was not found and needs to be recreated.
