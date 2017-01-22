@@ -9,32 +9,6 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 
-# This file contains the plug-in configuration data that will be packaged
-# into manifest.py by the build_plugin.py script.
-
-
-#
-# Plug-in information recommended values to specify by convention.
-#
-
-# Plug-in name that will prefix the plug-in messaqges displayed in Maya script editor.
-name: "tk-maya-basic"
-
-# Plug-in version number that will be displayed in Maya Plug-in Information window.
-# This plug-in version number and the one in the Maya module file should be synchronised.
-version: "0.0.5"
-
-description:  "Shotgun toolkit integration into a basic plug-in."
-author:       "Shotgun Software"
-organization: "Autodesk Inc."
-contact:      "support@shotgunsoftware.com"
-url:          "https://www.shotgunsoftware.com"
-
-
-#
-# Values required by all plug-ins.
-#
-
 base_configuration:
   # The default configuration that the plugin should use.
   # For documentation and details, see
@@ -49,11 +23,6 @@ base_configuration:
   type: app_store
   name: tk-config-basic
 
-  # For convenience, the following location descriptor lines will be
-  # kept around while the plug-in is still in private development.
-  # type: "dev"
-  # path: "$TK_CONFIG_PLUGINBASIC_ROOT"
-
 # The Plugin Id helps uniquely identify this plugin and can be
 # used to override and customize it. For more information, see
 # http://developer.shotgunsoftware.com/tk-core/bootstrap.html#sgtk.bootstrap.ToolkitManager.plugin_id
@@ -66,12 +35,3 @@ base_configuration:
 plugin_id: "basic.maya"
 
 
-#
-# Values specific to this plug-in.
-#
-
-# Value given to 'sgtk.LogManager().global_debug'.
-debug_logging: true
-
-# Engine used by the plug-in.
-engine_name: "tk-maya"

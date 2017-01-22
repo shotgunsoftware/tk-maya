@@ -8,5 +8,5 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-+ tk-maya-basic 0.0.5 .
++ tk-maya-basic 1.0.0 .
 TK_MAYA_BASIC_ROOT:=.
