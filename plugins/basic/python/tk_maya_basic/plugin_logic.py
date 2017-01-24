@@ -25,22 +25,12 @@ qt_importer = QtImporter()
 QtCore = qt_importer.QtCore
 QtGui = qt_importer.QtGui
 
-from sgtk_plugin_basic_maya import manifest
 from . import plugin_engine
 from . import plugin_logging
-
 from . import __name__ as PLUGIN_PACKAGE_NAME
-
 
 MENU_LOGIN = "ShotgunMenuLogin"
 MENU_LABEL = "Shotgun"
-
-ITEM_LABEL_LOGIN   = "Log In to Shotgun..."
-ITEM_LABEL_LOGOUT  = "Log Out of Shotgun"
-ITEM_LABEL_WEBSITE = "Learn about Shotgun..."
-
-WEBSITE_URL = "https://shotgunsoftware.com"
-
 
 # Initialize a standalone logger to display messages in Maya script editor
 # when the engine is not running while the user is logged out of Shotgun.
@@ -50,14 +40,13 @@ standalone_logger.propagate = False
 # Ignore messages less severe than the debug ones.
 standalone_logger.setLevel(logging.DEBUG)
 # Use a custom logging handler to display messages in Maya script editor.
-standalone_logger.addHandler(plugin_logging.PluginLoggingHandler(manifest.name))
+standalone_logger.addHandler(plugin_logging.PluginLoggingHandler())
 
 
 def bootstrap():
     """
     Bootstraps the plug-in logic handling user login and logout.
     """
-
     if sgtk.authentication.ShotgunAuthenticator().get_default_user():
         # When the user is already authenticated, automatically log him/her in.
         _login_user()
@@ -101,20 +90,23 @@ def _login_user():
     # processed before deleting the menu to avoid a crash in Maya 2017.
     maya.utils.executeDeferred(_delete_login_menu)
 
-    # Report starting of the bootstrap.
-    standalone_logger.info("Shotgun initialization starting.")
-
     # Show a progress bar, and set its initial value and message.
-    _show_progress_bar(0.0, "Initializing Shotgun...")
+    _show_progress_bar(0.0, "Loading...")
 
     # Before bootstrapping the engine for the first time around,
     # the toolkit manager may swap the toolkit core to its latest version.
-    plugin_engine.bootstrap(
-        user,
-        progress_callback=_handle_bootstrap_progress,
-        completed_callback=_handle_bootstrap_completed,
-        failed_callback=_handle_bootstrap_failed
-    )
+    try:
+        plugin_engine.bootstrap(
+            user,
+            progress_callback=_handle_bootstrap_progress,
+            completed_callback=_handle_bootstrap_completed,
+            failed_callback=_handle_bootstrap_failed
+        )
+    except Exception, e:
+        # return to normal state
+        _handle_bootstrap_failed(phase=None, exception=e)
+        # also print the full call stack
+        standalone_logger.exception("Shotgun reported the following exception during startup:")
 
 
 def _handle_bootstrap_progress(progress_value, message):
@@ -126,17 +118,7 @@ def _handle_bootstrap_progress(progress_value, message):
     :param progress_value: Current progress value, ranging from 0.0 to 1.0.
     :param message: Progress message to report.
     """
-
-    message = "Initializing Shotgun: %s" % message
-
-    standalone_logger.info(message)
-
-    # Show the progress bar, and update its value and message.
     _show_progress_bar(progress_value, message)
-
-    # Force Maya to process its UI events in order to refresh the main progress bar.
-    #qApp = QtCore.QCoreApplication.instance()
-    #qApp.processEvents()
 
 
 def _handle_bootstrap_completed(engine):
@@ -158,11 +140,11 @@ def _handle_bootstrap_completed(engine):
     _hide_progress_bar()
 
     # Report completion of the bootstrap.
-    standalone_logger.info("Shotgun initialization completed.")
+    standalone_logger.info("Integration Loaded.")
 
     # Add a logout menu item to the engine context menu.
     sgtk.platform.current_engine().register_command(
-        ITEM_LABEL_LOGOUT,
+        "Log Out of Shotgun",
         _logout_user,
         {"type": "context_menu"}
     )
@@ -190,7 +172,7 @@ def _handle_bootstrap_failed(phase, exception):
     _hide_progress_bar()
 
     # Report the encountered exception.
-    standalone_logger.error("Shotgun initialization failed: %s" % exception)
+    standalone_logger.error("Initialization failed: %s" % exception)
 
     # Clear the user's credentials to log him/her out.
     sgtk.authentication.ShotgunAuthenticator().clear_default_user()
@@ -229,7 +211,7 @@ def _show_progress_bar(progress_value, message):
 
     # Set the main progress bar value and message.
     main_progress_bar.setProgress(int(progress_value * 100.0))
-    main_progress_bar.setStatus(message)
+    main_progress_bar.setStatus("Shotgun: %s" % message)
 
 
 def _hide_progress_bar():
@@ -251,10 +233,25 @@ def _create_login_menu():
     menu = pm.menu(MENU_LOGIN, label=MENU_LABEL, parent=pm.melGlobals["gMainWindow"])
 
     # Add the login menu item.
-    pm.menuItem(parent=menu, label=ITEM_LABEL_LOGIN, command=pm.Callback(_login_user))
+    pm.menuItem(
+        parent=menu,
+        label="Log In to Shotgun...",
+        command=pm.Callback(_login_user)
+    )
+
+    pm.menuItem(parent=menu, divider=True)
 
     # Add the website menu item.
-    pm.menuItem(parent=menu, label=ITEM_LABEL_WEBSITE, command=pm.Callback(_jump_to_website))
+    pm.menuItem(
+        parent=menu,
+        label="Learn about Shotgun...",
+        command=pm.Callback(_jump_to_website)
+    )
+    pm.menuItem(
+        parent=menu,
+        label="Try Shotgun for Free...",
+        command=pm.Callback(_jump_to_signup)
+    )
 
 
 def _delete_login_menu():
@@ -268,7 +265,14 @@ def _delete_login_menu():
 
 def _jump_to_website():
     """
-    Jumps to the Shotgun website in the defaul web browser.
+    Jumps to the Shotgun website in the default web browser.
     """
+    QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://www.shotgunsoftware.com"))
 
-    QtGui.QDesktopServices.openUrl(QtCore.QUrl(WEBSITE_URL))
+
+def _jump_to_signup():
+    """
+    Jumps to the Shotgun signup page in the default web browser.
+    """
+    QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://www.shotgunsoftware.com/signup"))
+

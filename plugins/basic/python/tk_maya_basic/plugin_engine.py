@@ -10,11 +10,10 @@
 
 import os
 
-from sgtk_plugin_basic_maya import manifest
+from . import constants
 from . import plugin_logging
 
 from . import __name__ as PLUGIN_PACKAGE_NAME
-from . import PLUGIN_ROOT_PATH
 
 
 def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
@@ -32,20 +31,17 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     import sgtk
 
     # Use a custom logging handler to display messages in Maya script editor before the engine takes over logging.
-    plugin_logging_handler = plugin_logging.PluginLoggingHandler(manifest.name)
-
-    sgtk.LogManager().initialize_base_file_handler(manifest.engine_name)
+    plugin_logging_handler = plugin_logging.PluginLoggingHandler()
     sgtk.LogManager().initialize_custom_handler(plugin_logging_handler)
-
-    sgtk.LogManager().global_debug = bool(manifest.debug_logging)
 
     logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
 
     # Create a boostrap manager for the logged in user with the plug-in configuration data.
     toolkit_mgr = sgtk.bootstrap.ToolkitManager(sg_user)
-
-    # Pass the boostrap manager to the manifest for basic initialization.
-    manifest.initialize_manager(toolkit_mgr, PLUGIN_ROOT_PATH)
+    toolkit_mgr.base_configuration = constants.BASE_CONFIGURATION
+    toolkit_mgr.plugin_id = constants.PLUGIN_ID
+    plugin_root_path = os.environ.get("TK_MAYA_BASIC_ROOT")
+    toolkit_mgr.bundle_cache_fallback_paths = [os.path.join(plugin_root_path, "bundle_cache")]
 
     # Retrieve the Shotgun entity type and id when they exist in the environment.
     shotgun_site = os.environ.get("SHOTGUN_SITE")
@@ -87,53 +83,23 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
 
     logger.debug("Will launch the engine with entity: %s" % entity)
 
-    # Check if the target core supports asynchronous Shotgun initialization.
-    can_bootstrap_engine_async = hasattr(toolkit_mgr, "bootstrap_engine_async")
-    if not can_bootstrap_engine_async:
-        # Display the warning before the custom logging handler is removed.
-        logger.warning("Cannot initialize Shotgun asynchronously with the loaded toolkit core version;"
-                       " falling back on synchronous startup.")
-
     # Remove the custom logging handler now that the engine will take over logging.
     sgtk.LogManager().root_logger.removeHandler(plugin_logging_handler)
 
-    if can_bootstrap_engine_async:
+    # Install the bootstrap progress reporting callback.
+    toolkit_mgr.progress_callback = progress_callback
 
-        # Install the bootstrap progress reporting callback.
-        toolkit_mgr.progress_callback = progress_callback
+    # Bootstrap a toolkit instance asynchronously in a background thread,
+    # followed by launching the engine synchronously in the main application thread.
+    # Before bootstrapping the engine for the first time around,
+    # the toolkit manager may swap the toolkit core to its latest version.
+    toolkit_mgr.bootstrap_engine_async(
+        "tk-maya",
+        entity,
+        completed_callback=completed_callback,
+        failed_callback=failed_callback
+    )
 
-        # Bootstrap a toolkit instance asynchronously in a background thread,
-        # followed by launching the engine synchronously in the main application thread.
-        # Before bootstrapping the engine for the first time around,
-        # the toolkit manager may swap the toolkit core to its latest version.
-        toolkit_mgr.bootstrap_engine_async(
-            manifest.engine_name,
-            entity,
-            completed_callback=completed_callback,
-            failed_callback=failed_callback
-        )
-
-    else:
-
-        # The imported version of the toolkit core is too old to provide asynchronous bootstrapping.
-        # Fall back on synchronous bootstrapping of the engine in the main application thread,
-        # while still calling the provided callbacks in order for the plug-in to work as expected.
-        # Note that the provided progress reporting callback cannot be used since
-        # this older version of the toolkit core expects a differend callback signature.
-
-        try:
-
-            engine = toolkit_mgr.bootstrap_engine(manifest.engine_name, entity)
-
-        except Exception, exception:
-
-            # Handle cleanup after failed completion of the engine bootstrap.
-            failed_callback(None, exception)
-
-            return
-
-        # Handle cleanup after successful completion of the engine bootstrap.
-        completed_callback(engine)
 
 
 def shutdown():
@@ -143,20 +109,15 @@ def shutdown():
 
     # Re-import the toolkit core to ensure usage of a swapped in version.
     import sgtk
-
     logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
-
     engine = sgtk.platform.current_engine()
 
     if engine:
-
-        logger.info("Stopping the %s engine." % manifest.engine_name)
-
+        logger.info("Stopping the Shotgun engine.")
         # Close the various windows (dialogs, panels, etc.) opened by the engine.
         engine.close_windows()
-
         # Turn off your engine! Step away from the car!
         engine.destroy()
 
     else:
-        logger.warning("The %s engine is already stopped!" % manifest.engine_name)
+        logger.debug("The Shotgun engine was already stopped!")

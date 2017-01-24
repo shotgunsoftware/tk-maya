@@ -110,7 +110,7 @@ class MayaLauncher(SoftwareLauncher):
                     # If the plugin path exists, add it to the list of MAYA_MODULE_PATHS
                     # so Maya can find it and to the list of SGTK_LOAD_MAYA_PLUGINS so
                     # the startup's userSetup.py file knows what plugins to load.
-                    self.logger.info("Loading builtin plugin '%s'" % load_plugin)
+                    self.logger.debug("Preparing to launch builtin plugin '%s'" % load_plugin)
                     load_maya_plugins.append(load_plugin)
                     if load_plugin not in maya_module_paths:
                         maya_module_paths.append(load_plugin)
