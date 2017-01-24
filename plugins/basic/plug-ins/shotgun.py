@@ -99,7 +99,7 @@ def initializePlugin(mobject):
 
     else:
         # Running as part of the the launch process and as part of zero
-        # config. The launch logic that already started maya has already
+        # config. The launch logic that started maya has already
         # added sgtk to the pythonpath.
         import sgtk
 

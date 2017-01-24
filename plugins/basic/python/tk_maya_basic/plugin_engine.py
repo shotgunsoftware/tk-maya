@@ -120,4 +120,4 @@ def shutdown():
         engine.destroy()
 
     else:
-        logger.debug("The maya engine was already stopped!")
+        logger.debug("The Shotgun engine was already stopped!")

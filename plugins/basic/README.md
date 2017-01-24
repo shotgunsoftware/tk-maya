@@ -16,7 +16,7 @@ via the toolkit launch application, or as a standalone plugin.
 ### Technical Details
 
 This is a Maya Module that enables basic Shotgun integration
-Inside of Maya. The plugin source is located in the [toolkit maya engine repository](https://github.com/shotgunsoftware/tk-maya/tree/develop/plugin/plugins/basic).
+inside Maya. The plugin source is located in the [toolkit maya engine repository](https://github.com/shotgunsoftware/tk-maya/tree/develop/plugin/plugins/basic).
 Maya version 2014 and above are supported.
 You can read more about maya modules [here](http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__files_GUID_CB76E356_753B_4837_8C5B_3296C14872CA_htm).
 
