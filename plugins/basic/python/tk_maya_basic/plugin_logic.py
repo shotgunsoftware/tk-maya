@@ -37,8 +37,8 @@ MENU_LABEL = "Shotgun"
 standalone_logger = logging.getLogger(PLUGIN_PACKAGE_NAME)
 # Do not propagate messages to Maya ancestor logger to avoid duplicated logs.
 standalone_logger.propagate = False
-# Ignore messages less severe than the debug ones.
-standalone_logger.setLevel(logging.DEBUG)
+# Ignore messages less severe than the info ones.
+standalone_logger.setLevel(logging.INFO)
 # Use a custom logging handler to display messages in Maya script editor.
 standalone_logger.addHandler(plugin_logging.PluginLoggingHandler())
 
@@ -90,6 +90,8 @@ def _login_user():
     # processed before deleting the menu to avoid a crash in Maya 2017.
     maya.utils.executeDeferred(_delete_login_menu)
 
+    standalone_logger.debug("Bootstrapping Shotgun.")
+
     # Show a progress bar, and set its initial value and message.
     _show_progress_bar(0.0, "Loading...")
 
@@ -118,6 +120,10 @@ def _handle_bootstrap_progress(progress_value, message):
     :param progress_value: Current progress value, ranging from 0.0 to 1.0.
     :param message: Progress message to report.
     """
+
+    standalone_logger.debug("Bootstrapping Shotgun: %s" % message)
+
+    # Show the progress bar, and update its value and message.
     _show_progress_bar(progress_value, message)
 
 
@@ -241,7 +247,7 @@ def _create_login_menu():
 
     pm.menuItem(parent=menu, divider=True)
 
-    # Add the website menu item.
+    # Add the website menu items.
     pm.menuItem(
         parent=menu,
         label="Learn about Shotgun...",
@@ -275,4 +281,3 @@ def _jump_to_signup():
     Jumps to the Shotgun signup page in the default web browser.
     """
     QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://www.shotgunsoftware.com/signup"))
-
