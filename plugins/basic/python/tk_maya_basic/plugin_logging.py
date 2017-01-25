@@ -22,16 +22,13 @@ class PluginLoggingHandler(logging.Handler):
     def __init__(self):
         """
         Initializes an instance of the plug-in logging handler.
-
-        :param plugin_name: Plug-in name to include in the standard message format.
         """
 
         # Avoid using super() in order to be compatible with old-style classes found in older versions of logging.
         logging.Handler.__init__(self)
 
-        # Set the handler to use a standard message format similar to the one used by the engine.
-        logging_format = "Shotgun: %(message)s"
-        self.setFormatter(logging.Formatter(logging_format))
+        # Set the handler to use a simple message format.
+        self.setFormatter(logging.Formatter("%(message)s"))
 
     def emit(self, record):
         """
@@ -41,10 +38,18 @@ class PluginLoggingHandler(logging.Handler):
 
         :param record: Logging record to display in Maya script editor.
         """
-        # Give a standard format to the message.
-        msg = self.format(record)
 
-        # Display the message in Maya script editor in a thread safe manner.
+        # Give a standard format to the message:
+        #     Shotgun DEBUG: <message>
+        # or
+        #     Shotgun: <message>
+        # We use a simpler message format than the one used by the engine.
+        if record.levelno < logging.INFO:
+            msg = "Shotgun DEBUG: %s" % self.format(record)
+        else:
+            msg = "Shotgun: %s" % self.format(record)
+
+        # Select Maya display function to use according to the logging record level.
         if record.levelno < logging.WARNING:
             fct = OpenMaya2.MGlobal.displayInfo
         elif record.levelno < logging.ERROR:
@@ -52,4 +57,5 @@ class PluginLoggingHandler(logging.Handler):
         else:
             fct = OpenMaya2.MGlobal.displayError
 
+        # Display the message in Maya script editor in a thread safe manner.
         maya.utils.executeInMainThreadWithResult(fct, msg)
