@@ -83,11 +83,13 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
 
     logger.debug("Will launch the engine with entity: %s" % entity)
 
-    # Remove the custom logging handler now that the engine will take over logging.
-    sgtk.LogManager().root_logger.removeHandler(plugin_logging_handler)
-
     # Install the bootstrap progress reporting callback.
     toolkit_mgr.progress_callback = progress_callback
+
+    # install a callback that turns off logging just before the
+    # engine starts up its own logging
+    callback = lambda ctx, log_handler=plugin_logging_handler: _pre_engine_start_callback(ctx, log_handler)
+    toolkit_mgr.pre_engine_start_callback = callback
 
     # Bootstrap a toolkit instance asynchronously in a background thread,
     # followed by launching the engine synchronously in the main application thread.
@@ -100,6 +102,20 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
         failed_callback=failed_callback
     )
 
+
+def _pre_engine_start_callback(ctx, log_handler):
+    """
+    Called just before the engine starts during bootstrap.
+
+    :param ctx: Toolkit context we are bootstrapping into.
+    :type ctx: :class:`sgtk.Context`
+    :param log_handler: log handler for plugin
+    """
+    # Remove the custom logging handler now that the engine will take over logging.
+    # This ensures that there is minimal gap in logging between the bootstrapper
+    # and the engine.
+    import sgtk
+    sgtk.LogManager().root_logger.removeHandler(log_handler)
 
 
 def shutdown():
