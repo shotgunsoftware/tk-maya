@@ -146,7 +146,7 @@ def _handle_bootstrap_completed(engine):
     _hide_progress_bar()
 
     # Report completion of the bootstrap.
-    standalone_logger.info("Integration Loaded.")
+    standalone_logger.info("Integration loaded.")
 
     # Add a logout menu item to the engine context menu.
     sgtk.platform.current_engine().register_command(

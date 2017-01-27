@@ -216,10 +216,6 @@ class MayaEngine(tank.platform.Engine):
     Toolkit engine for Maya.
     """
 
-    # Time stamp of the last debug message logged.
-    # Initialize it with the current time for lack of a better value.
-    _debug_msg_time_stamp = time.time()
-
     @property
     def context_change_allowed(self):
         """
@@ -547,18 +543,11 @@ class MayaEngine(tank.platform.Engine):
         """
 
         # Give a standard format to the message:
-        #     Shotgun DEBUG (<timing>) <basename>: <message>
-        # or
         #     Shotgun <basename>: <message>
         # where "basename" is the leaf part of the logging record name,
         # for example "tk-multi-shotgunpanel" or "qt_importer".
         if record.levelno < logging.INFO:
-            current_time_stamp = time.time()
-            msg = "Shotgun DEBUG (%0.3fs) %s: %s" % (current_time_stamp-self._debug_msg_time_stamp,
-                                                     record.basename,
-                                                     record.message)
-            # Update the debug message time stamp.
-            self._debug_msg_time_stamp = current_time_stamp
+            msg = "Debug: Shotgun %s: %s" % (record.basename, record.message)
         else:
             msg = "Shotgun %s: %s" % (record.basename, record.message)
 
