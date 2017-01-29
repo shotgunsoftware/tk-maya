@@ -309,9 +309,9 @@ class MayaLauncher(SoftwareLauncher):
             self.logger.debug("Creating SoftwareVersion for '%s'" % exec_path)
             sw_versions.append(SoftwareVersion(
                 synergy_data["NumericVersion"],
-                (display_name or synergy_data["StringVersion"]),
+                (synergy_data["StringVersion"] or display_name),
                 exec_path,
-                (icon or self._icon_from_executable(exec_path))
+                (self._icon_from_executable(exec_path) or icon)
             ))
 
         return sw_versions
@@ -423,9 +423,9 @@ class MayaLauncher(SoftwareLauncher):
                 )
                 sw_versions.append(SoftwareVersion(
                     default_version,
-                    (display_name or default_display),
+                    (default_display or display_name),
                     exec_path,
-                    (icon or self._icon_from_executable(exec_path))
+                    (self._icon_from_executable(exec_path) or icon)
                 ))
 
         return sw_versions
