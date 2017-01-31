@@ -48,8 +48,7 @@ def restore_panels(engine):
 
         # When the current Maya workspace contains the Maya panel workspace control,
         # the Shotgun app panel needs to be recreated and docked.
-        if cmds.workspaceControl(maya_panel_name, exists=True) and \
-           not cmds.control(maya_panel_name, query=True, isObscured=True):
+        if cmds.workspaceControl(maya_panel_name, exists=True):
 
             # Once Maya will have completed its UI update and be idle,
             # recreate and dock the Shotgun app panel.
@@ -132,8 +131,7 @@ def dock_panel(engine, shotgun_panel, title):
         # embed the Shotgun app panel into this workspace control.
         # This can happen when the engine has just been started and the Shotgun app panel is
         # displayed for the first time around, or when the user reinvokes a displayed panel.
-        if cmds.workspaceControl(maya_panel_name, exists=True) and \
-           not cmds.control(maya_panel_name, query=True, isObscured=True):
+        if cmds.workspaceControl(maya_panel_name, exists=True):
 
             engine.log_debug("Restoring Maya workspace panel %s." % maya_panel_name)
 
@@ -143,24 +141,25 @@ def dock_panel(engine, shotgun_panel, title):
             # Embed the Shotgun app panel into the Maya panel workspace control.
             build_workspace_control_ui(shotgun_panel_name)
 
-            # Use a workaround to force Maya 2017 to refresh the panel size.
+            # When the panel is visible, use a workaround to force Maya 2017 to refresh the panel size.
             # We encased this workaround in a try/except since we cannot be sure
             # that it will still work without errors in future versions of Maya.
-            try:
-                engine.log_debug("Forcing Maya to refresh workspace panel %s size." % maya_panel_name)
+            if not cmds.control(maya_panel_name, query=True, isObscured=True):
+                try:
+                    engine.log_debug("Forcing Maya to refresh workspace panel %s size." % maya_panel_name)
 
-                # Create a new empty workspace control tab.
-                name = cmds.workspaceControl(uuid.uuid4().hex,
-                                             tabToControl=(maya_panel_name, -1),  # -1 to append a new tab
-                                             uiScript="",
-                                             r=True)  # raise at the top of its workspace area
-                # Delete the empty workspace control.
-                cmds.deleteUI(name)
-                # Delete the empty workspace control state that was created
-                # when deleting the empty workspace control.
-                cmds.workspaceControlState(name, remove=True)
-            except:
-                engine.log_debug("Cannot force Maya to refresh workspace panel %s size." % maya_panel_name)
+                    # Create a new empty workspace control tab.
+                    name = cmds.workspaceControl(uuid.uuid4().hex,
+                                                 tabToControl=(maya_panel_name, -1),  # -1 to append a new tab
+                                                 uiScript="",
+                                                 r=True)  # raise at the top of its workspace area
+                    # Delete the empty workspace control.
+                    cmds.deleteUI(name)
+                    # Delete the empty workspace control state that was created
+                    # when deleting the empty workspace control.
+                    cmds.workspaceControlState(name, remove=True)
+                except:
+                    engine.log_debug("Cannot force Maya to refresh workspace panel %s size." % maya_panel_name)
 
             return maya_panel_name
 
