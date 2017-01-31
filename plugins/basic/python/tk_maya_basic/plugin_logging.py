@@ -28,7 +28,7 @@ class PluginLoggingHandler(logging.Handler):
         logging.Handler.__init__(self)
 
         # Set the handler to use a simple message format.
-        self.setFormatter(logging.Formatter("%(message)s"))
+        self.setFormatter(logging.Formatter("Shotgun %(basename)s: %(message)s"))
 
     def emit(self, record):
         """
@@ -43,9 +43,9 @@ class PluginLoggingHandler(logging.Handler):
         #     Shotgun: <message>
         # We use a simpler message format than the one used by the engine.
         if record.levelno < logging.INFO:
-            msg = "Debug: Shotgun: %s" % self.format(record)
+            msg = "Debug: %s" % self.format(record)
         else:
-            msg = "Shotgun: %s" % self.format(record)
+            msg = self.format(record)
 
         # Select Maya display function to use according to the logging record level.
         # We use MEL to display the message in order to have it surrounded by "//"
