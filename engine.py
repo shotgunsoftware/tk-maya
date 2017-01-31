@@ -541,15 +541,16 @@ class MayaEngine(tank.platform.Engine):
         :param record: Standard python logging record.
         :type record: :class:`~python.logging.LogRecord`
         """
-
         # Give a standard format to the message:
         #     Shotgun <basename>: <message>
         # where "basename" is the leaf part of the logging record name,
         # for example "tk-multi-shotgunpanel" or "qt_importer".
         if record.levelno < logging.INFO:
-            msg = "Debug: Shotgun %s: %s" % (record.basename, record.message)
+            formatter = logging.Formatter("Debug: Shotgun %(basename)s: %(message)s")
         else:
-            msg = "Shotgun %s: %s" % (record.basename, record.message)
+            formatter = logging.Formatter("Shotgun %(basename)s: %(message)s")
+
+        msg = formatter.format(record)
 
         # Select Maya display function to use according to the logging record level.
         if record.levelno < logging.WARNING:
