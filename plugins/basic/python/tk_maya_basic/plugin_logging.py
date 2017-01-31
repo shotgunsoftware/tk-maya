@@ -10,7 +10,7 @@
 
 import logging
 
-import maya.mel as mel
+import maya.api.OpenMaya as OpenMaya2  # Python API 2.0
 import maya.utils
 
 
@@ -51,12 +51,11 @@ class PluginLoggingHandler(logging.Handler):
         # We use MEL to display the message in order to have it surrounded by "//"
         # rather than "#" to go along with the messages emitted by the engine.
         if record.levelno < logging.WARNING:
-            mel_fct = 'print "// %s //\\n";' % msg
+            fct = OpenMaya2.MGlobal.displayInfo
         elif record.levelno < logging.ERROR:
-            mel_fct = 'warning -noContext "%s";' % msg
+            fct = OpenMaya2.MGlobal.displayWarning
         else:
-            # We use MEL "catch" to ignore the exception raised by MEL "error".
-            mel_fct = 'catch( `error -noContext "%s"` );' % msg
+            fct = OpenMaya2.MGlobal.displayError
 
         # Display the message in Maya script editor in a thread safe manner.
-        maya.utils.executeInMainThreadWithResult(mel.eval, mel_fct)
+        maya.utils.executeInMainThreadWithResult(fct, msg)
