@@ -28,7 +28,7 @@ class PluginLoggingHandler(logging.Handler):
         logging.Handler.__init__(self)
 
         # Set the handler to use a simple message format.
-        self.setFormatter(logging.Formatter("Shotgun %(basename)s: %(message)s"))
+        self.setFormatter(logging.Formatter("Shotgun: %(message)s"))
 
     def emit(self, record):
         """
