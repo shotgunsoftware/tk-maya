@@ -141,10 +141,14 @@ def dock_panel(engine, shotgun_panel, title):
             # Embed the Shotgun app panel into the Maya panel workspace control.
             build_workspace_control_ui(shotgun_panel_name)
 
-            # When the panel is visible, use a workaround to force Maya 2017 to refresh the panel size.
-            # We encased this workaround in a try/except since we cannot be sure
-            # that it will still work without errors in future versions of Maya.
-            if not cmds.control(maya_panel_name, query=True, isObscured=True):
+            if cmds.control(maya_panel_name, query=True, isObscured=True):
+                # When the panel is not visible, raise it to the top of its workspace area.
+                engine.log_debug("Raising workspace panel %s." % maya_panel_name)
+                cmds.workspaceControl(maya_panel_name, edit=True, r=True)
+            else:
+                # When the panel is visible, use a workaround to force Maya 2017 to refresh the panel size.
+                # We encased this workaround in a try/except since we cannot be sure
+                # that it will still work without errors in future versions of Maya.
                 try:
                     engine.log_debug("Forcing Maya to refresh workspace panel %s size." % maya_panel_name)
 
