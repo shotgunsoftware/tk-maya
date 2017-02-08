@@ -308,7 +308,9 @@ class MayaLauncher(SoftwareLauncher):
             # Sometimes the Synergy StringVersion is a bit wordy.
             # Truncate non essential strings for the display name.
             synergy_name = None
-            if synergy_data["StringVersion"]:
+            if synergy_data["Name"] and synergy_data["NumericVersion"]:
+                synergy_name = "%s %s" % (synergy_data["Name"], synergy_data["NumericVersion"])
+            elif synergy_data["StringVersion"]:
                 synergy_name = str(synergy_data["StringVersion"]).replace("Autodesk", "").strip()
 
             # Create a SoftwareVersion from input and config data.
@@ -402,8 +404,9 @@ class MayaLauncher(SoftwareLauncher):
                     # Display and version information are contained before the first ','
                     # in the output version string.
                     default_display = version_output[0:version_output.find(",")]
+
+                    # Update known oddball display values to "nicer" version numbers.
                     if "2016 Extension 2 SP1" in default_display:
-                        # Update the display value to know "nicer" version numbers.
                         default_display = default_display.replace("2016 Extension 2 SP1", "2016.5")
 
                     # Parse the default version from the display name determined from
