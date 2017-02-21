@@ -26,7 +26,7 @@ class MayaLauncher(SoftwareLauncher):
     a tk-maya engine with the current context in the new session
     of Maya.
     """
-    def scan_software(self, versions=None, display_name=None, icon=None):
+    def scan_software(self, versions=None):
         """
         Performs a scan for software installations.
 
@@ -35,24 +35,14 @@ class MayaLauncher(SoftwareLauncher):
                               for all versions. A version string is
                               DCC-specific but could be something
                               like "2017", "6.3v7" or "1.2.3.52".
-        :param str display_name : (optional) Name to use in graphical
-                                  displays to describe the
-                                  SoftwareVersions that were found.
-        :param icon: (optional) Path to a 256x256 (or smaller) png file
-                     to use in graphical displays for every SoftwareVersion
-                     found.
         :returns: List of :class:`SoftwareVersion` instances
         """
         # First look for executables using the Autodesk Synergy registry.
-        sw_versions = self._synergy_software_versions(
-            versions, display_name, icon
-        )
+        sw_versions = self._synergy_software_versions(versions)
         if not sw_versions:
             # Look for executables in paths formerly specified by the
             # default configuration paths.yml file.
-            sw_versions = self._default_path_software_versions(
-                versions, display_name, icon
-            )
+            sw_versions = self._default_path_software_versions(versions)
         if not sw_versions:
             self.logger.info(
                 "Unable to determine available SoftwareVersions for engine %s" %
@@ -226,9 +216,7 @@ class MayaLauncher(SoftwareLauncher):
 
         return exec_path
 
-    def _synergy_software_versions(
-            self, versions=None, display_name=None, icon=None
-        ):
+    def _synergy_software_versions(self, versions):
         """
         Creates SoftwareVersion instances based on the Synergy configuration
         data from Synergy Config (.syncfg) files found in the local environment.
@@ -238,12 +226,6 @@ class MayaLauncher(SoftwareLauncher):
                               search for all versions. A version string
                               is DCC-specific but could be something
                               like "2017", "6.3v7" or "1.2.3.52".
-        :param str display_name : (optional) Name to use in graphical
-                                  displays to describe the
-                                  SoftwareVersions that were found.
-        :param icon: (optional) Path to a 256x256 (or smaller) png file
-                     to use in graphical displays for every SoftwareVersion
-                     found.
         :returns: List of :class:`SoftwareVersion` instances
         """
         # Get the list of Maya*.syncfg files in the local environment
@@ -315,16 +297,14 @@ class MayaLauncher(SoftwareLauncher):
             self.logger.debug("Creating SoftwareVersion for '%s'" % exec_path)
             sw_versions.append(SoftwareVersion(
                 synergy_data["NumericVersion"],
-                (synergy_name or display_name),
+                synergy_name,
                 exec_path,
-                (self._icon_from_executable(exec_path) or icon)
+                self._icon_from_executable(exec_path)
             ))
 
         return sw_versions
 
-    def _default_path_software_versions(
-            self, versions=None, display_name=None, icon=None
-        ):
+    def _default_path_software_versions(self, versions):
         """
         Creates SoftwareVersion instances based on the path values used
         in the default configuration paths.yml environment.
@@ -334,12 +314,6 @@ class MayaLauncher(SoftwareLauncher):
                               search for all versions. A version string
                               is DCC-specific but could be something
                               like "2017", "6.3v7" or "1.2.3.52"
-        :param str display_name : (optional) Name to use in graphical
-                                  displays to describe the
-                                  SoftwareVersions that were found.
-        :param icon: (optional) Path to a 256x256 (or smaller) png file
-                     to use in graphical displays for every SoftwareVersion
-                     found.
         :returns: List of :class:`SoftwareVersion` instances
         """
         # Determine a list of paths to search for Maya executables based
@@ -430,9 +404,9 @@ class MayaLauncher(SoftwareLauncher):
                 )
                 sw_versions.append(SoftwareVersion(
                     default_version,
-                    (default_display or display_name),
+                    default_display,
                     exec_path,
-                    (self._icon_from_executable(exec_path) or icon)
+                    self._icon_from_executable(exec_path)
                 ))
 
         return sw_versions
