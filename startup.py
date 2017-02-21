@@ -125,12 +125,10 @@ class MayaLauncher(SoftwareLauncher):
             required_env["MAYA_MODULE_PATH"] = os.pathsep.join(maya_module_paths)
             required_env["SGTK_LOAD_MAYA_PLUGINS"] = os.pathsep.join(load_maya_plugins)
 
-            # Add additional variables required by the plugins to the launch
-            # environment
-            (entity_type, entity_id) = _extract_entity_from_context(self.context)
-            required_env["SHOTGUN_SITE"] = self.sgtk.shotgun_url
-            required_env["SHOTGUN_ENTITY_TYPE"] = entity_type
-            required_env["SHOTGUN_ENTITY_ID"] = str(entity_id)
+            # Add context and site info
+            std_env = self.get_standard_plugin_environment()
+            required_env.update(std_env)
+
         else:
             # Prepare the launch environment with variables required by the
             # classic bootstrap approach.
@@ -501,25 +499,3 @@ def _synergy_config_files(config_match=None):
 
     return synergy_configs
 
-def _extract_entity_from_context(context):
-    """
-    Extract an entity type and id from the context.
-
-    :param context:
-    :returns: Tuple (entity_type_str, entity_id_int)
-    """
-    # Use the Project by default
-    entity_type = context.project["type"]
-    entity_id = context.project["id"]
-
-    # if there is an entity then that takes precedence
-    if context.entity:
-        entity_type = context.entity["type"]
-        entity_id = context.entity["id"]
-
-    # and if there is a Task that is even better
-    if context.task:
-        entity_type = context.task["type"]
-        entity_id = context.task["id"]
-
-    return (entity_type, entity_id)
