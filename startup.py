@@ -26,6 +26,7 @@ class MayaLauncher(SoftwareLauncher):
     a tk-maya engine with the current context in the new session
     of Maya.
     """
+
     def scan_software(self, versions=None):
         """
         Performs a scan for software installations.
@@ -284,6 +285,12 @@ class MayaLauncher(SoftwareLauncher):
             exec_path = self._resolve_path_for_platform(
                 synergy_data.get("StartWrapperPath") or synergy_data["ExecutablePath"]
             )
+
+            if not os.path.exists(exec_path):
+                # someone has done a rogue uninstall and the synergy file
+                # is there but there is no actual executable
+                self.logger.debug("Synergy path '%s' does not exist on disk. Skipping." % exec_path)
+                continue
 
             # Sometimes the Synergy StringVersion is a bit wordy.
             # Truncate non essential strings for the display name.
