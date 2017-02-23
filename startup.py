@@ -27,6 +27,15 @@ class MayaLauncher(SoftwareLauncher):
     of Maya.
     """
 
+    def __init__(self, *args, **kwargs):
+        """
+        Constructor
+        """
+        # init base class
+        super(MayaLauncher, self).__init__(*args, **kwargs)
+        # define our minimum supported version
+        self.minimum_supported_version = "2016"
+
     def scan_software(self, versions=None):
         """
         Performs a scan for software installations.
@@ -286,6 +295,12 @@ class MayaLauncher(SoftwareLauncher):
                 synergy_data.get("StartWrapperPath") or synergy_data["ExecutablePath"]
             )
 
+            if not self.is_version_supported(synergy_data["NumericVersion"]):
+                self.logger.info(
+                    "Found Maya install in '%s' but only versions %s "
+                    "and above are supported" % (exec_path, self.minimum_supported_version)
+                )
+
             if not os.path.exists(exec_path):
                 # someone has done a rogue uninstall and the synergy file
                 # is there but there is no actual executable
@@ -398,17 +413,19 @@ class MayaLauncher(SoftwareLauncher):
 
                 if versions and default_version not in versions:
                     # If this version isn't in the list of requested versions, skip it.
-                    self.logger.debug("Skipping Maya default version %s ..." %
-                        default_version
-                    )
+                    self.logger.debug("Skipping Maya version %s ..." % default_version)
                     continue
+
+                if not self.is_version_supported(default_version):
+                    self.logger.info(
+                        "Found Maya install in '%s' but only versions %s "
+                        "and above are supported" % (exec_path, self.minimum_supported_version)
+                    )
 
                 # Create a SoftwareVersion using the information from executable
                 # path(s) found in default locations.
                 exec_path = self._resolve_path_for_platform(exec_path)
-                self.logger.debug("Creating SoftwareVersion for executable '%s'." %
-                    exec_path
-                )
+                self.logger.debug("Creating SoftwareVersion for executable '%s'." % exec_path)
                 sw_versions.append(SoftwareVersion(
                     default_version,
                     default_display,
