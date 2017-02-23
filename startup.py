@@ -27,14 +27,12 @@ class MayaLauncher(SoftwareLauncher):
     of Maya.
     """
 
-    def __init__(self, *args, **kwargs):
+    @property
+    def minimum_supported_version(self):
         """
-        Constructor
+        The minimum software version that is supported by the launcher.
         """
-        # init base class
-        super(MayaLauncher, self).__init__(*args, **kwargs)
-        # define our minimum supported version
-        self.minimum_supported_version = "2016"
+        return "2016"
 
     def scan_software(self, versions=None):
         """
