@@ -44,43 +44,7 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     toolkit_mgr.bundle_cache_fallback_paths = [os.path.join(plugin_root_path, "bundle_cache")]
 
     # Retrieve the Shotgun entity type and id when they exist in the environment.
-    shotgun_site = os.environ.get("SHOTGUN_SITE")
-    entity_type = os.environ.get("SHOTGUN_ENTITY_TYPE")
-    entity_id = os.environ.get("SHOTGUN_ENTITY_ID")
-
-    # Check that the shotgun site (if set) matches the site we are currently
-    # logged in to. If not, issue a warning and ignore the entity type/id variables
-    # TODO: Handle this correctly and pop up a login dialog in case of a site mismatch
-    if shotgun_site and sg_user.host != shotgun_site:
-        logger.warning("You are currently logged in to site %s but the plugin has been "
-                       "requested to launch with context %s %s at %s. The plugin does not "
-                       "currently support switching between sites and the contents of "
-                       "SHOTGUN_ENTITY_TYPE and SHOTGUN_ENTITY_ID will therefore "
-                       "be ignored." % (sg_user.host, entity_type, entity_id, shotgun_site)
-                       )
-        entity_type = None
-        entity_id = None
-
-    if (entity_type and not entity_id) or (not entity_type and entity_id):
-        logger.error("Both environment variables SHOTGUN_ENTITY_TYPE and SHOTGUN_ENTITY_ID must be provided "
-                     "to set a context entity. Shotgun will be initialized in site context.")
-
-    if entity_id:
-        # The entity id must be an integer number.
-        try:
-            entity_id = int(entity_id)
-        except ValueError:
-            logger.error("Environment variable SHOTGUN_ENTITY_ID value '%s' is not an integer number. "
-                         "Shotgun will be initialized in site context." % entity_id)
-            entity_id = None
-
-    if entity_type and entity_id:
-        # Set the entity to launch the engine for.
-        entity = {"type": entity_type, "id": entity_id}
-    else:
-        # Set the entity to launch the engine in site context.
-        entity = None
-
+    entity = toolkit_mgr.get_entity_from_environment()
     logger.debug("Will launch the engine with entity: %s" % entity)
 
     # Install the bootstrap progress reporting callback.
