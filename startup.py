@@ -34,7 +34,7 @@ class MayaLauncher(SoftwareLauncher):
         """
         return "2016"
 
-    def scan_software(self, versions=None):
+    def scan_software(self, versions=None, products=None):
         """
         Performs a scan for software installations.
 
@@ -43,6 +43,13 @@ class MayaLauncher(SoftwareLauncher):
                               for all versions. A version string is
                               DCC-specific but could be something
                               like "2017", "6.3v7" or "1.2.3.52".
+
+        :param list versions: List of strings representing products
+                              to search for. If set to None, search
+                              for all maya products. Currently unused
+                              since there is a single executable for
+                              Maya.
+
         :returns: List of :class:`SoftwareVersion` instances
         """
         # First look for executables using the Autodesk Synergy registry.
@@ -317,6 +324,7 @@ class MayaLauncher(SoftwareLauncher):
             self.logger.debug("Creating SoftwareVersion for '%s'" % exec_path)
             sw_versions.append(SoftwareVersion(
                 synergy_data["NumericVersion"],
+                "Maya",  # hardcoded product name
                 synergy_name,
                 exec_path,
                 self._icon_from_executable(exec_path)
