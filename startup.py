@@ -34,38 +34,30 @@ class MayaLauncher(SoftwareLauncher):
         """
         return "2016"
 
-    def scan_software(self, versions=None, products=None):
+    def scan_software(self):
         """
         Performs a scan for software installations.
 
-        :param list versions: List of strings representing versions
-                              to search for. If set to None, search
-                              for all versions. A version string is
-                              DCC-specific but could be something
-                              like "2017", "6.3v7" or "1.2.3.52".
-
-        :param list versions: List of strings representing products
-                              to search for. If set to None, search
-                              for all maya products. Currently unused
-                              since there is a single executable for
-                              Maya.
-
         :returns: List of :class:`SoftwareVersion` instances
         """
-        # First look for executables using the Autodesk Synergy registry.
-        sw_versions = self._synergy_software_versions(versions)
-        if not sw_versions:
-            # Look for executables in paths formerly specified by the
-            # default configuration paths.yml file.
-            sw_versions = self._default_path_software_versions(versions)
-        if not sw_versions:
-            self.logger.info(
-                "Unable to determine available SoftwareVersions for engine %s" %
-                self.engine_name
-            )
-            return []
 
-        return sw_versions
+        # Look for sw versions via Autodesk Synergy registry. If none found,
+        # fall back to looking in known locations on disk.
+        all_sw_versions = self._synergy_software_versions() or \
+            self._default_path_software_versions()
+
+        # build a list of supported sw versions
+        supported_sw_versions = []
+
+        for sw_version in all_sw_versions:
+            if self.is_version_supported(sw_version):
+                self.logger.debug("Accepting %s", sw_version)
+                supported_sw_versions.append(sw_version)
+            else:
+                self.logger.debug("Rejecting %s", sw_version)
+                continue
+
+        return supported_sw_versions
 
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
@@ -231,16 +223,11 @@ class MayaLauncher(SoftwareLauncher):
 
         return exec_path
 
-    def _synergy_software_versions(self, versions):
+    def _synergy_software_versions(self):
         """
         Creates SoftwareVersion instances based on the Synergy configuration
         data from Synergy Config (.syncfg) files found in the local environment.
 
-        :param list versions: (optional) List of strings representing
-                              versions to search for. If set to None,
-                              search for all versions. A version string
-                              is DCC-specific but could be something
-                              like "2017", "6.3v7" or "1.2.3.52".
         :returns: List of :class:`SoftwareVersion` instances
         """
         # Get the list of Maya*.syncfg files in the local environment
@@ -289,22 +276,9 @@ class MayaLauncher(SoftwareLauncher):
                     "from %s:\n%s" % (config, e)
                 )
 
-            if versions and synergy_data["NumericVersion"] not in versions:
-                # If this version isn't in the list of requested versions, skip it.
-                self.logger.debug("Skipping Maya Synergy version %s ..." %
-                    synergy_data["NumericVersion"]
-                )
-                continue
-
             exec_path = self._resolve_path_for_platform(
                 synergy_data.get("StartWrapperPath") or synergy_data["ExecutablePath"]
             )
-
-            if not self.is_version_supported(synergy_data["NumericVersion"]):
-                self.logger.info(
-                    "Found Maya install in '%s' but only versions %s "
-                    "and above are supported" % (exec_path, self.minimum_supported_version)
-                )
 
             if not os.path.exists(exec_path):
                 # someone has done a rogue uninstall and the synergy file
@@ -320,6 +294,9 @@ class MayaLauncher(SoftwareLauncher):
             elif synergy_data["StringVersion"]:
                 synergy_name = str(synergy_data["StringVersion"]).replace("Autodesk", "").strip()
 
+            # remove "Maya" from display name since it'll be shown in the group
+            synergy_name = synergy_name.replace("Maya ", "")
+
             # Create a SoftwareVersion from input and config data.
             self.logger.debug("Creating SoftwareVersion for '%s'" % exec_path)
             sw_versions.append(SoftwareVersion(
@@ -332,16 +309,11 @@ class MayaLauncher(SoftwareLauncher):
 
         return sw_versions
 
-    def _default_path_software_versions(self, versions):
+    def _default_path_software_versions(self):
         """
         Creates SoftwareVersion instances based on the path values used
         in the default configuration paths.yml environment.
 
-        :param list versions: (optional) List of strings representing
-                              versions to search for. If set to None,
-                              search for all versions. A version string
-                              is DCC-specific but could be something
-                              like "2017", "6.3v7" or "1.2.3.52"
         :returns: List of :class:`SoftwareVersion` instances
         """
         # Determine a list of paths to search for Maya executables based
@@ -383,7 +355,6 @@ class MayaLauncher(SoftwareLauncher):
                     # and version for the SoftwareVersion to be created.
                     default_display = path_sw_versions[0]
                     default_version = default_display.replace("maya", "")
-                    default_display = "Maya %s" % default_version
                     self.logger.debug(
                         "Resolved version '%s' from executable '%s'." %
                         (default_version, exec_path)
@@ -417,16 +388,8 @@ class MayaLauncher(SoftwareLauncher):
                         (default_version, version_output)
                     )
 
-                if versions and default_version not in versions:
-                    # If this version isn't in the list of requested versions, skip it.
-                    self.logger.debug("Skipping Maya version %s ..." % default_version)
-                    continue
-
-                if not self.is_version_supported(default_version):
-                    self.logger.info(
-                        "Found Maya install in '%s' but only versions %s "
-                        "and above are supported" % (exec_path, self.minimum_supported_version)
-                    )
+                # only display the version number in the group
+                default_display = default_display.replace("Maya ", "")
 
                 # Create a SoftwareVersion using the information from executable
                 # path(s) found in default locations.
@@ -434,6 +397,7 @@ class MayaLauncher(SoftwareLauncher):
                 self.logger.debug("Creating SoftwareVersion for executable '%s'." % exec_path)
                 sw_versions.append(SoftwareVersion(
                     default_version,
+                    "Maya",  # hardcoded product name
                     default_display,
                     exec_path,
                     self._icon_from_executable(exec_path)
