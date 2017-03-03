@@ -80,13 +80,11 @@ class MayaLauncher(SoftwareLauncher):
 
         # Check the engine settings to see whether any plugins have been
         # specified to load.
-        load_plugins = self.get_setting("launch_builtin_plugin") or None
-        if load_plugins:
+        find_plugins = self.get_setting("launch_builtin_plugins")
+        if find_plugins:
             # Parse the specified comma-separated list of plugins
-            find_plugins = [p.strip() for p in load_plugins.split(",") if p.strip()]
             self.logger.debug(
-                "Plugins found from 'launch_builtin_plugins' string value "
-                "split by ',': %s" % find_plugins
+                "Plugins found from 'launch_builtin_plugins': %s" % find_plugins
             )
 
             # Keep track of the specific list of Toolkit plugins to load when
