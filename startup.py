@@ -266,15 +266,15 @@ class MayaLauncher(SoftwareLauncher):
 
                     # Display and version information are contained before the first ','
                     # in the output version string.
-                    display_info = version_output[0:version_output.find(",")]
+                    default_product = version_output[0:version_output.find(",")]
 
                     # Update known oddball display values to "nicer" version numbers.
-                    if "2016 Extension 2 SP1" in display_info:
-                        display_info = display_info.replace("2016 Extension 2 SP1", "2016.5")
+                    if "2016 Extension 2 SP1" in default_product:
+                        default_product = default_product.replace("2016 Extension 2 SP1", "2016.5")
 
                     # Parse the default version from the display name determined from
                     # the version output.
-                    default_version = display_info.lower().replace("maya", "").strip()
+                    default_version = default_product.lower().replace("maya", "").strip()
                     self.logger.debug(
                         "Resolved version '%s' from version output '%s'" %
                         (default_version, version_output)
