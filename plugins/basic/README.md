@@ -27,7 +27,7 @@ If you are using toolkit's application launcher `tk-multi-launchapp`, you can
 configure this to start up the plugin as part of launching maya.
 
 This is all done as part of the maya engine configuration. Simply include 
-the parameter `launch_builtin_plugin: basic` as part of your engine configuration
+the parameter `launch_builtin_plugins: [basic]` as part of your engine configuration
 and the launch app will load the plugin whenever maya is launched for that context:
 
 ```
@@ -35,7 +35,7 @@ and the launch app will load the plugin whenever maya is launched for that conte
     apps:
       ...
 
-    launch_builtin_plugin: basic  
+    launch_builtin_plugins: [basic]  
     location:
       type: app_store
       name: tk-maya
