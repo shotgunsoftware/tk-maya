@@ -32,7 +32,7 @@ class MayaLauncher(SoftwareLauncher):
         """
         The minimum software version that is supported by the launcher.
         """
-        return "2016"
+        return "2014"
 
     def scan_software(self, versions=None):
         """
