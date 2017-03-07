@@ -15,10 +15,3 @@ PLUGIN_VERSION = "1.0.0"
 # the author of this maya plugin - displayed in the maya plugin dialog
 PLUGIN_AUTHOR = "Shotgun Software"
 
-# the plugin id to identify this plugin with at bootstrap
-PLUGIN_ID = "basic.maya"
-# the configuration to fall back on if no customization has been provided
-BASE_CONFIGURATION = {"type": "app_store", "name": "tk-config-basic"}
-
-
-

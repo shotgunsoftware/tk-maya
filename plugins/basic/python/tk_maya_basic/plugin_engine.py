@@ -36,10 +36,13 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
 
     logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
 
+    # get information about this plugin (plugin id & base config)
+    plugin_info = _get_plugin_info()
+
     # Create a boostrap manager for the logged in user with the plug-in configuration data.
     toolkit_mgr = sgtk.bootstrap.ToolkitManager(sg_user)
-    toolkit_mgr.base_configuration = constants.BASE_CONFIGURATION
-    toolkit_mgr.plugin_id = constants.PLUGIN_ID
+    toolkit_mgr.base_configuration = plugin_info["base_configuration"]
+    toolkit_mgr.plugin_id = plugin_info["plugin_id"]
     plugin_root_path = os.environ.get("TK_MAYA_BASIC_ROOT")
     toolkit_mgr.bundle_cache_fallback_paths = [os.path.join(plugin_root_path, "bundle_cache")]
 
@@ -64,6 +67,53 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
         entity,
         completed_callback=completed_callback,
         failed_callback=failed_callback
+    )
+
+
+def _get_plugin_info():
+    """
+    Returns a dictionary of information about the plugin of the form:
+
+        {
+            plugin_id: <plugin id>,
+            base_configuration: <config descriptor>
+        }
+    """
+
+    try:
+        # first, see if we can get the info from the manifest. if we can, no
+        # need to parse info.yml
+        from sgtk_plugin_basic_maya import manifest
+        plugin_id = manifest.plugin_id
+        base_configuration = manifest.base_configuration
+    except ImportError:
+        # no manifest, running in situ from the engine. just parse the info.yml
+        # file to get at the info we need.
+
+        # import the yaml parser
+        from tank_vendor import yaml
+
+        # build the path to the info.yml file
+        plugin_info_yml = os.path.abspath(
+            os.path.join(
+                __file__,
+                "..",
+                "..",
+                "..",
+                "info.yml"
+            )
+        )
+
+        # open the yaml file and read the data
+        with open(plugin_info_yml, "r") as plugin_info_fh:
+            info_yml = yaml.load(plugin_info_fh)
+            plugin_id = info_yml["plugin_id"]
+            base_configuration = info_yml["base_configuration"]
+
+    # return a dictionary with the required info
+    return dict(
+        plugin_id=plugin_id,
+        base_configuration=base_configuration,
     )
 
 
