@@ -14,11 +14,9 @@ import re
 import glob
 import subprocess
 
-from xml.etree import ElementTree
-
 import sgtk
-from sgtk import TankError
 from sgtk.platform import SoftwareLauncher, SoftwareVersion, LaunchInformation
+
 
 class MayaLauncher(SoftwareLauncher):
     """
@@ -33,32 +31,6 @@ class MayaLauncher(SoftwareLauncher):
         The minimum software version that is supported by the launcher.
         """
         return "2014"
-
-    def scan_software(self, versions=None):
-        """
-        Performs a scan for software installations.
-
-        :param list versions: List of strings representing versions
-                              to search for. If set to None, search
-                              for all versions. A version string is
-                              DCC-specific but could be something
-                              like "2017", "6.3v7" or "1.2.3.52".
-        :returns: List of :class:`SoftwareVersion` instances
-        """
-        # First look for executables using the Autodesk Synergy registry.
-        sw_versions = self._synergy_software_versions(versions)
-        if not sw_versions:
-            # Look for executables in paths formerly specified by the
-            # default configuration paths.yml file.
-            sw_versions = self._default_path_software_versions(versions)
-        if not sw_versions:
-            self.logger.info(
-                "Unable to determine available SoftwareVersions for engine %s" %
-                self.engine_name
-            )
-            return []
-
-        return sw_versions
 
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
@@ -112,7 +84,8 @@ class MayaLauncher(SoftwareLauncher):
                         maya_module_paths.append(load_plugin)
                 else:
                     # Report the missing plugin directory
-                    self.logger.warning("Resolved plugin path '%s' does not exist!" %
+                    self.logger.warning(
+                        "Resolved plugin path '%s' does not exist!" %
                         load_plugin
                     )
 
@@ -186,7 +159,8 @@ class MayaLauncher(SoftwareLauncher):
             return None
 
         # Record what the resolved icon path was.
-        self.logger.debug("Resolved icon path '%s' from input executable '%s'." %
+        self.logger.debug(
+            "Resolved icon path '%s' from input executable '%s'." %
             (icon_path, exec_path)
         )
         return icon_path
@@ -222,116 +196,11 @@ class MayaLauncher(SoftwareLauncher):
 
         return exec_path
 
-    def _synergy_software_versions(self, versions):
-        """
-        Creates SoftwareVersion instances based on the Synergy configuration
-        data from Synergy Config (.syncfg) files found in the local environment.
-
-        :param list versions: (optional) List of strings representing
-                              versions to search for. If set to None,
-                              search for all versions. A version string
-                              is DCC-specific but could be something
-                              like "2017", "6.3v7" or "1.2.3.52".
-        :returns: List of :class:`SoftwareVersion` instances
-        """
-        # Get the list of Maya*.syncfg files in the local environment
-        configs = _synergy_config_files("Maya")
-        if not configs:
-            self.logger.debug(
-                "Unable to determine Autodesk Synergy paths for %s platform." %
-                sys.platform
-            )
-            return []
-        self.logger.debug("Found (%d) Autodesk Synergy Maya config files." %
-            len(configs)
-        )
-
-        # Determine the list of SoftwareVersion to return from the list
-        # of configurations found and the list of versions requested.
-        sw_versions = []
-        for config in configs:
-            self.logger.debug("Parsing Synergy config '%s' ..." % config)
-            try:
-                # Parse the Synergy Config file as XML
-                doc = ElementTree.parse(config)
-            except Exception, e:
-                raise TankError(
-                    "Caught exception attempting to parse [%s] as XML.\n%s" %
-                    (config, e)
-                )
-
-            try:
-                # Find the <Application> element that contains the data
-                # we want.
-                app_elem = doc.getroot().find("Application")
-                if app_elem is None:
-                    self.logger.warning(
-                        "No <Application> found in Synergy config file '%s'." %
-                        config
-                    )
-                    continue
-
-                # Convert the element's attribute/value pairs to a dictionary
-                synergy_data = dict(app_elem.items())
-                self.logger.debug("Synergy data from config : %s" % synergy_data)
-            except Exception, e:
-                raise TankError(
-                    "Caught unknown exception retrieving <Application> data "
-                    "from %s:\n%s" % (config, e)
-                )
-
-            if versions and synergy_data["NumericVersion"] not in versions:
-                # If this version isn't in the list of requested versions, skip it.
-                self.logger.debug("Skipping Maya Synergy version %s ..." %
-                    synergy_data["NumericVersion"]
-                )
-                continue
-
-            exec_path = self._resolve_path_for_platform(
-                synergy_data.get("StartWrapperPath") or synergy_data["ExecutablePath"]
-            )
-
-            if not self.is_version_supported(synergy_data["NumericVersion"]):
-                self.logger.info(
-                    "Found Maya install in '%s' but only versions %s "
-                    "and above are supported" % (exec_path, self.minimum_supported_version)
-                )
-
-            if not os.path.exists(exec_path):
-                # someone has done a rogue uninstall and the synergy file
-                # is there but there is no actual executable
-                self.logger.debug("Synergy path '%s' does not exist on disk. Skipping." % exec_path)
-                continue
-
-            # Sometimes the Synergy StringVersion is a bit wordy.
-            # Truncate non essential strings for the display name.
-            synergy_name = None
-            if synergy_data["Name"] and synergy_data["NumericVersion"]:
-                synergy_name = "%s %s" % (synergy_data["Name"], synergy_data["NumericVersion"])
-            elif synergy_data["StringVersion"]:
-                synergy_name = str(synergy_data["StringVersion"]).replace("Autodesk", "").strip()
-
-            # Create a SoftwareVersion from input and config data.
-            self.logger.debug("Creating SoftwareVersion for '%s'" % exec_path)
-            sw_versions.append(SoftwareVersion(
-                synergy_data["NumericVersion"],
-                synergy_name,
-                exec_path,
-                self._icon_from_executable(exec_path)
-            ))
-
-        return sw_versions
-
-    def _default_path_software_versions(self, versions):
+    def scan_software(self):
         """
         Creates SoftwareVersion instances based on the path values used
         in the default configuration paths.yml environment.
 
-        :param list versions: (optional) List of strings representing
-                              versions to search for. If set to None,
-                              search for all versions. A version string
-                              is DCC-specific but could be something
-                              like "2017", "6.3v7" or "1.2.3.52"
         :returns: List of :class:`SoftwareVersion` instances
         """
         # Determine a list of paths to search for Maya executables based
@@ -362,18 +231,21 @@ class MayaLauncher(SoftwareLauncher):
                     exec_paths.append(exec_path)
 
         sw_versions = []
+
+        default_product = "Maya"
+
         if exec_paths:
             for exec_path in exec_paths:
                 # Check to see if the version number can be parsed from the path name.
-                path_sw_versions = [p.lower() for p in exec_path.split(os.path.sep)
+                path_sw_versions = [
+                    p.lower() for p in exec_path.split(os.path.sep)
                     if re.match("maya[0-9]+[.0-9]*$", p.lower()) is not None
                 ]
                 if path_sw_versions:
-                    # Use this sub dir to determine the default display name
+                    # Use this sub dir to determine the default product name
                     # and version for the SoftwareVersion to be created.
-                    default_display = path_sw_versions[0]
-                    default_version = default_display.replace("maya", "")
-                    default_display = "Maya %s" % default_version
+                    exec_dir = path_sw_versions[0]
+                    default_version = exec_dir.replace("maya", "")
                     self.logger.debug(
                         "Resolved version '%s' from executable '%s'." %
                         (default_version, exec_path)
@@ -393,103 +265,36 @@ class MayaLauncher(SoftwareLauncher):
 
                     # Display and version information are contained before the first ','
                     # in the output version string.
-                    default_display = version_output[0:version_output.find(",")]
+                    default_product = version_output[0:version_output.find(",")]
 
                     # Update known oddball display values to "nicer" version numbers.
-                    if "2016 Extension 2 SP1" in default_display:
-                        default_display = default_display.replace("2016 Extension 2 SP1", "2016.5")
+                    if "2016 Extension 2 SP1" in default_product:
+                        default_product = default_product.replace("2016 Extension 2 SP1", "2016.5")
 
                     # Parse the default version from the display name determined from
                     # the version output.
-                    default_version = default_display.lower().replace("maya", "").strip()
+                    default_version = default_product.lower().replace("maya", "").strip()
                     self.logger.debug(
                         "Resolved version '%s' from version output '%s'" %
                         (default_version, version_output)
-                    )
-
-                if versions and default_version not in versions:
-                    # If this version isn't in the list of requested versions, skip it.
-                    self.logger.debug("Skipping Maya version %s ..." % default_version)
-                    continue
-
-                if not self.is_version_supported(default_version):
-                    self.logger.info(
-                        "Found Maya install in '%s' but only versions %s "
-                        "and above are supported" % (exec_path, self.minimum_supported_version)
                     )
 
                 # Create a SoftwareVersion using the information from executable
                 # path(s) found in default locations.
                 exec_path = self._resolve_path_for_platform(exec_path)
                 self.logger.debug("Creating SoftwareVersion for executable '%s'." % exec_path)
-                sw_versions.append(SoftwareVersion(
+
+                sw = SoftwareVersion(
                     default_version,
-                    default_display,
+                    default_product,
                     exec_path,
                     self._icon_from_executable(exec_path)
-                ))
+                )
+
+                supported, reason = self._is_supported(sw)
+                if supported:
+                    sw_versions.append(sw)
+                else:
+                    self.logger.debug(reason)
 
         return sw_versions
-
-
-def _synergy_config_files(config_match=None):
-    """
-    Scans the local file system using a list of search paths for
-    Autodesk Synergy Config files (.syncfg).
-
-    :param str config_prefix: Substring resolved Synergy config
-                              file should start with.
-    :returns: List of path names to Synergy Config files found
-              in the local environment
-    """
-    # Check for custom paths defined by the SYNHUB_CONFIG_PATH env var.
-    env_paths = os.environ.get("SYNHUB_CONFIG_PATH")
-    search_paths = []
-    if isinstance(env_paths, basestring):
-        # This can be a list of directories and/or files.
-        search_paths = env_paths.split(os.pathsep)
-
-    # Check the platfom-specific default installation path
-    # if no paths were set in the environment
-    elif sys.platform == "darwin":
-        search_paths = ["/Applications/Autodesk/Synergy"]
-    elif sys.platform == "win32":
-        search_paths = ["C:\\ProgramData\\Autodesk\\Synergy"]
-    elif sys.platform == "linux2":
-        search_paths = ["/opt/Autodesk/Synergy"]
-    else:
-        return search_paths
-
-    # Find the Synergy config files from the list of paths
-    # to search. Filter by files that start with config_prefix
-    # if specified.
-    synergy_configs = []
-    for search_path in search_paths:
-        if os.path.isdir(search_path):
-            for item in os.listdir(search_path):
-                if not item.endswith(".syncfg"):
-                    # Skip non Synergy config files
-                    continue
-
-                if config_match and config_match not in item:
-                    # Skip Synergy config files that do not
-                    # contain the requested string
-                    continue
-
-                # Found a matching Synergy config file
-                synergy_configs.append(os.path.join(search_path, item))
-
-        elif os.path.isfile(search_path):
-            # Determine whether this search_path is a Synergy
-            # config file and matches the specified config_prefix,
-            # if requested.
-            file_name = os.path.basename(search_path)
-            if file_name.endswith(".syncfg"):
-                if config_match:
-                    if config_match in file_name:
-                        synergy_configs.append(search_path)
-                else:
-                    synergy_configs.append(search_path)
-
-    return synergy_configs
-
