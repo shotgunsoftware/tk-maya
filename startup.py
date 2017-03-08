@@ -14,11 +14,9 @@ import re
 import glob
 import subprocess
 
-from xml.etree import ElementTree
-
 import sgtk
-from sgtk import TankError
 from sgtk.platform import SoftwareLauncher, SoftwareVersion, LaunchInformation
+
 
 class MayaLauncher(SoftwareLauncher):
     """
@@ -88,7 +86,8 @@ class MayaLauncher(SoftwareLauncher):
                         maya_module_paths.append(load_plugin)
                 else:
                     # Report the missing plugin directory
-                    self.logger.warning("Resolved plugin path '%s' does not exist!" %
+                    self.logger.warning(
+                        "Resolved plugin path '%s' does not exist!" %
                         load_plugin
                     )
 
@@ -162,7 +161,8 @@ class MayaLauncher(SoftwareLauncher):
             return None
 
         # Record what the resolved icon path was.
-        self.logger.debug("Resolved icon path '%s' from input executable '%s'." %
+        self.logger.debug(
+            "Resolved icon path '%s' from input executable '%s'." %
             (icon_path, exec_path)
         )
         return icon_path
@@ -198,7 +198,7 @@ class MayaLauncher(SoftwareLauncher):
 
         return exec_path
 
-    def _scan_software(self):
+    def scan_software(self):
         """
         Creates SoftwareVersion instances based on the path values used
         in the default configuration paths.yml environment.
@@ -239,7 +239,8 @@ class MayaLauncher(SoftwareLauncher):
         if exec_paths:
             for exec_path in exec_paths:
                 # Check to see if the version number can be parsed from the path name.
-                path_sw_versions = [p.lower() for p in exec_path.split(os.path.sep)
+                path_sw_versions = [
+                    p.lower() for p in exec_path.split(os.path.sep)
                     if re.match("maya[0-9]+[.0-9]*$", p.lower()) is not None
                 ]
                 if path_sw_versions:
@@ -284,12 +285,18 @@ class MayaLauncher(SoftwareLauncher):
                 # path(s) found in default locations.
                 exec_path = self._resolve_path_for_platform(exec_path)
                 self.logger.debug("Creating SoftwareVersion for executable '%s'." % exec_path)
-                sw_versions.append(SoftwareVersion(
+
+                sw = SoftwareVersion(
                     default_version,
                     default_product,
                     exec_path,
                     self._icon_from_executable(exec_path)
-                ))
+                )
+
+                supported, reason = self._is_supported(sw)
+                if supported:
+                    sw_versions.append(sw)
+                else:
+                    self.logger.debug(reason)
 
         return sw_versions
-
