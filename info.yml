@@ -78,8 +78,6 @@ configuration:
         type: list
         description: Comma-separated list of tk-maya plugins to load when launching Maya. Use
                      of this feature disables the classic mechanism for bootstrapping Toolkit
-                     when Maya is launched. Therefore, if any plugins are specified using this
-                     setting, the first one in the list must be responsible for starting Toolkit
                      when Maya is launched.
         allows_empty: True
         default_value: []
