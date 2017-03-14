@@ -10,9 +10,6 @@
 
 import os
 import sys
-import re
-import glob
-import subprocess
 
 import sgtk
 from sgtk.platform import SoftwareLauncher, SoftwareVersion, LaunchInformation
@@ -30,7 +27,7 @@ class MayaLauncher(SoftwareLauncher):
     # strings, these allow us to alter the regex matching for any of the
     # variable components of the path in one place
     COMPONENT_REGEX_LOOKUP = {
-        "version": "(?P<version>[\d.]+)",
+        "version": "[\d.]+"
     }
 
     # This dictionary defines a list of executable template strings for each
@@ -184,7 +181,7 @@ class MayaLauncher(SoftwareLauncher):
         if not os.path.exists(icon_path):
             self.logger.debug(
                 "Icon path '%s' resolved from executable '%s' does not exist!"
-                "Falling back on engine icon."% (icon_path, exec_path)
+                "Falling back on engine icon." % (icon_path, exec_path)
             )
             return engine_icon
 
@@ -238,7 +235,7 @@ class MayaLauncher(SoftwareLauncher):
             )
 
             # Extract all products from that executable.
-            for (executable_path, key_groups, key_dict) in executable_matches:
+            for (executable_path, key_dict) in executable_matches:
 
                 # extract the matched keys form the key_dict (default to None if
                 # not included)
