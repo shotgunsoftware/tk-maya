@@ -27,7 +27,8 @@ class MayaLauncher(SoftwareLauncher):
     # strings, these allow us to alter the regex matching for any of the
     # variable components of the path in one place
     COMPONENT_REGEX_LOOKUP = {
-        "version": "[\d.]+"
+        "version": "[\d.]+",
+        "mach": "-\d+x"
     }
 
     # This dictionary defines a list of executable template strings for each
@@ -48,6 +49,7 @@ class MayaLauncher(SoftwareLauncher):
         "linux2": [
             # /usr/autodesk/maya2016/bin/maya
             "/usr/autodesk/maya{version}/bin/maya",
+            "/usr/autodesk/maya{version}{mach}/bin/maya",
         ]
     }
 
