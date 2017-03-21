@@ -28,7 +28,7 @@ class MayaLauncher(SoftwareLauncher):
     # variable components of the path in one place
     COMPONENT_REGEX_LOOKUP = {
         "version": "[\d.]+",
-        "mach": "\d+x"
+        "mach": "x\d+"
     }
 
     # This dictionary defines a list of executable template strings for each
