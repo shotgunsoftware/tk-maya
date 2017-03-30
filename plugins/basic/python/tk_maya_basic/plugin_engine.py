@@ -10,12 +10,6 @@
 
 import os
 
-from . import constants
-from . import plugin_logging
-
-from . import __name__ as PLUGIN_PACKAGE_NAME
-
-
 def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     """
     Bootstraps the engine using the plug-in manifest data to drive some bootstrap options.
@@ -30,11 +24,7 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     # but also re-import it later to ensure usage of a swapped in version.
     import sgtk
 
-    # Use a custom logging handler to display messages in Maya script editor before the engine takes over logging.
-    plugin_logging_handler = plugin_logging.PluginLoggingHandler()
-    sgtk.LogManager().initialize_custom_handler(plugin_logging_handler)
-
-    logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
+    logger = sgtk.LogManager.get_logger(__name__)
 
     # get information about this plugin (plugin id & base config)
     plugin_info = _get_plugin_info()
@@ -52,11 +42,6 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
 
     # Install the bootstrap progress reporting callback.
     toolkit_mgr.progress_callback = progress_callback
-
-    # install a callback that turns off logging just before the
-    # engine starts up its own logging
-    callback = lambda ctx, log_handler=plugin_logging_handler: _pre_engine_start_callback(ctx, log_handler)
-    toolkit_mgr.pre_engine_start_callback = callback
 
     # Bootstrap a toolkit instance asynchronously in a background thread,
     # followed by launching the engine synchronously in the main application thread.
@@ -117,21 +102,6 @@ def _get_plugin_info():
     )
 
 
-def _pre_engine_start_callback(ctx, log_handler):
-    """
-    Called just before the engine starts during bootstrap.
-
-    :param ctx: Toolkit context we are bootstrapping into.
-    :type ctx: :class:`sgtk.Context`
-    :param log_handler: log handler for plugin
-    """
-    # Remove the custom logging handler now that the engine will take over logging.
-    # This ensures that there is minimal gap in logging between the bootstrapper
-    # and the engine.
-    import sgtk
-    sgtk.LogManager().root_logger.removeHandler(log_handler)
-
-
 def shutdown():
     """
     Shuts down the running engine.
@@ -139,7 +109,7 @@ def shutdown():
 
     # Re-import the toolkit core to ensure usage of a swapped in version.
     import sgtk
-    logger = sgtk.LogManager.get_logger(PLUGIN_PACKAGE_NAME)
+    logger = sgtk.LogManager.get_logger(__name__)
     engine = sgtk.platform.current_engine()
 
     if engine:
