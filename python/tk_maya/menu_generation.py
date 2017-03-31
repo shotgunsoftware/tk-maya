@@ -160,7 +160,7 @@ class MenuGenerator(object):
             
             exit_code = os.system(cmd)
             if exit_code != 0:
-                self._engine.logger.error("Failed to launch '%s'!" % cmd)
+                self._engine.logger.error("Failed to launch '%s'!", cmd)
         
                         
     ##########################################################################################
