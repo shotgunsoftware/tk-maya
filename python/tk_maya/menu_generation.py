@@ -160,7 +160,7 @@ class MenuGenerator(object):
             
             exit_code = os.system(cmd)
             if exit_code != 0:
-                self._engine.log_error("Failed to launch '%s'!" % cmd)
+                self._engine.logger.error("Failed to launch '%s'!", cmd)
         
                         
     ##########################################################################################
@@ -320,7 +320,7 @@ class AppCommand(object):
             self.callback()
         except Exception, e:
             current_engine = tank.platform.current_engine()
-            current_engine.log_exception("An exception was raised from Toolkit")
+            current_engine.logger.exception("An exception was raised from Toolkit")
 
     def _find_sub_menu_item(self, menu, label):
         """
