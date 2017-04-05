@@ -12,6 +12,7 @@ import logging
 
 import maya.utils
 import pymel.core as pm
+import maya.OpenMaya as OpenMaya
 
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
@@ -26,21 +27,11 @@ QtCore = qt_importer.QtCore
 QtGui = qt_importer.QtGui
 
 from . import plugin_engine
-from . import plugin_logging
-from . import __name__ as PLUGIN_PACKAGE_NAME
 
 MENU_LOGIN = "ShotgunMenuLogin"
 MENU_LABEL = "Shotgun"
 
-# Initialize a standalone logger to display messages in Maya script editor
-# when the engine is not running while the user is logged out of Shotgun.
-standalone_logger = logging.getLogger(PLUGIN_PACKAGE_NAME)
-# Do not propagate messages to Maya ancestor logger to avoid duplicated logs.
-standalone_logger.propagate = False
-# Ignore messages less severe than the info ones.
-standalone_logger.setLevel(logging.INFO)
-# Use a custom logging handler to display messages in Maya script editor.
-standalone_logger.addHandler(plugin_logging.PluginLoggingHandler())
+logger = sgtk.LogManager.get_logger(__name__)
 
 
 def bootstrap():
@@ -82,7 +73,7 @@ def _login_user():
     except sgtk.authentication.AuthenticationCancelled:
         # When the user cancelled the Shotgun login dialog,
         # keep around the displayed login menu.
-        standalone_logger.info("Shotgun login was cancelled by the user.")
+        OpenMaya.MGlobal.displayInfo("Shotgun login was cancelled by the user.")
         return
 
     # Get rid of the displayed login menu since the engine menu will take over.
@@ -90,7 +81,7 @@ def _login_user():
     # processed before deleting the menu to avoid a crash in Maya 2017.
     maya.utils.executeDeferred(_delete_login_menu)
 
-    standalone_logger.debug("Bootstrapping Shotgun.")
+    OpenMaya.MGlobal.displayInfo("Loading Shotgun integration...")
 
     # Show a progress bar, and set its initial value and message.
     _show_progress_bar(0.0, "Loading...")
@@ -108,7 +99,7 @@ def _login_user():
         # return to normal state
         _handle_bootstrap_failed(phase=None, exception=e)
         # also print the full call stack
-        standalone_logger.exception("Shotgun reported the following exception during startup:")
+        logger.exception("Shotgun reported the following exception during startup:")
 
 
 def _handle_bootstrap_progress(progress_value, message):
@@ -121,7 +112,7 @@ def _handle_bootstrap_progress(progress_value, message):
     :param message: Progress message to report.
     """
 
-    standalone_logger.debug("Bootstrapping Shotgun: %s" % message)
+    logger.debug("Bootstrapping Shotgun: %s" % message)
 
     # Show the progress bar, and update its value and message.
     _show_progress_bar(progress_value, message)
@@ -146,7 +137,7 @@ def _handle_bootstrap_completed(engine):
     _hide_progress_bar()
 
     # Report completion of the bootstrap.
-    standalone_logger.info("Integration loaded.")
+    logger.debug("Maya Plugin bootstrapped.")
 
     # Add a logout menu item to the engine context menu.
     sgtk.platform.current_engine().register_command(
@@ -178,7 +169,11 @@ def _handle_bootstrap_failed(phase, exception):
     _hide_progress_bar()
 
     # Report the encountered exception.
-    standalone_logger.error("Initialization failed: %s" % exception)
+    # the message displayed last will be the one visible in the script editor,
+    # so make sure this is the error message summary.
+    OpenMaya.MGlobal.displayError("An exception was raised during Shotgun startup: %s" % exception)
+    OpenMaya.MGlobal.displayError("For details, see log files in %s" % sgtk.LogManager().log_folder)
+    OpenMaya.MGlobal.displayError("Error loading Shotgun integration.")
 
     # Clear the user's credentials to log him/her out.
     sgtk.authentication.ShotgunAuthenticator().clear_default_user()
