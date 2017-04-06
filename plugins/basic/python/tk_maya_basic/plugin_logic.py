@@ -139,12 +139,14 @@ def _handle_bootstrap_completed(engine):
     # Report completion of the bootstrap.
     logger.debug("Maya Plugin bootstrapped.")
 
-    # Add a logout menu item to the engine context menu.
-    sgtk.platform.current_engine().register_command(
-        "Log Out of Shotgun",
-        _logout_user,
-        {"type": "context_menu"}
-    )
+    # Add a logout menu item to the engine context menu, but only if
+    # running as a standalone plugin
+    if sgtk.platform.current_engine().context.project is None:
+        sgtk.platform.current_engine().register_command(
+            "Log Out of Shotgun",
+            _logout_user,
+            {"type": "context_menu"}
+        )
 
 
 def _handle_bootstrap_failed(phase, exception):
