@@ -216,10 +216,6 @@ class MayaEngine(tank.platform.Engine):
     Toolkit engine for Maya.
     """
 
-    # Time stamp of the last debug message logged.
-    # Initialize it with the current time for lack of a better value.
-    _debug_msg_time_stamp = time.time()
-
     @property
     def context_change_allowed(self):
         """
@@ -240,13 +236,13 @@ class MayaEngine(tank.platform.Engine):
         # tell QT to interpret C strings as utf-8
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
         QtCore.QTextCodec.setCodecForCStrings(utf8)
-        self.log_debug("set utf-8 codec for widget text")
+        self.logger.debug("set utf-8 codec for widget text")
 
     def init_engine(self):
         """
         Initializes the Maya engine.
         """
-        self.log_debug("%s: Initializing..." % self)
+        self.logger.debug("%s: Initializing...", self)
 
         # check that we are running an ok version of maya
         current_os = cmds.about(operatingSystem=True)
@@ -258,7 +254,7 @@ class MayaEngine(tank.platform.Engine):
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
         if maya_ver.startswith(("2014", "2015", "2016", "2017")):
-            self.log_debug("Running Maya version %s" % maya_ver)
+            self.logger.debug("Running Maya version %s", maya_ver)
         elif maya_ver.startswith(("2012", "2013")):
             # We won't be able to rely on the warning dialog below, because Maya
             # older than 2014 doesn't ship with PySide. Instead, we just have to
@@ -292,7 +288,7 @@ class MayaEngine(tank.platform.Engine):
                 cmds.confirmDialog(title = title, message = msg, button = "Ok")
 
             # always log the warning to the script editor:
-            self.log_warning(msg)
+            self.logger.warning(msg)
 
         self._maya_version = maya_ver
 
@@ -318,7 +314,7 @@ class MayaEngine(tank.platform.Engine):
             # need to watch some scene events in case the engine needs rebuilding:
             cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name:on_scene_event_callback(en, pc, mn)
             self.__watcher = SceneEventWatcher(cb_fn)
-            self.log_debug("Registered open and save callbacks.")
+            self.logger.debug("Registered open and save callbacks.")
 
         # Initialize a dictionary of Maya panels that have been created by the engine.
         # Each panel entry has a Maya panel name key and an app widget instance value.
@@ -365,7 +361,7 @@ class MayaEngine(tank.platform.Engine):
                 menu_name=mn,
             )
             self.__watcher = SceneEventWatcher(cb_fn)
-            self.log_debug(
+            self.logger.debug(
                 "Registered new open and save callbacks before changing context."
             )
 
@@ -398,17 +394,17 @@ class MayaEngine(tank.platform.Engine):
             command_dict = app_instance_commands.get(app_instance_name)
 
             if command_dict is None:
-                self.log_warning(
-                    "%s configuration setting 'run_at_startup' requests app '%s' that is not installed." %
-                    (self.name, app_instance_name))
+                self.logger.warning(
+                    "%s configuration setting 'run_at_startup' requests app '%s' that is not installed.",
+                    self.name, app_instance_name)
             else:
                 if not setting_command_name:
                     # Run all commands of the given app instance.
                     # Run these commands once Maya will have completed its UI update and be idle
                     # in order to run them after the ones that restore the persisted Shotgun app panels.
                     for (command_name, command_function) in command_dict.iteritems():
-                        self.log_debug("%s startup running app '%s' command '%s'." %
-                                       (self.name, app_instance_name, command_name))
+                        self.logger.debug("%s startup running app '%s' command '%s'.",
+                                       self.name, app_instance_name, command_name)
                         maya.utils.executeDeferred(command_function)
                 else:
                     # Run the command whose name is listed in the 'run_at_startup' setting.
@@ -416,22 +412,22 @@ class MayaEngine(tank.platform.Engine):
                     # in order to run it after the ones that restore the persisted Shotgun app panels.
                     command_function = command_dict.get(setting_command_name)
                     if command_function:
-                        self.log_debug("%s startup running app '%s' command '%s'." %
-                                       (self.name, app_instance_name, setting_command_name))
+                        self.logger.debug("%s startup running app '%s' command '%s'.",
+                                       self.name, app_instance_name, setting_command_name)
                         maya.utils.executeDeferred(command_function)
                     else:
                         known_commands = ', '.join("'%s'" % name for name in command_dict)
-                        self.log_warning(
+                        self.logger.warning(
                             "%s configuration setting 'run_at_startup' requests app '%s' unknown command '%s'. "
-                            "Known commands: %s" %
-                            (self.name, app_instance_name, setting_command_name, known_commands))
+                            "Known commands: %s",
+                            self.name, app_instance_name, setting_command_name, known_commands)
 
 
     def destroy_engine(self):
         """
         Stops watching scene events and tears down menu.
         """
-        self.log_debug("%s: Destroying..." % self)
+        self.logger.debug("%s: Destroying...", self)
 
         # Clear the dictionary of Maya panels to keep the garbage collector happy.
         self._maya_panel_dict = {}
@@ -454,10 +450,10 @@ class MayaEngine(tank.platform.Engine):
             from PySide2 import QtGui
         except:
             # fine, we don't expect PySide2 to be present just yet
-            self.log_debug("PySide2 not detected - trying for PySide now...")
+            self.logger.debug("PySide2 not detected - trying for PySide now...")
         else:
             # looks like pyside2 is already working! No need to do anything
-            self.log_debug("PySide2 detected - the existing version will be used.")
+            self.logger.debug("PySide2 detected - the existing version will be used.")
             return
 
         # then see if pyside is present
@@ -465,21 +461,21 @@ class MayaEngine(tank.platform.Engine):
             from PySide import QtGui
         except:
             # must be a very old version of Maya.
-            self.log_debug("PySide not detected - it will be added to the setup now...")
+            self.logger.debug("PySide not detected - it will be added to the setup now...")
         else:
             # looks like pyside is already working! No need to do anything
-            self.log_debug("PySide detected - the existing version will be used.")
+            self.logger.debug("PySide detected - the existing version will be used.")
             return
 
         if sys.platform == "darwin":
             pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_mac", "python")
-            self.log_debug("Adding pyside to sys.path: %s" % pyside_path)
+            self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
             sys.path.append(pyside_path)
 
         elif sys.platform == "win32":
             # default windows version of pyside for 2011 and 2012
             pyside_path = os.path.join(self.disk_location, "resources","pyside111_py26_qt471_win64", "python")
-            self.log_debug("Adding pyside to sys.path: %s" % pyside_path)
+            self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
             sys.path.append(pyside_path)
             dll_path = os.path.join(self.disk_location, "resources","pyside111_py26_qt471_win64", "lib")
             path = os.environ.get("PATH", "")
@@ -488,18 +484,18 @@ class MayaEngine(tank.platform.Engine):
 
         elif sys.platform == "linux2":
             pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_linux", "python")
-            self.log_debug("Adding pyside to sys.path: %s" % pyside_path)
+            self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
             sys.path.append(pyside_path)
 
         else:
-            self.log_error("Unknown platform - cannot initialize PySide!")
+            self.logger.error("Unknown platform - cannot initialize PySide!")
 
         # now try to import it
         try:
             from PySide import QtGui
         except Exception, e:
-            self.log_error("PySide could not be imported! Apps using pyside will not "
-                           "operate correctly! Error reported: %s" % e)
+            self.logger.error("PySide could not be imported! Apps using pyside will not "
+                           "operate correctly! Error reported: %s", e)
 
     def _get_dialog_parent(self):
         """
@@ -534,13 +530,10 @@ class MayaEngine(tank.platform.Engine):
     ##########################################################################################
     # logging
 
-    def _emit_log_message_FUTURE(self, handler, record):
+    def _emit_log_message(self, handler, record):
         """
         Called by the engine to log messages in Maya script editor.
         All log messages from the toolkit logging namespace will be passed to this method.
-
-        .. note:: This method will be called by the new logging system introduced in core v0.18.
-                  It will be enabled in January 2017 by removing the method name suffix "_FUTURE".
 
         :param handler: Log handler that this message was dispatched from.
                         Its default format is "[levelname basename] message".
@@ -548,14 +541,16 @@ class MayaEngine(tank.platform.Engine):
         :param record: Standard python logging record.
         :type record: :class:`~python.logging.LogRecord`
         """
-
         # Give a standard format to the message:
-        #     Shotgun DEBUG <basename>: <message>
-        # or
         #     Shotgun <basename>: <message>
-        msg = "Shotgun %s%s: %s" % ("DEBUG " if record.levelno < logging.INFO else "",
-                                    record.basename,
-                                    record.message)
+        # where "basename" is the leaf part of the logging record name,
+        # for example "tk-multi-shotgunpanel" or "qt_importer".
+        if record.levelno < logging.INFO:
+            formatter = logging.Formatter("Debug: Shotgun %(basename)s: %(message)s")
+        else:
+            formatter = logging.Formatter("Shotgun %(basename)s: %(message)s")
+
+        msg = formatter.format(record)
 
         # Select Maya display function to use according to the logging record level.
         if record.levelno < logging.WARNING:
@@ -567,95 +562,6 @@ class MayaEngine(tank.platform.Engine):
 
         # Display the message in Maya script editor in a thread safe manner.
         self.async_execute_in_main_thread(fct, msg)
-
-    def log_debug(self, msg):
-        """
-        Logs debug messages in Maya script editor.
-
-        .. note:: This method is called by the legacy logging system.
-                  The new logging method will take over in January 2017
-                  while preserving backward compatibility.
-
-        :param msg: Debug message to log.
-                    This message usually has the format "basename: text" where
-                    "basename" is the leaf part of the logging record name,
-                    for example "tk-multi-shotgunpanel" or "qt_importer".
-        """
-
-        # Do not log debug messages when debug logging setting is off.
-        if not self.get_setting("debug_logging", False):
-            return
-
-        current_time_stamp = time.time()
-
-        # Give a standard format to the message.
-        msg = "Shotgun DEBUG (%0.3fs): %s" % (current_time_stamp-self._debug_msg_time_stamp, msg)
-
-        # Display the message in Maya script editor in a thread safe manner.
-        self.async_execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
-
-        # Update the debug message time stamp.
-        self._debug_msg_time_stamp = current_time_stamp
-
-    def log_info(self, msg):
-        """
-        Logs info messages in Maya script editor.
-
-        .. note:: This method is called by the legacy logging system.
-                  The new logging method will take over in January 2017
-                  while preserving backward compatibility.
-
-        :param msg: Info message to log.
-                    This message usually has the format "basename: text" where
-                    "basename" is the leaf part of the logging record name,
-                    for example "tk-multi-shotgunpanel" or "qt_importer".
-        """
-
-        # Give a standard format to the message.
-        msg = "Shotgun: %s" % msg
-
-        # Display the message in Maya script editor in a thread safe manner.
-        self.async_execute_in_main_thread(OpenMaya.MGlobal.displayInfo, msg)
-
-    def log_warning(self, msg):
-        """
-        Logs warning messages in Maya script editor.
-
-        .. note:: This method is called by the legacy logging system.
-                  The new logging method will take over in January 2017
-                  while preserving backward compatibility.
-
-        :param msg: Warning message to log.
-                    This message usually has the format "basename: text" where
-                    "basename" is the leaf part of the logging record name,
-                    for example "tk-multi-shotgunpanel" or "qt_importer".
-        """
-
-        # Give a standard format to the message.
-        msg = "Shotgun: %s" % msg
-
-        # Display the message in Maya script editor in a thread safe manner.
-        self.async_execute_in_main_thread(OpenMaya.MGlobal.displayWarning, msg)
-
-    def log_error(self, msg):
-        """
-        Logs error messages in Maya script editor.
-
-        .. note:: This method is called by the legacy logging system.
-                  The new logging method will take over in January 2017
-                  while preserving backward compatibility.
-
-        :param msg: Error message to log.
-                    This message usually has the format "basename: text" where
-                    "basename" is the leaf part of the logging record name,
-                    for example "tk-multi-shotgunpanel" or "qt_importer".
-        """
-
-        # Give a standard format to the message.
-        msg = "Shotgun: %s" % msg
-
-        # Display the message in Maya script editor in a thread safe manner.
-        self.async_execute_in_main_thread(OpenMaya.MGlobal.displayError, msg)
 
     ##########################################################################################
     # scene and project management
@@ -671,7 +577,7 @@ class MayaEngine(tank.platform.Engine):
         tmpl = self.tank.templates.get(setting)
         fields = self.context.as_template_fields(tmpl)
         proj_path = tmpl.apply_fields(fields)
-        self.log_info("Setting Maya project to '%s'" % proj_path)
+        self.logger.info("Setting Maya project to '%s'", proj_path)
         pm.mel.setProject(proj_path)
 
     ##########################################################################################
@@ -694,7 +600,7 @@ class MayaEngine(tank.platform.Engine):
 
         tk_maya = self.import_module("tk_maya")
 
-        self.log_debug("Begin showing panel %s" % panel_id)
+        self.logger.debug("Begin showing panel %s", panel_id)
 
         # The general approach below is as follows:
         #
@@ -725,27 +631,27 @@ class MayaEngine(tank.platform.Engine):
         widget_id = tk_maya.panel_generation.SHOTGUN_APP_PANEL_PREFIX + panel_id
 
         if pm.control(widget_id, query=1, exists=1):
-            self.log_debug("Reparent existing toolkit widget %s." % widget_id)
+            self.logger.debug("Reparent existing toolkit widget %s.", widget_id)
             # Find the Shotgun app panel widget for later use.
             for widget in QtGui.QApplication.allWidgets():
                 if widget.objectName() == widget_id:
                     widget_instance = widget
                     # Reparent the Shotgun app panel widget under Maya main window
                     # to prevent it from being deleted with the existing Maya panel.
-                    self.log_debug("Reparenting widget %s under Maya main window." % widget_id)
+                    self.logger.debug("Reparenting widget %s under Maya main window.", widget_id)
                     parent = self._get_dialog_parent()
                     widget_instance.setParent(parent)
                     # The Shotgun app panel was retrieved from under an existing Maya panel.
                     break
         else:
-            self.log_debug("Create toolkit widget %s" % widget_id)
+            self.logger.debug("Create toolkit widget %s", widget_id)
             # parent the UI to the main maya window
             parent = self._get_dialog_parent()
             widget_instance = widget_class(*args, **kwargs)
             widget_instance.setParent(parent)
             # set its name - this means that it can also be found via the maya API
             widget_instance.setObjectName(widget_id)
-            self.log_debug("Created widget %s: %s" % (widget_id, widget_instance))
+            self.logger.debug("Created widget %s: %s", widget_id, widget_instance)
             # apply external stylesheet
             self._apply_external_styleshet(bundle, widget_instance)
             # The Shotgun app panel was just created.
@@ -777,10 +683,10 @@ class MayaEngine(tank.platform.Engine):
             dialog_window_title = dialog.windowTitle()
             try:
                 # Close the dialog and let its close callback remove it from the original dialog list.
-                self.log_debug("Closing dialog %s." % dialog_window_title)
+                self.logger.debug("Closing dialog %s.", dialog_window_title)
                 dialog.close()
             except Exception, exception:
-                self.log_error("Cannot close dialog %s: %s" % (dialog_window_title, exception))
+                self.logger.error("Cannot close dialog %s: %s", dialog_window_title, exception)
 
         # Loop through the dictionary of Maya panels that have been created by the engine.
         for (maya_panel_name, widget_instance) in self._maya_panel_dict.iteritems():
@@ -789,15 +695,15 @@ class MayaEngine(tank.platform.Engine):
                 try:
                     # Reparent the Shotgun app panel widget under Maya main window
                     # to prevent it from being deleted with the existing Maya panel.
-                    self.log_debug("Reparenting widget %s under Maya main window." %
+                    self.logger.debug("Reparenting widget %s under Maya main window.",
                                    widget_instance.objectName())
                     parent = self._get_dialog_parent()
                     widget_instance.setParent(parent)
                     # The Maya panel can now be deleted safely.
-                    self.log_debug("Deleting Maya panel %s." % maya_panel_name)
+                    self.logger.debug("Deleting Maya panel %s.", maya_panel_name)
                     pm.deleteUI(maya_panel_name)
                 except Exception, exception:
-                    self.log_error("Cannot delete Maya panel %s: %s" % (maya_panel_name, exception))
+                    self.logger.error("Cannot delete Maya panel %s: %s", maya_panel_name, exception)
 
         # Clear the dictionary of Maya panels now that they were deleted.
         self._maya_panel_dict = {}

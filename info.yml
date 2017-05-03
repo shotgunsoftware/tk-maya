@@ -74,6 +74,16 @@ configuration:
         description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Shotgun'
         default_value: false
 
+    launch_builtin_plugins:
+        type: list
+        description: Comma-separated list of tk-maya plugins to load when launching Maya. Use
+                     of this feature disables the classic mechanism for bootstrapping Toolkit
+                     when Maya is launched.
+        allows_empty: True
+        default_value: []
+        values:
+            type: str
+
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
         
