@@ -109,7 +109,10 @@ class MayaLauncher(SoftwareLauncher):
                     self.logger.debug("Preparing to launch builtin plugin '%s'" % load_plugin)
                     load_maya_plugins.append(load_plugin)
                     if load_plugin not in maya_module_paths:
-                        maya_module_paths.append(load_plugin)
+                        # Insert at beginning of list to give priority to toolkit plugins
+                        # launched from the desktop app over standalone ones whose
+                        # path is already part of the MAYA_MODULE_PATH env var
+                        maya_module_paths.insert(0, load_plugin)
                 else:
                     # Report the missing plugin directory
                     self.logger.warning(
