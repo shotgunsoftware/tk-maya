@@ -187,6 +187,7 @@ def create_sgtk_disabled_menu(menu_name):
     if pm.menu("ShotgunMenu", exists=True):
         pm.deleteUI("ShotgunMenu")
 
+    remove_sgtk_disabled_menu()
     sg_menu = pm.menu("ShotgunMenuDisabled", label=menu_name, parent=pm.melGlobals["gMainWindow"])
     pm.menuItem(label="Sgtk is disabled.", parent=sg_menu,
                 command=lambda arg: sgtk_disabled_message())
