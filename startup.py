@@ -132,7 +132,7 @@ class MayaLauncher(SoftwareLauncher):
         else:
             # Prepare the launch environment with variables required by the
             # classic bootstrap approach.
-            self.logger.info("Preparing Maya Launch via Toolkit Classic methodology ...")
+            self.logger.debug("Preparing Maya Launch via Toolkit Classic methodology ...")
             required_env["SGTK_ENGINE"] = self.engine_name
             required_env["SGTK_CONTEXT"] = sgtk.context.serialize(self.context)
 
