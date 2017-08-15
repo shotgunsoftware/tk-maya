@@ -184,12 +184,15 @@ def create_sgtk_disabled_menu(menu_name):
         # don't create menu in batch mode
         return
 
+    # destroy any pre-existing shotgun menu - the one that holds the apps
     if pm.menu("ShotgunMenu", exists=True):
         pm.deleteUI("ShotgunMenu")
 
-    sg_menu = pm.menu("ShotgunMenuDisabled", label=menu_name, parent=pm.melGlobals["gMainWindow"])
-    pm.menuItem(label="Sgtk is disabled.", parent=sg_menu,
-                command=lambda arg: sgtk_disabled_message())
+    # create a new shotgun disabled menu if one doesn't exist already.
+    if not pm.menu("ShotgunMenuDisabled", exists=True):
+        sg_menu = pm.menu("ShotgunMenuDisabled", label=menu_name, parent=pm.melGlobals["gMainWindow"])
+        pm.menuItem(label="Sgtk is disabled.", parent=sg_menu,
+                    command=lambda arg: sgtk_disabled_message())
 
 
 def remove_sgtk_disabled_menu():
