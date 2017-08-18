@@ -136,6 +136,11 @@ def refresh_engine(engine_name, prev_context, menu_name):
         create_sgtk_disabled_menu(menu_name)
         return
 
+    # shotgun menu may have been removed, so add it back in if its not already there.
+    current_engine.create_shotgun_menu()
+    # now remove the shotgun disabled menu if it exists.
+    remove_sgtk_disabled_menu()
+
     # and construct the new context for this path:
     ctx = tk.context_from_path(new_path, prev_context)
 
@@ -323,13 +328,15 @@ class MayaEngine(tank.platform.Engine):
         # Each panel entry has a Maya panel name key and an app widget instance value.
         self._maya_panel_dict = {}
 
-    def post_app_init(self):
+    def create_shotgun_menu(self):
         """
-        Called when all apps have initialized
+        Creates the main shotgun menu in maya.
+        Note that this only creates the menu, not the child actions
+        :return: bool
         """
 
-        # detect if in batch mode
-        if self.has_ui:
+        # only create the shotgun menu if not in batch mode and menu doesn't already exist
+        if self.has_ui and not pm.menu("ShotgunMenu", exists=True):
 
             self._menu_handle = pm.menu("ShotgunMenu", label=self._menu_name, parent=pm.melGlobals["gMainWindow"])
             # create our menu handler
@@ -340,6 +347,15 @@ class MayaEngine(tank.platform.Engine):
 
             # Restore the persisted Shotgun app panels.
             tk_maya.panel_generation.restore_panels(self)
+            return True
+
+        return False
+
+    def post_app_init(self):
+        """
+        Called when all apps have initialized
+        """
+        self.create_shotgun_menu()
 
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
