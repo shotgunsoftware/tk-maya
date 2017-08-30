@@ -23,6 +23,8 @@ import maya.OpenMaya as OpenMaya
 import pymel.core as pm
 import maya.cmds as cmds
 import maya.utils
+from tank.util.version import Version
+
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
@@ -226,6 +228,14 @@ class MayaEngine(tank.platform.Engine):
         """
         return True
 
+    @property
+    def host_app_name(self):
+        return self._version_info.app_name
+
+    @property
+    def host_app_version_string(self):
+        return self._version_info.version_string
+
     ##########################################################################################
     # init and destroy
 
@@ -243,9 +253,19 @@ class MayaEngine(tank.platform.Engine):
 
     def init_engine(self):
         """
+        TODO: Should't this method be depricated and code be moved to 'pre_app_init' or 'post_app_init'
+              as mentioned in the platform/engine.py init code?
+
         Initializes the Maya engine.
         """
         self.logger.debug("%s: Initializing...", self)
+
+        # The 'about -product' Maya MEL command return both the app name
+        # ( Maya, Maya LT, Maya IO) and the major version e.g.: Maya 2018
+        maya_about_string = cmds.about(product=True)
+        self.logger.debug("Maya about: '%s'", maya_about_string)
+        self._version_info = tank.util.version.Version(maya_about_string)
+        self.logger.debug("_version_info: '%s'", str(self._version_info))
 
         # check that we are running an ok version of maya
         current_os = cmds.about(operatingSystem=True)
@@ -253,12 +273,9 @@ class MayaEngine(tank.platform.Engine):
             raise tank.TankError("The current platform is not supported! Supported platforms "
                                  "are Mac, Linux 64 and Windows 64.")
 
-        maya_ver = cmds.about(version=True)
-        if maya_ver.startswith("Maya "):
-            maya_ver = maya_ver[5:]
-        if maya_ver.startswith(("2014", "2015", "2016", "2017")):
-            self.logger.debug("Running Maya version %s", maya_ver)
-        elif maya_ver.startswith(("2012", "2013")):
+        if self._version_info.major in [2014, 2015, 2016, 2017]:
+            self.logger.debug("Running Maya version %s", self.host_app_version_string)
+        elif self._version_info.major in [2012, 2013]:
             # We won't be able to rely on the warning dialog below, because Maya
             # older than 2014 doesn't ship with PySide. Instead, we just have to
             # raise an exception so that we bail out here with an error message
@@ -270,7 +287,7 @@ class MayaEngine(tank.platform.Engine):
             msg = ("The Shotgun Pipeline Toolkit has not yet been fully tested with Maya %s.  "
                    "You can continue to use Toolkit but you may experience bugs or instability."
                    "\n\nPlease report any issues to: support@shotgunsoftware.com"
-                   % (maya_ver))
+                   % (self.host_app_version_string))
 
             # determine if we should show the compatibility warning dialog:
             show_warning_dlg = self.has_ui and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
@@ -278,12 +295,8 @@ class MayaEngine(tank.platform.Engine):
                 # make sure we only show it once per session:
                 os.environ["SGTK_COMPATIBILITY_DIALOG_SHOWN"] = "1"
 
-                # split off the major version number - accomodate complex version strings and decimals:
-                major_version_number_str = maya_ver.split(" ")[0].split(".")[0]
-                if major_version_number_str and major_version_number_str.isdigit():
-                    # check against the compatibility_dialog_min_version setting:
-                    if int(major_version_number_str) < self.get_setting("compatibility_dialog_min_version"):
-                        show_warning_dlg = False
+                if self._version_info.major < self.get_setting("compatibility_dialog_min_version"):
+                    show_warning_dlg = False
 
             if show_warning_dlg:
                 # Note, title is padded to try to ensure dialog isn't insanely narrow!
@@ -293,13 +306,6 @@ class MayaEngine(tank.platform.Engine):
             # always log the warning to the script editor:
             self.logger.warning(msg)
 
-        self._maya_version = maya_ver
-
-        try:
-            self.log_user_attribute_metric("Maya version", maya_ver)
-        except:
-            # ignore all errors. ex: using a core that doesn't support metrics
-            pass
 
         # Set the Maya project based on config
         self._set_project()
