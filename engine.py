@@ -24,7 +24,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import maya.utils
 from tank.util.version import Version
-
+from tank.platform import Engine, HostInfo
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
@@ -216,7 +216,7 @@ def remove_sgtk_disabled_menu():
 ###############################################################################################
 # The Tank Maya engine
 
-class MayaEngine(tank.platform.Engine):
+class MayaEngine(Engine):
     """
     Toolkit engine for Maya.
     """
@@ -229,12 +229,12 @@ class MayaEngine(tank.platform.Engine):
         return True
 
     @property
-    def host_app_name(self):
-        return self._version_info.app_name
-
-    @property
-    def host_app_version_string(self):
-        return self._version_info.version_string
+    def host_info(self):
+        """
+        :returns: A :class:`sgtk.platform.HostInfo` with informations about the
+                  application hosting this engine.
+        """
+        return self._version_info
 
     ##########################################################################################
     # init and destroy
@@ -262,9 +262,12 @@ class MayaEngine(tank.platform.Engine):
 
         # The 'about -product' Maya MEL command return both the app name
         # ( Maya, Maya LT, Maya IO) and the major version e.g.: Maya 2018
-        maya_about_string = cmds.about(product=True)
-        self.logger.debug("Maya about: '%s'", maya_about_string)
-        self._version_info = tank.util.version.Version(maya_about_string)
+        maya_about = cmds.about(product=True).rsplit(" ", 1)
+        self.logger.debug("Maya about: '%s'", maya_about)
+        self._version_info = HostInfo(
+            maya_about[0],
+            maya_about[1],
+        )
         self.logger.debug("_version_info: '%s'", str(self._version_info))
 
         # check that we are running an ok version of maya
@@ -274,7 +277,7 @@ class MayaEngine(tank.platform.Engine):
                                  "are Mac, Linux 64 and Windows 64.")
 
         if self._version_info.major in [2014, 2015, 2016, 2017]:
-            self.logger.debug("Running Maya version %s", self.host_app_version_string)
+            self.logger.debug("Running Maya version %s", self.host_info_string)
         elif self._version_info.major in [2012, 2013]:
             # We won't be able to rely on the warning dialog below, because Maya
             # older than 2014 doesn't ship with PySide. Instead, we just have to
@@ -287,7 +290,7 @@ class MayaEngine(tank.platform.Engine):
             msg = ("The Shotgun Pipeline Toolkit has not yet been fully tested with Maya %s.  "
                    "You can continue to use Toolkit but you may experience bugs or instability."
                    "\n\nPlease report any issues to: support@shotgunsoftware.com"
-                   % (self.host_app_version_string))
+                   % (self.host_info_string))
 
             # determine if we should show the compatibility warning dialog:
             show_warning_dlg = self.has_ui and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
