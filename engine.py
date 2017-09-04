@@ -230,17 +230,13 @@ class MayaEngine(Engine):
     @property
     def host_info(self):
         """
-        :returns: A :class:`sgtk.platform.HostInfo` with informations about the
+        :returns: A (name, release) tuple with informations about the
                   application hosting this engine.
         """
-        # We defer importing HostInfo to the point where tk-core will call this
-        # method, so we don't cause problems with earlier tk-core releases which
-        # don't support it yet.
-        from tank.platform import HostInfo
         # The 'about -product' Maya MEL command return both the app name
         # ( Maya, Maya LT, Maya IO) and the major version e.g.: Maya 2018
         name, version = cmds.about(product=True).rsplit(" ", 1)
-        return HostInfo(name, version)
+        return (name, version)
 
     ##########################################################################################
     # init and destroy
@@ -259,9 +255,6 @@ class MayaEngine(Engine):
 
     def init_engine(self):
         """
-        TODO: Should't this method be depricated and code be moved to 'pre_app_init' or 'post_app_init'
-              as mentioned in the platform/engine.py init code?
-
         Initializes the Maya engine.
         """
         self.logger.debug("%s: Initializing...", self)
