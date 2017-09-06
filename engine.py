@@ -230,13 +230,14 @@ class MayaEngine(Engine):
     @property
     def host_info(self):
         """
-        :returns: A (name, release) tuple with informations about the
-                  application hosting this engine.
+        :returns: A {"name": application name, "version": application version} 
+                  dictionary with informations about the application hosting this
+                  engine.
         """
         # The 'about -product' Maya MEL command return both the app name
         # ( Maya, Maya LT, Maya IO) and the major version e.g.: Maya 2018
         name, version = cmds.about(product=True).rsplit(" ", 1)
-        return (name, version)
+        return {"name": name, "version": version}
 
     ##########################################################################################
     # init and destroy
