@@ -307,12 +307,6 @@ class MayaEngine(Engine):
             # always log the warning to the script editor:
             self.logger.warning(msg)
 
-        try:
-            self.log_user_attribute_metric("Maya version", maya_ver)
-        except:
-            # ignore all errors. ex: using a core that doesn't support metrics
-            pass
-
         # Set the Maya project based on config
         self._set_project()
 
