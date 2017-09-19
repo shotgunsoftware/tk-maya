@@ -16,6 +16,7 @@ A Maya engine for Tank.
 import tank
 import sys
 import traceback
+import re
 import time
 import os
 import logging
@@ -23,6 +24,7 @@ import maya.OpenMaya as OpenMaya
 import pymel.core as pm
 import maya.cmds as cmds
 import maya.utils
+from tank.platform import Engine
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
@@ -219,7 +221,7 @@ def remove_sgtk_disabled_menu():
 ###############################################################################################
 # The Tank Maya engine
 
-class MayaEngine(tank.platform.Engine):
+class MayaEngine(Engine):
     """
     Toolkit engine for Maya.
     """
@@ -230,6 +232,60 @@ class MayaEngine(tank.platform.Engine):
         Whether the engine allows a context change without the need for a restart.
         """
         return True
+
+    @property
+    def host_info(self):
+        """
+        :returns: A dictionary with information about the application hosting this engine.
+
+        The returned dictionary is of the following form on success:
+
+            {
+                "name": "Maya",
+                "version": "2017 Update 4",
+            }
+
+        The returned dictionary is of following form on an error preventing
+        the version identification.
+
+            {
+                "name": "Maya",
+                "version: "unknown"
+            }
+        """
+
+        host_info = {"name": "Maya", "version": "unknown"}
+        try:
+
+            # The 'about -installedVersion' Maya MEL command returns:
+            # - the app name (Maya, Maya LT, Maya IO)
+            # - the major version (2017, 2018)
+            # - the update version when applicable (update 4)
+            maya_installed_version_string = cmds.about(installedVersion=True)
+            try:
+
+                # Match what starts with a 4 digit number up to end of line
+                # thus including possible update version as well.
+                # group(0) returns the version part
+                host_info["version"] = re.search(r"([\d]{4}.*)", maya_installed_version_string).group(0)
+
+            except:
+                # Fallback to 'unknown' initialized above
+                pass
+
+            # Now, from the base string shop off the version string also removing
+            # leading and trailing whitespaces, leaving us with the app name.
+            tmp_app_name = maya_installed_version_string.replace(host_info["version"], "").rstrip().lstrip()
+
+            # Finally shop off 'Autodesk' if present in the remaining string
+            # by looking for 'maya' up to end of line.
+            host_info["name"] = re.search(r"maya.*", tmp_app_name, re.IGNORECASE).group(0)
+
+        except:
+            # Fallback to 'Maya' initialized above
+            pass
+
+        return host_info
 
     ##########################################################################################
     # init and destroy
@@ -261,6 +317,7 @@ class MayaEngine(tank.platform.Engine):
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
+        self._maya_version = maya_ver
         if maya_ver.startswith(("2014", "2015", "2016", "2017")):
             self.logger.debug("Running Maya version %s", maya_ver)
         elif maya_ver.startswith(("2012", "2013")):
@@ -297,14 +354,6 @@ class MayaEngine(tank.platform.Engine):
 
             # always log the warning to the script editor:
             self.logger.warning(msg)
-
-        self._maya_version = maya_ver
-
-        try:
-            self.log_user_attribute_metric("Maya version", maya_ver)
-        except:
-            # ignore all errors. ex: using a core that doesn't support metrics
-            pass
 
         # Set the Maya project based on config
         self._set_project()
