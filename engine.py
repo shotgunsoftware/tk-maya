@@ -16,6 +16,7 @@ A Maya engine for Tank.
 import tank
 import sys
 import traceback
+import re
 import time
 import os
 import logging
@@ -230,14 +231,56 @@ class MayaEngine(Engine):
     @property
     def host_info(self):
         """
-        :returns: A {"name": application name, "version": application version} 
-                  dictionary with informations about the application hosting this
-                  engine.
+        :returns: A dictionary with information about the application hosting this engine.
+
+        The returned dictionary is of the following form on success:
+
+            {
+                "name": "Maya",
+                "version": "2017 Update 4",
+            }
+
+        The returned dictionary is of following form on an error preventing
+        the version identification.
+
+            {
+                "name": "Maya",
+                "version: "unknown"
+            }
         """
-        # The 'about -product' Maya MEL command return both the app name
-        # ( Maya, Maya LT, Maya IO) and the major version e.g.: Maya 2018
-        name, version = cmds.about(product=True).rsplit(" ", 1)
-        return {"name": name, "version": version}
+
+        host_info = {"name": "Maya", "version": "unknown"}
+        try:
+
+            # The 'about -installedVersion' Maya MEL command returns:
+            # - the app name (Maya, Maya LT, Maya IO)
+            # - the major version (2017, 2018)
+            # - the update version when applicable (update 4)
+            maya_installed_version_string = cmds.about(installedVersion=True)
+            try:
+
+                # Match what starts with a 4 digit number up to end of line
+                # thus including possible update version as well.
+                # group(0) returns the version part
+                host_info["version"] = re.search(r"([\d]{4}.*)", maya_installed_version_string).group(0)
+
+            except:
+                # Fallback to 'unknown' initialized above
+                pass
+
+            # Now, from the base string shop off the version string also removing
+            # leading and trailing whitespaces, leaving us with the app name.
+            tmp_app_name = maya_installed_version_string.replace(host_info["version"], "").rstrip().lstrip()
+
+            # Finally shop off 'Autodesk' if present in the remaining string
+            # by looking for 'maya' up to end of line.
+            host_info["name"] = re.search(r"maya.*", tmp_app_name, re.IGNORECASE).group(0)
+
+        except:
+            # Fallback to 'Maya' initialized above
+            pass
+
+        return host_info
 
     ##########################################################################################
     # init and destroy
