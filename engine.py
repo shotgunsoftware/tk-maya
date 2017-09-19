@@ -251,30 +251,21 @@ class MayaEngine(Engine):
 
         host_info = {"name": "Maya", "version": "unknown"}
         try:
-
             # The 'about -installedVersion' Maya MEL command returns:
             # - the app name (Maya, Maya LT, Maya IO)
             # - the major version (2017, 2018)
             # - the update version when applicable (update 4)
             maya_installed_version_string = cmds.about(installedVersion=True)
-            try:
 
-                # Match what starts with a 4 digit number up to end of line
-                # thus including possible update version as well.
-                # group(0) returns the version part
-                host_info["version"] = re.search(r"([\d]{4}.*)", maya_installed_version_string).group(0)
-
-            except:
-                # Fallback to 'unknown' initialized above
-                pass
-
-            # Now, from the base string shop off the version string also removing
-            # leading and trailing whitespaces, leaving us with the app name.
-            tmp_app_name = maya_installed_version_string.replace(host_info["version"], "").rstrip().lstrip()
-
-            # Finally shop off 'Autodesk' if present in the remaining string
-            # by looking for 'maya' up to end of line.
-            host_info["name"] = re.search(r"maya.*", tmp_app_name, re.IGNORECASE).group(0)
+            # group(0) entire match
+            # group(1) 'Maya' match (name)
+            # group(2) LT, IO, etc ... match (flavor)
+            # group(3) 2017 ... match (version)
+            matches = re.search(r"(maya)\s+([a-zA-Z]+)?\s*(.*)", maya_installed_version_string, re.IGNORECASE)
+            host_info["name"] = matches.group(1).capitalize().rstrip().lstrip()
+            host_info["version"] = matches.group(3)
+            if matches.group(2):
+                host_info["name"] = host_info["name"] + " " + matches.group(2)
 
         except:
             # Fallback to 'Maya' initialized above
