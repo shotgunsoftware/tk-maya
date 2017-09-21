@@ -554,9 +554,6 @@ class MayaSessionPublishPlugin(HookBaseClass):
 
         # ---- Check to see if templates are configured
 
-        # NOTE: we're using `get_template_by_name` here since the settings are
-        # not configured at the app level.
-
         work_template = self._get_template("Work file Template", settings)
         publish_template = self._get_template("Publish file Template", settings)
 
@@ -609,6 +606,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
 
         publisher = self.parent
         template_name = settings[template_name].value
+
+        # NOTE: we're using `get_template_by_name` here since the settings are
+        # not configured at the app level.
         return publisher.get_template_by_name(template_name)
 
 
