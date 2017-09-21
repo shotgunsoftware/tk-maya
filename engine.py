@@ -272,7 +272,7 @@ class MayaEngine(tank.platform.Engine):
                     "Maya 2018 on Windows can deadlock if QtWebEngineWidgets "
                     "is imported. Setting SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT=1..."
                 )
-                os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = 1
+                os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = "1"
         elif maya_ver.startswith(("2012", "2013")):
             # We won't be able to rely on the warning dialog below, because Maya
             # older than 2014 doesn't ship with PySide. Instead, we just have to
