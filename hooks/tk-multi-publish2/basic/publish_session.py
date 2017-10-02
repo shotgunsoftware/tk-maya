@@ -217,9 +217,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
         project_root = cmds.workspace(q=True, rootDirectory=True)
         item.properties["project_root"] = project_root
 
-        # warn if no project root could be determined.
+        # log if no project root could be determined.
         if not project_root:
-            self.logger.warning(
+            self.logger.info(
                 "Your session is not part of a maya project.",
                 extra={
                     "action_button": {
