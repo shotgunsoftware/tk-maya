@@ -100,7 +100,7 @@ class MayaSessionCollector(HookBaseClass):
 
         else:
 
-            self.logger.warning(
+            self.logger.info(
                 "Could not determine the current Maya project.",
                 extra={
                     "action_button": {
