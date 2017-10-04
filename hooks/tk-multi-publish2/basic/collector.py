@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Shotgun Software Inc.
+﻿# Copyright (c) 2017 Shotgun Software Inc.
 # 
 # CONFIDENTIAL AND PROPRIETARY
 # 
@@ -53,8 +53,10 @@ class MayaSessionCollector(HookBaseClass):
             )
 
             self.collect_playblasts(item, project_root)
-            self.collect_alembic_caches(item, project_root)
-
+            if cmds.ls(geometry=True, noIntermediate=True):
+                self.collect_alembic_caches_geometry(item)
+            elif self._alembic_cache_dir(project_root):
+                self.collect_alembic_caches(item, project_root)
         else:
 
             self.logger.warning(
@@ -125,7 +127,7 @@ class MayaSessionCollector(HookBaseClass):
         """
 
         # ensure the alembic cache dir exists
-        cache_dir = os.path.join(project_root, "cache", "alembic")
+        cache_dir = self._alembic_cache_dir(project_root)
         if not os.path.exists(cache_dir):
             return
 
@@ -155,6 +157,28 @@ class MayaSessionCollector(HookBaseClass):
                 parent_item,
                 cache_path
             )
+
+    def collect_alembic_caches_geometry(self, parent_item):
+        """
+        Creates items for alembic caches
+
+        :param parent_item: Parent Item instance
+        """
+
+        session_item = parent_item.create_item(
+            "maya.session.geometry",
+            "Alembic Cache",
+            "scenea.abc"
+        )
+        # get the icon path to display for this item
+        icon_path = os.path.join(
+            self.disk_location,
+            os.pardir,
+            "icons",
+            "alembic.png"
+        )
+        session_item.set_icon_from_path(icon_path)
+
 
     def collect_playblasts(self, parent_item, project_root):
         """
@@ -242,3 +266,11 @@ class MayaSessionCollector(HookBaseClass):
                 # the item has been created. update the display name to include
                 # the an indication of what it is and why it was collected
                 item.name = "%s (Render Layer: %s)" % (item.name, layer)
+
+    def _alembic_cache_dir(self, project_root):
+        alembic_cache_dir = os.path.join(project_root, "cache", "alembic")
+        if not os.path.exists(alembic_cache_dir):
+            return None
+        else:
+            return alembic_cache_dir
+
