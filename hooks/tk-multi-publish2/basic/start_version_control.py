@@ -29,8 +29,9 @@ class MayaStartVersionControlPlugin(HookBaseClass):
 
         # look for icon one level up from this hook's folder in "icons" folder
         return os.path.join(
-            self.parent.engine.disk_location,
-            "resources",
+            self.disk_location,
+            os.pardir,
+            "icons",
             "version_up.png"
         )
 

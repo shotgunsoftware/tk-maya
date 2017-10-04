@@ -141,8 +141,9 @@ class MayaSessionCollector(HookBaseClass):
 
         # get the icon path to display for this item
         icon_path = os.path.join(
-            self.parent.engine.disk_location,
-            "resources",
+            self.disk_location,
+            os.pardir,
+            "icons",
             "maya.png"
         )
         session_item.set_icon_from_path(icon_path)
