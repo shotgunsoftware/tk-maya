@@ -329,6 +329,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             mel.eval(abc_export_cmd)
         except Exception, e:
             self.logger.error("Failed to export Geometry: %s" % e)
+            return
 
         # arguments for publish registration
         self.logger.info("Registering publish...")
