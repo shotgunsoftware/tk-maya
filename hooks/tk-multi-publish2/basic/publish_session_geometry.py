@@ -19,7 +19,7 @@ import traceback
 HookBaseClass = sgtk.get_hook_baseclass()
 
 
-class MayaSessionPublishPlugin(HookBaseClass):
+class MayaSessionGeometryPublishPlugin(HookBaseClass):
     """
     Plugin for publishing an open maya session.
     """
@@ -55,7 +55,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         loader_url = "https://support.shotgunsoftware.com/hc/en-us/articles/219033078"
 
         return """
-        Publishes the file to Shotgun. A <b>Publish</b> entry will be
+        Publishes the session's geometry to Shotgun. A <b>Publish</b> entry will be
         created in Shotgun which will include a reference to the file's current
         path on disk. If templates are configured and the work file template
         matches the current session path, the work file will be copied to the
@@ -64,12 +64,11 @@ class MayaSessionPublishPlugin(HookBaseClass):
         <b><a href='%s'>Loader</a></b> so long as they have access to the file's
         location on disk.
 
-        If the session has not been saved, validation will fail and a button
-        will be provided in the logging output to save the file.
+        If the session has no geometry nothing will be exported or published.
 
         <h3>File versioning</h3>
-        If the filename contains a version number, the process will bump the
-        file to the next version after publishing.
+        The version number, will be derived from the session's project file
+        version number and will be incremented in sync with it.
 
         The <code>version</code> field of the resulting <b>Publish</b> in
         Shotgun will also reflect the version number identified in the filename.
@@ -83,16 +82,6 @@ class MayaSessionPublishPlugin(HookBaseClass):
 
         If templates are configured, the version will be determined from the
         "{version}" token.
-
-        After publishing, if a version number is detected in the work file, the
-        work file will automatically be saved to the next incremental version
-        number. For example, <code>filename.v001.ext</code> will be published
-        and copied to <code>filename.v002.ext</code>
-
-        If the next incremental version of the file already exists on disk, the
-        validation step will produce a warning, and a button will be provided in
-        the logging output which will allow saving the session to the next
-        available version number prior to publishing.
 
         <br><br><i>NOTE: any amount of version number padding is supported. for
         non-template based workflows.</i>
@@ -187,6 +176,11 @@ class MayaSessionPublishPlugin(HookBaseClass):
         if not publish_template:
             accepted = False
 
+        # check that the AbcExport command is available!
+        if not mel.eval("exists \"AbcExport\""):
+            accepted = False
+            self.logger.warn("Item not accepted because export command AbcExport is not available.")
+        
         return {
             "accepted": accepted,
             "checked": True
@@ -204,12 +198,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
         :returns: True if item is valid, False otherwise.
         """
 
-        # check that the AbcExport command is available!
-        if not mel.eval("exists \"AbcExport\""):
-            return False
-        
         # check that there is still geometry in the scene:
         if not cmds.ls(geometry=True, noIntermediate=True):
+            self.logger.warn("Validation failed because there is no geometry in the scene to be exported")
             return False
 
         publisher = self.parent
@@ -337,7 +328,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
             self.parent.log_debug("Executing command: %s" % abc_export_cmd)
             mel.eval(abc_export_cmd)
         except Exception, e:
-            raise TankError("Failed to export Alembic Cache: %s" % e)
+            self.logger.error("Failed to export Geometry: %s" % e)
 
         # arguments for publish registration
         self.logger.info("Registering publish...")
@@ -413,51 +404,6 @@ class MayaSessionPublishPlugin(HookBaseClass):
                 }
             }
         )
-
-
-    def _get_next_version_info(self, path, settings):
-        """
-        Return the next version of the supplied path.
-
-        If templates are configured, use template logic. Otherwise, fall back to
-        the zero configuration, path_info hook logic.
-
-        :param str path: A path with a version number.
-        :param settings: Configured settings for this plugin.
-
-        :return: A tuple of the form::
-
-            # the first item is the supplied path with the version bumped by 1
-            # the second item is the new version number
-            (next_version_path, version)
-        """
-
-        publisher = self.parent
-
-        # get the configured work file template
-        work_template = self._get_template("Work file Template", settings)
-
-        # set these so we can check to see if the template logic applied
-        next_version_path = None
-        version = None
-
-        if work_template:
-            # if the work file template matches, we'll get parsed fields
-            fields = work_template.validate_and_get_fields(path)
-
-            if fields and "version" in fields:
-                # template matched. bump the version number and re-apply to
-                # the template
-                fields["version"] += 1
-                next_version_path = work_template.apply_fields(fields)
-                version = fields["version"]
-
-        if not next_version_path and not version:
-            # fall back to the "zero config" logic
-            next_version_path = publisher.util.get_next_version_path(path)
-            version = publisher.util.get_version_number(next_version_path)
-
-        return (next_version_path, version)
 
     def _get_publish_info(self, path, settings):
         """
