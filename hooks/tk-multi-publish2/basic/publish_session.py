@@ -14,7 +14,6 @@ import maya.cmds as cmds
 import maya.mel as mel
 import sgtk
 from sgtk.util.filesystem import copy_file
-import traceback
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -57,12 +56,11 @@ class MayaSessionPublishPlugin(HookBaseClass):
         return """
         Publishes the file to Shotgun. A <b>Publish</b> entry will be
         created in Shotgun which will include a reference to the file's current
-        path on disk. If templates are configured and the work file template
-        matches the current session path, the work file will be copied to the
-        publish file template path which will be the file that is published.
-        Other users will be able to access the published file via the
-        <b><a href='%s'>Loader</a></b> so long as they have access to the file's
-        location on disk.
+        path on disk. If a publish file template is configured, a copy of the
+        current session will be copied to the publish file template path which
+        will be the file that is published. Other users will be able to access
+        the published file via the <b><a href='%s'>Loader</a></b> so long as
+        they have access to the file's location on disk.
 
         If the session has not been saved, validation will fail and a button
         will be provided in the logging output to save the file.
@@ -80,9 +78,6 @@ class MayaSessionPublishPlugin(HookBaseClass):
         <li><code>filename_v###.ext</code></li>
         <li><code>filename-v###.ext</code></li>
         </ul>
-
-        If templates are configured, the version will be determined from the
-        "{version}" token.
 
         After publishing, if a version number is detected in the work file, the
         work file will automatically be saved to the next incremental version
@@ -125,23 +120,16 @@ class MayaSessionPublishPlugin(HookBaseClass):
         """
         return {
             "Publish Type": {
-                "type": "shotgun_publish_type",
+                "type": "publish_type",
                 "default": "Maya Scene",
                 "description": "SG publish type to associate publishes with."
-            },
-            "Work file Template": {
-                "type": "template",
-                "default": None,
-                "description": "Template path for artist work files. Should "
-                               "correspond to a template defined in "
-                               "templates.yml."
             },
             "Publish file Template": {
                 "type": "template",
                 "default": None,
                 "description": "Template path for published work files. Should"
                                "correspond to a template defined in "
-                               "templates.yml."
+                               "templates.yml.",
             }
         }
 
@@ -230,9 +218,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
         project_root = cmds.workspace(q=True, rootDirectory=True)
         item.properties["project_root"] = project_root
 
-        # warn if no project root could be determined.
+        # log if no project root could be determined.
         if not project_root:
-            self.logger.warning(
+            self.logger.info(
                 "Your session is not part of a maya project.",
                 extra={
                     "action_button": {
@@ -248,10 +236,33 @@ class MayaSessionPublishPlugin(HookBaseClass):
         # etc.
         path = sgtk.util.ShotgunPath.normalize(path)
 
-        # determine the publish path, version, type, and name
-        publish_info = self._get_publish_info(path, settings)
+        # if the session item has a known work file template, see if the path
+        # matches. if not, warn the user and provide a way to save the file to
+        # a different path
+        work_file_template = item.properties.get("work_file_template")
+        if work_file_template:
+            if not work_file_template.validate(path):
+                self.logger.warning(
+                    "The current session does not match the configured work "
+                    "file template.",
+                    extra={
+                        "action_button": {
+                            "label": "Save File",
+                            "tooltip": "Save the current Maya session to a "
+                                       "different file name",
+                            # will launch wf2 if configured
+                            "callback": _get_save_as_action()
+                        }
+                    }
+                )
+        else:
+            self.logger.debug("No work file template configured.")
 
-        publish_name = publish_info["publish_name"]
+
+        # determine the publish path, version, type, and name
+        publish_info = self._get_publish_info(path, settings, item)
+
+        publish_name = publish_info["name"]
 
         # see if there are any other publishes of this path with a status.
         # Note the name, context, and path *must* match the values supplied to
@@ -285,15 +296,14 @@ class MayaSessionPublishPlugin(HookBaseClass):
         # check to see if the next version of the work file already exists on
         # disk. if so, warn the user and provide the ability to jump to save
         # to that version now
-        (next_version_path, version) = self._get_next_version_info(
-            path, settings)
+        (next_version_path, version) = self._get_next_version_info(path, item)
         if next_version_path and os.path.exists(next_version_path):
 
             # determine the next available version_number. just keep asking for
             # the next one until we get one that doesn't exist.
             while os.path.exists(next_version_path):
                 (next_version_path, version) = self._get_next_version_info(
-                    next_version_path, settings)
+                    next_version_path, item)
 
             self.logger.error(
                 "The next version of this file already exists on disk.",
@@ -307,13 +317,6 @@ class MayaSessionPublishPlugin(HookBaseClass):
                 }
             )
             return False
-
-        # store the session path since this is guaranteed to run just before
-        # the publish itself
-        item.properties["work_file_path"] = path
-
-        # store the publish info in the properties
-        item.properties["publish_info"] = publish_info
 
         self.logger.info("A Publish will be created in Shotgun and linked to:")
         self.logger.info("  %s" % (path,))
@@ -333,17 +336,23 @@ class MayaSessionPublishPlugin(HookBaseClass):
         publisher = self.parent
 
         # get the work file path stored during validation
-        path = item.properties["work_file_path"]
+        path = _session_path()
+
+        # get the path in a normalized state. no trailing separator,
+        # separators are appropriate for current os, no double separators,
+        # etc.
+        path = sgtk.util.ShotgunPath.normalize(path)
 
         # ensure the session is saved
         _save_session(path)
 
         # get all the publish info extracted during validation
-        publish_info = item.properties["publish_info"]
-        version_number = publish_info["publish_version"]
-        publish_path = publish_info["publish_path"]
-        publish_name = publish_info["publish_name"]
-        publish_type = publish_info["publish_type"]
+        publish_info = self._get_publish_info(path, settings, item)
+
+        version_number = publish_info["version"]
+        publish_path = publish_info["path"]
+        publish_name = publish_info["name"]
+        publish_type = publish_info["type"]
 
         # if the path doesn't match the publish path, copy the file to the
         # publish path
@@ -382,6 +391,10 @@ class MayaSessionPublishPlugin(HookBaseClass):
             }
         )
 
+        # store for use in finalize now that the publish is complete
+        item.properties["work_file_path"] = path
+        item.properties["publish_info"] = publish_info
+
         # create the publish and stash it in the item properties for other
         # plugins to use.
         item.properties["sg_publish_data"] = sgtk.util.register_publish(
@@ -416,7 +429,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         self.logger.info(
             "Cleared the status of all previous, conflicting publishes")
 
-        publish_path = item.properties["publish_info"]["publish_path"]
+        publish_path = item.properties["publish_info"]["path"]
 
         path = item.properties["work_file_path"]
 
@@ -433,15 +446,14 @@ class MayaSessionPublishPlugin(HookBaseClass):
 
         # insert the path into the properties
         item.properties["next_version_path"] = self._bump_file_version(
-            path, settings)
+            path, settings, item)
 
-    def _bump_file_version(self, path, settings):
+    def _bump_file_version(self, path, settings, item):
         """
         Save the supplied path to the next version on disk.
         """
 
-        (next_version_path, version) = self._get_next_version_info(
-            path, settings)
+        (next_version_path, version) = self._get_next_version_info(path, item)
 
         if version is None:
             self.logger.debug(
@@ -474,7 +486,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
 
         return next_version_path
 
-    def _get_next_version_info(self, path, settings):
+    def _get_next_version_info(self, path, item):
         """
         Return the next version of the supplied path.
 
@@ -482,7 +494,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         the zero configuration, path_info hook logic.
 
         :param str path: A path with a version number.
-        :param settings: Configured settings for this plugin.
+        :param item: The session item
 
         :return: A tuple of the form::
 
@@ -491,34 +503,48 @@ class MayaSessionPublishPlugin(HookBaseClass):
             (next_version_path, version)
         """
 
+        if not path:
+            self.logger.debug("Path is None. Can not determine version info.")
+            return None, None
+
         publisher = self.parent
 
-        # get the configured work file template
-        work_template = self._get_template("Work file Template", settings)
-
-        # set these so we can check to see if the template logic applied
-        next_version_path = None
-        version = None
+        # if the session item has a known work file template, see if the path
+        # matches. if not, warn the user and provide a way to save the file to
+        # a different path
+        work_template = item.properties.get("work_file_template")
+        work_fields = None
 
         if work_template:
-            # if the work file template matches, we'll get parsed fields
-            fields = work_template.validate_and_get_fields(path)
+            if work_template.validate(path):
+                self.logger.debug(
+                    "Work file template configured and matches session file.")
 
-            if fields and "version" in fields:
-                # template matched. bump the version number and re-apply to
-                # the template
-                fields["version"] += 1
-                next_version_path = work_template.apply_fields(fields)
-                version = fields["version"]
+                work_fields = work_template.get_fields(path)
 
-        if not next_version_path and not version:
-            # fall back to the "zero config" logic
+        # if we have template and fields, use them to determine the version info
+        if work_template and work_fields and "version" in work_fields:
+            self.logger.debug(
+                "Using work file template to determine next version.")
+
+            # template matched. bump version number and re-apply to the template
+            work_fields["version"] += 1
+            next_version_path = work_template.apply_fields(work_fields)
+            version = work_fields["version"]
+
+        # fall back to the "zero config" logic
+        else:
+            self.logger.debug("Using path info hook to determine next version.")
             next_version_path = publisher.util.get_next_version_path(path)
-            version = publisher.util.get_version_number(next_version_path)
+            cur_version = publisher.util.get_version_number(path)
+            if cur_version:
+                version = cur_version + 1
+            else:
+                version = None
 
-        return (next_version_path, version)
+        return next_version_path, version
 
-    def _get_publish_info(self, path, settings):
+    def _get_publish_info(self, path, settings, item):
         """
         This method encompasses the logic for extracting the publish path,
         version, type, and name given the path to the current session.
@@ -533,83 +559,78 @@ class MayaSessionPublishPlugin(HookBaseClass):
         :return: A dictionary of the form::
 
             {
-                "publish_path": "/path/to/file/to/publish/filename.v0001.ma",
-                "publish_name": "filename.ma",
-                "publish_version": 1,
-                "publish_type": "Maya Scene"
+                "path": "/path/to/file/to/publish/filename.v0001.ma",
+                "name": "filename.ma",
+                "version": 1,
+                "type": "Maya Scene"
             }
         """
 
         publisher = self.parent
 
-        # by default, extract the version number from the work file for
-        # publishing. use 1 if no version in path
-        version_number = publisher.util.get_version_number(path) or 1
-
-        # publish in place by default
-        publish_path = path
-
-        # the configured publish type
+        # publish type comes from the plugin settings
         publish_type = settings["Publish Type"].value
 
-        # ---- Check to see if templates are configured
+        # ---- Check to see if templates are in play
 
-        work_template = self._get_template("Work file Template", settings)
-        publish_template = self._get_template("Publish file Template", settings)
+        work_template = item.properties.get("work_file_template")
+        work_fields = None
 
-        if work_template and publish_template:
+        if work_template:
+            if work_template.validate(path):
+                self.logger.debug(
+                    "Work file template configured and matches session file.")
 
-            self.logger.debug("Work and publish templates are defined")
+                work_fields = work_template.get_fields(path)
 
-            # templates are defined, see if the session path matches the work
-            # file template
-            fields = work_template.validate_and_get_fields(path)
+        # the configured publish file template
+        publish_template = None
+        publish_template_setting = settings.get("Publish file Template")
 
-            self.logger.debug("Fields extracted from work file: %s" % (fields,))
+        if publish_template_setting:
+            # template setting defined, get the template itself
+            publish_template = publisher.engine.get_template_by_name(
+                publish_template_setting.value)
 
-            if fields:
+        if work_fields and publish_template:
 
-                # scene path matches the work file template. execute the
-                # "classic" toolkit behavior of constructing the output publish
-                # path and copying the work file to that location
-                fields["TankType"] = publish_type
+            # templates in play. use them to extract the info we need.
+            self.logger.debug(
+                "Using publish template to determine publish info.")
 
-                # construct the publish path
-                publish_path = publish_template.apply_fields(fields)
+            # scene path matches the work file template. execute the
+            # "classic" toolkit behavior of constructing the output publish
+            # path and copying the work file to that location
+            work_fields["TankType"] = publish_type
 
-                self.logger.debug("Publish path: %s" % (publish_path,))
+            # construct the publish path
+            publish_path = publish_template.apply_fields(work_fields)
 
-                # if version number is one of the fields, use it to populate the
-                # publish information, else fall back to the default version,
-                # extracted from the work file above
-                version_number = fields.get("version", version_number)
+            self.logger.debug("Publish path: %s" % (publish_path,))
 
-                self.logger.debug("Version number: %s" % (version_number,))
+            # if version number is one of the fields, use it to populate the
+            # publish information, else fall back to the default version,
+            # extracted from the work file above
+            version_number = work_fields.get("version", 1)
+
+            self.logger.debug("Version number: %s" % (version_number,))
+
+        else:
+            self.logger.debug("Using path info hook to determine publish info.")
+            publish_path = path
+            version_number = publisher.util.get_version_number(path) or 1
 
         # get the publish name for the publish file. this will ensure we get a
-        # consistent name across version publishes of this file.
+        # consistent name across version publishes of this file and regardless
+        # of whether we're using templates or zero config path resolution.
         publish_name = publisher.util.get_publish_name(publish_path)
 
         return {
-            "publish_path": publish_path,
-            "publish_name": publish_name,
-            "publish_version": version_number,
-            "publish_type": publish_type,
+            "path": publish_path,
+            "name": publish_name,
+            "version": version_number,
+            "type": publish_type,
         }
-
-    def _get_template(self, template_name, settings):
-        """Return the configured template for the supplied name.
-
-        TODO: should publish2 populate "settings" with the configured template?
-              currently it just stores the name.
-        """
-
-        publisher = self.parent
-        template_name = settings[template_name].value
-
-        # NOTE: we're using `get_template_by_name` here since the settings are
-        # not configured at the app level.
-        return publisher.get_template_by_name(template_name)
 
 
 def _maya_find_additional_session_dependencies():
@@ -686,6 +707,7 @@ def _save_session(path):
         cmds.file(save=True, force=True)
 
 
+# TODO: method duplicated in all the maya hooks
 def _get_save_as_action():
     """
 

@@ -23,16 +23,59 @@ class MayaSessionCollector(HookBaseClass):
     collector hook.
     """
 
-    def process_current_session(self, parent_item):
+    @property
+    def settings(self):
+        """
+        Dictionary defining the settings that this collector expects to receive
+        through the settings parameter in the process_current_session and
+        process_file methods.
+
+        A dictionary on the following form::
+
+            {
+                "Settings Name": {
+                    "type": "settings_type",
+                    "default": "default_value",
+                    "description": "One line description of the setting"
+            }
+
+        The type string should be one of the data types that toolkit accepts as
+        part of its environment configuration.
+        """
+
+        # grab any base class settings
+        collector_settings = super(MayaSessionCollector, self).settings or {}
+
+        # settings specific to this collector
+        maya_session_settings = {
+            "Work file Template": {
+                "type": "template",
+                "default": None,
+                "description": "Template path for artist work files. Should "
+                               "correspond to a template defined in "
+                               "templates.yml. If configured, is made available"
+                               "to publish plugins via the collected item's "
+                               "properties. ",
+            },
+        }
+
+        # update the base settings with these settings
+        collector_settings.update(maya_session_settings)
+
+        return collector_settings
+
+    def process_current_session(self, settings, parent_item):
         """
         Analyzes the current session open in Maya and parents a subtree of
         items under the parent_item passed in.
 
+        :param dict settings: Configured settings for this collector
         :param parent_item: Root item instance
+
         """
 
         # create an item representing the current maya session
-        item = self.collect_current_maya_session(parent_item)
+        item = self.collect_current_maya_session(settings, parent_item)
         project_root = item.properties["project_root"]
 
         # look at the render layers to find rendered images on disk
@@ -56,7 +99,7 @@ class MayaSessionCollector(HookBaseClass):
             self.collect_alembic_caches(item, project_root)
         else:
 
-            self.logger.warning(
+            self.logger.info(
                 "Could not determine the current Maya project.",
                 extra={
                     "action_button": {
@@ -70,11 +113,12 @@ class MayaSessionCollector(HookBaseClass):
         if cmds.ls(geometry=True, noIntermediate=True):
             self._collect_session_geometry(item)
 
-    def collect_current_maya_session(self, parent_item):
+    def collect_current_maya_session(self, settings, parent_item):
         """
         Creates an item that represents the current maya session.
 
         :param parent_item: Parent Item instance
+
         :returns: Item of type maya.session
         """
 
@@ -110,6 +154,22 @@ class MayaSessionCollector(HookBaseClass):
         # publishable items
         project_root = cmds.workspace(q=True, rootDirectory=True)
         session_item.properties["project_root"] = project_root
+
+        # if a work file template is defined, add it to the item properties so
+        # that it can be used by attached publish plugins
+        work_template_setting = settings.get("Work file Template")
+        if work_template_setting:
+
+            work_template = publisher.engine.get_template_by_name(
+                work_template_setting.value)
+
+            # store the template on the item for use by publish plugins. we
+            # can't evaluate the fields here because there's no guarantee the
+            # current session path won't change once the item has been created.
+            # the attached publish plugins will need to resolve the fields at
+            # execution time.
+            session_item.properties["work_file_template"] = work_template
+            self.logger.debug("Work file template defined for Maya collection.")
 
         self.logger.info("Collected current Maya scene")
 
@@ -175,6 +235,7 @@ class MayaSessionCollector(HookBaseClass):
             self.disk_location,
             os.pardir,
             "icons",
+            # TODO: update to another icon 'geometry'
             "alembic.png"
         )
         session_item.set_icon_from_path(icon_path)
@@ -267,3 +328,28 @@ class MayaSessionCollector(HookBaseClass):
                 # the an indication of what it is and why it was collected
                 item.name = "%s (Render Layer: %s)" % (item.name, layer)
 
+# TODO: method duplicated in all the maya hooks
+def _get_save_as_action():
+    """
+
+    Simple helper for returning a log action dict for saving the session
+    """
+
+    engine = sgtk.platform.current_engine()
+
+    # default save callback
+    callback = cmds.SaveScene
+
+    # if workfiles2 is configured, use that for file save
+    if "tk-multi-workfiles2" in engine.apps:
+        app = engine.apps["tk-multi-workfiles2"]
+        if hasattr(app, "show_file_save_dlg"):
+            callback = app.show_file_save_dlg
+
+    return {
+        "action_button": {
+            "label": "Save As...",
+            "tooltip": "Save the current session",
+            "callback": callback
+        }
+    }

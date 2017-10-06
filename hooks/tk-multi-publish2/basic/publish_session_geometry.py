@@ -118,13 +118,6 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
                 "default": "Alembic Cache",
                 "description": "SG publish type to associate publishes with."
             },
-            "Work file Template": {
-                "type": "template",
-                "default": None,
-                "description": "Template path for artist work files. Should "
-                               "correspond to a template defined in "
-                               "templates.yml."
-            },
             "Publish file Template": {
                 "type": "template",
                 "default": None,
@@ -173,7 +166,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
 
         accepted = True
         publish_template = self._get_template("Publish file Template", settings)
-        if not publish_template:
+        if not publish_template and not item.parent.properties["work_file_template"]:
             accepted = False
 
         # check that the AbcExport command is available!
@@ -210,7 +203,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         item.properties["project_root"] = project_root
 
         # get the configured work file template
-        work_template = self._get_template("Work file Template", settings)
+        work_template = item.parent.properties["work_file_template"]
         publish_template = self._get_template("Publish file Template", settings)
 
         # get the current scene path and extract fields from it
@@ -237,7 +230,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         # determine the publish path, version, type, and name
         publish_info = self._get_publish_info(path, settings)
 
-        publish_name = publish_info["publish_name"]
+        publish_name = publish_info["name"]
 
         # see if there are any other publishes of this path with a status.
         # Note the name, context, and path *must* match the values supplied to
@@ -297,10 +290,10 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
 
         # get all the publish info extracted during validation
         publish_info = item.properties["publish_info"]
-        version_number = publish_info["publish_version"]
-        publish_path = publish_info["publish_path"]
-        publish_name = publish_info["publish_name"]
-        publish_type = publish_info["publish_type"]
+        version_number = publish_info["version"]
+        publish_path = publish_info["path"]
+        publish_name = publish_info["name"]
+        publish_type = publish_info["type"]
 
         # set the alembic args that make the most sense when working with Mari.  These flags
         # will ensure the export of an Alembic file that contains all visible geometry from
@@ -391,7 +384,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         self.logger.info(
             "Cleared the status of all previous, conflicting publishes")
 
-        publish_path = item.properties["publish_info"]["publish_path"]
+        publish_path = item.properties["publish_info"]["path"]
 
         path = item.properties["publish_file_path"]
 
@@ -478,10 +471,10 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         publish_name = publisher.util.get_publish_name(publish_path)
 
         return {
-            "publish_path": publish_path,
-            "publish_name": publish_name,
-            "publish_version": version_number,
-            "publish_type": publish_type,
+            "path": publish_path,
+            "name": publish_name,
+            "version": version_number,
+            "type": publish_type,
         }
 
     def _get_template(self, template_name, settings):
