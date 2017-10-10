@@ -220,7 +220,7 @@ class MayaSessionCollector(HookBaseClass):
 
     def _collect_session_geometry(self, parent_item):
         """
-        Creates items for alembic caches
+        Creates items for session geometry to be exported.
 
         :param parent_item: Parent Item instance
         """
@@ -235,7 +235,6 @@ class MayaSessionCollector(HookBaseClass):
             self.disk_location,
             os.pardir,
             "icons",
-            # TODO: update to another icon 'geometry'
             "alembic.png"
         )
         session_item.set_icon_from_path(icon_path)

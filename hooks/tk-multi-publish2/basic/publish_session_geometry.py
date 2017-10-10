@@ -165,8 +165,12 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         """
 
         accepted = True
-        publish_template = self._get_template("Publish file Template", settings)
-        if not publish_template and not item.parent.properties["work_file_template"]:
+        publisher = self.parent
+        template_name = settings["Publish file Template"].value
+
+        publish_template = publisher.get_template_by_name(template_name)
+        item.properties["publish_file_template"] = publish_template
+        if not publish_template and not item.parent.properties.get("work_file_template"):
             accepted = False
 
         # check that the AbcExport command is available!
@@ -198,39 +202,36 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
 
         publisher = self.parent
 
-        # ensure we have an updated project root
-        project_root = cmds.workspace(q=True, rootDirectory=True)
-        item.properties["project_root"] = project_root
-
         # get the configured work file template
-        work_template = item.parent.properties["work_file_template"]
-        publish_template = self._get_template("Publish file Template", settings)
+        work_template = item.parent.properties.get("work_file_template")
+        publish_template = item.properties.get("publish_file_template")
 
         # get the current scene path and extract fields from it
         # using the work template:
-        scene_path = os.path.abspath(cmds.file(query=True, sn=True))
+        scene_path = sgtk.util.ShotgunPath.normalize(self._session_path())
         #scene_file_name = os.path.basename(scene_path)
         scene_file_name = publisher.util.get_publish_name(scene_path)
         scene_file_name_root, scene_file_name_ext = os.path.splitext(scene_file_name)
-        fields = work_template.get_fields(scene_path) #{ "asset_root": project_root, "name": scene_file_name_root, "version": 0 }
+        fields = work_template.get_fields(scene_path)
                 
         # create the publish path by applying the fields 
         # with the publish template:
         publish_path = publish_template.apply_fields(fields)
         
-        # ensure the publish folder exists:
-        publish_folder = os.path.dirname(publish_path)
-        self.parent.ensure_folder_exists(publish_folder)
-
-        # get the path in a normalized state. no trailing separator,
-        # separators are appropriate for current os, no double separators,
-        # etc.
-        path = sgtk.util.ShotgunPath.normalize(publish_path)
-
         # determine the publish path, version, type, and name
-        publish_info = self._get_publish_info(path, settings)
+        publish_name = publisher.util.get_publish_name(publish_path)
 
-        publish_name = publish_info["name"]
+        # get all the publish info extracted during validation
+        version_number = publisher.util.get_version_number(publish_path) or 1
+        publish_type = settings["Publish Type"].value
+
+        publish_info = { "path": publish_path,
+                         "name": publish_name,
+                         "version": version_number,
+                         "type": publish_type,
+                       }
+
+        item.properties["publish_info"] = publish_info
 
         # see if there are any other publishes of this path with a status.
         # Note the name, context, and path *must* match the values supplied to
@@ -238,7 +239,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         # accurate list of previous publishes of this file.
         publishes = publisher.util.get_conflicting_publishes(
             item.context,
-            path,
+            publish_path,
             publish_name,
             filters=["sg_status_list", "is_not", None]
         )
@@ -261,15 +262,8 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
                 }
             )
 
-        # store the session path since this is guaranteed to run just before
-        # the publish itself
-        item.properties["publish_file_path"] = path
-
-        # store the publish info in the properties
-        item.properties["publish_info"] = publish_info
-
         self.logger.info("A Publish will be created in Shotgun and linked to:")
-        self.logger.info("  %s" % (path,))
+        self.logger.info("  %s" % (publish_path,))
 
         return True
 
@@ -285,15 +279,19 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
 
         publisher = self.parent
 
+        publish_info = item.properties["publish_info"]
+
         # get the work file path stored during validation
-        path = item.properties["publish_file_path"]
+        publish_path = publish_info["path"]
 
         # get all the publish info extracted during validation
-        publish_info = item.properties["publish_info"]
         version_number = publish_info["version"]
-        publish_path = publish_info["path"]
         publish_name = publish_info["name"]
         publish_type = publish_info["type"]
+
+        # ensure the publish folder exists:
+        publish_folder = os.path.dirname(publish_path)
+        self.parent.ensure_folder_exists(publish_folder)
 
         # set the alembic args that make the most sense when working with Mari.  These flags
         # will ensure the export of an Alembic file that contains all visible geometry from
@@ -386,8 +384,6 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
 
         publish_path = item.properties["publish_info"]["path"]
 
-        path = item.properties["publish_file_path"]
-
         self.logger.info(
             "Publish created for file: %s" % (publish_path,),
             extra={
@@ -398,98 +394,6 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
                 }
             }
         )
-
-    def _get_publish_info(self, path, settings):
-        """
-        This method encompasses the logic for extracting the publish path,
-        version, type, and name given the path to the current session.
-
-        If templates are configured they will be used to identify the publish
-        path. If templates are not configured, the publish-in-place logic will
-        be used.
-
-        :param str path: The path to the current session
-        :param dict settings: Configured publish settings
-
-        :return: A dictionary of the form::
-
-            {
-                "publish_path": "/path/to/file/to/publish/caches/filename.v0001.abc",
-                "publish_name": "filename.abc",
-                "publish_version": 1,
-                "publish_type": "Alembic Cache"
-            }
-        """
-
-        publisher = self.parent
-
-        # by default, extract the version number from the work file for
-        # publishing. use 1 if no version in path
-        version_number = publisher.util.get_version_number(path) or 1
-
-        # publish in place by default
-        publish_path = path
-
-        # the configured publish type
-        publish_type = settings["Publish Type"].value
-
-        # ---- Check to see if templates are configured
-
-        publish_template = self._get_template("Publish file Template", settings)
-
-        if publish_template:
-
-            self.logger.debug("Work and publish templates are defined")
-
-            # templates are defined, see if the session path matches the work
-            # file template
-            fields = publish_template.validate_and_get_fields(path)
-
-            self.logger.debug("Fields extracted from file: %s" % (fields,))
-
-            if fields:
-
-                # scene path matches the work file template. execute the
-                # "classic" toolkit behavior of constructing the output publish
-                # path and copying the work file to that location
-                fields["TankType"] = publish_type
-
-                # construct the publish path
-                publish_path = publish_template.apply_fields(fields)
-
-                self.logger.debug("Publish path: %s" % (publish_path,))
-
-                # if version number is one of the fields, use it to populate the
-                # publish information, else fall back to the default version,
-                # extracted from the work file above
-                version_number = fields.get("version", version_number)
-
-                self.logger.debug("Version number: %s" % (version_number,))
-
-        # get the publish name for the publish file. this will ensure we get a
-        # consistent name across version publishes of this file.
-        publish_name = publisher.util.get_publish_name(publish_path)
-
-        return {
-            "path": publish_path,
-            "name": publish_name,
-            "version": version_number,
-            "type": publish_type,
-        }
-
-    def _get_template(self, template_name, settings):
-        """Return the configured template for the supplied name.
-
-        TODO: should publish2 populate "settings" with the configured template?
-              currently it just stores the name.
-        """
-
-        publisher = self.parent
-        template_name = settings[template_name].value
-
-        # NOTE: we're using `get_template_by_name` here since the settings are
-        # not configured at the app level.
-        return publisher.get_template_by_name(template_name)
 
     def _find_scene_animation_range(self):
         """
@@ -511,4 +415,15 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         
         return (start, end)
 
+    def _session_path(self):
+        """
+        Return the path to the current session
+        :return:
+        """
+        path = cmds.file(query=True, sn=True)
+
+        if isinstance(path, unicode):
+            path = path.encode("utf-8")
+
+        return path
 
