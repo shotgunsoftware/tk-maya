@@ -48,7 +48,7 @@ class MayaSessionCollector(HookBaseClass):
 
         # settings specific to this collector
         maya_session_settings = {
-            "Work file Template": {
+            "Work Template": {
                 "type": "template",
                 "default": None,
                 "description": "Template path for artist work files. Should "
@@ -155,9 +155,9 @@ class MayaSessionCollector(HookBaseClass):
         project_root = cmds.workspace(q=True, rootDirectory=True)
         session_item.properties["project_root"] = project_root
 
-        # if a work file template is defined, add it to the item properties so
+        # if a work template is defined, add it to the item properties so
         # that it can be used by attached publish plugins
-        work_template_setting = settings.get("Work file Template")
+        work_template_setting = settings.get("Work Template")
         if work_template_setting:
 
             work_template = publisher.engine.get_template_by_name(
@@ -168,8 +168,8 @@ class MayaSessionCollector(HookBaseClass):
             # current session path won't change once the item has been created.
             # the attached publish plugins will need to resolve the fields at
             # execution time.
-            session_item.properties["work_file_template"] = work_template
-            self.logger.debug("Work file template defined for Maya collection.")
+            session_item.properties["work_template"] = work_template
+            self.logger.debug("Work template defined for Maya collection.")
 
         self.logger.info("Collected current Maya scene")
 
@@ -326,29 +326,3 @@ class MayaSessionCollector(HookBaseClass):
                 # the item has been created. update the display name to include
                 # the an indication of what it is and why it was collected
                 item.name = "%s (Render Layer: %s)" % (item.name, layer)
-
-# TODO: method duplicated in all the maya hooks
-def _get_save_as_action():
-    """
-
-    Simple helper for returning a log action dict for saving the session
-    """
-
-    engine = sgtk.platform.current_engine()
-
-    # default save callback
-    callback = cmds.SaveScene
-
-    # if workfiles2 is configured, use that for file save
-    if "tk-multi-workfiles2" in engine.apps:
-        app = engine.apps["tk-multi-workfiles2"]
-        if hasattr(app, "show_file_save_dlg"):
-            callback = app.show_file_save_dlg
-
-    return {
-        "action_button": {
-            "label": "Save As...",
-            "tooltip": "Save the current session",
-            "callback": callback
-        }
-    }

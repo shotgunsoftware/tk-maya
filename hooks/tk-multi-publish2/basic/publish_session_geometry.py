@@ -118,7 +118,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
                 "default": "Alembic Cache",
                 "description": "SG publish type to associate publishes with."
             },
-            "Publish file Template": {
+            "Publish Template": {
                 "type": "template",
                 "default": None,
                 "description": "Template path for published work files. Should"
@@ -166,11 +166,11 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
 
         accepted = True
         publisher = self.parent
-        template_name = settings["Publish file Template"].value
+        template_name = settings["Publish Template"].value
 
         publish_template = publisher.get_template_by_name(template_name)
-        item.properties["publish_file_template"] = publish_template
-        if not publish_template and not item.parent.properties.get("work_file_template"):
+        item.properties["publish_template"] = publish_template
+        if not publish_template and not item.parent.properties.get("work_template"):
             accepted = False
 
         # check that the AbcExport command is available!
@@ -203,8 +203,8 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         publisher = self.parent
 
         # get the configured work file template
-        work_template = item.parent.properties.get("work_file_template")
-        publish_template = item.properties.get("publish_file_template")
+        work_template = item.parent.properties.get("work_template")
+        publish_template = item.properties.get("publish_template")
 
         # get the current scene path and extract fields from it
         # using the work template:
