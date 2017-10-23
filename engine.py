@@ -634,7 +634,7 @@ class MayaEngine(tank.platform.Engine):
         dependencies = []
 
         # include file paths from file references
-        for ref_node in cmds.ls(type='reference'):
+        for ref_node in cmds.ls(type="reference"):
             try:
                 ref_file = cmds.referenceQuery(ref_node, filename=True)
                 dependencies.append(ref_file)
@@ -642,7 +642,7 @@ class MayaEngine(tank.platform.Engine):
                 pass
 
         # include file paths from file nodes (textures)
-        for file_node in cmds.ls(type='file'):
+        for file_node in cmds.ls(type="file"):
             file_path = cmds.getAttr("%s.fileTextureName" % (file_node,))
             dependencies.append(file_path)
 
