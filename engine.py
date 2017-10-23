@@ -611,6 +611,43 @@ class MayaEngine(tank.platform.Engine):
         self.logger.info("Setting Maya project to '%s'", proj_path)
         pm.mel.setProject(proj_path)
 
+    def get_session_path(self):
+        """
+        Returns the path to the current scene file if it resides on
+        disk. If unsaved, it returns an empty string.
+
+        :returns: Path to the current scene
+        """
+        path = cmds.file(query=True, sceneName=True)
+
+        if isinstance(path, unicode):
+            path = path.encode("utf-8")
+
+        return path
+
+    def get_session_dependencies(self):
+        """
+        Returns a list of file dependencies for this scene.
+
+        :returns: List of files or folder paths constituting the scene dependencies.
+        """
+        dependencies = []
+
+        # include file paths from file references
+        for ref_node in cmds.ls(type='reference'):
+            try:
+                ref_file = cmds.referenceQuery(ref_node, filename=True)
+                dependencies.append(ref_file)
+            except Exception:
+                pass
+
+        # include file paths from file nodes (textures)
+        for file_node in cmds.ls(type='file'):
+            file_path = cmds.getAttr("%s.fileTextureName" % (file_node,))
+            dependencies.append(file_path)
+
+        return dependencies
+
     ##########################################################################################
     # panel support
 
