@@ -235,7 +235,7 @@ class MayaSessionCollector(HookBaseClass):
             self.disk_location,
             os.pardir,
             "icons",
-            "alembic.png"
+            "geometry.png"
         )
         session_item.set_icon_from_path(icon_path)
 
