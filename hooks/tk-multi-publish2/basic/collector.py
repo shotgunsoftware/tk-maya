@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Shotgun Software Inc.
+﻿# Copyright (c) 2017 Shotgun Software Inc.
 # 
 # CONFIDENTIAL AND PROPRIETARY
 # 
@@ -97,7 +97,6 @@ class MayaSessionCollector(HookBaseClass):
 
             self.collect_playblasts(item, project_root)
             self.collect_alembic_caches(item, project_root)
-
         else:
 
             self.logger.info(
@@ -110,6 +109,9 @@ class MayaSessionCollector(HookBaseClass):
                     }
                 }
             )
+
+        if cmds.ls(geometry=True, noIntermediate=True):
+            self._collect_session_geometry(item)
 
     def collect_current_maya_session(self, settings, parent_item):
         """
@@ -215,6 +217,28 @@ class MayaSessionCollector(HookBaseClass):
                 parent_item,
                 cache_path
             )
+
+    def _collect_session_geometry(self, parent_item):
+        """
+        Creates items for session geometry to be exported.
+
+        :param parent_item: Parent Item instance
+        """
+
+        session_item = parent_item.create_item(
+            "maya.session.geometry",
+            "Geometry",
+            "All Session Geometry"
+        )
+        # get the icon path to display for this item
+        icon_path = os.path.join(
+            self.disk_location,
+            os.pardir,
+            "icons",
+            "geometry.png"
+        )
+        session_item.set_icon_from_path(icon_path)
+
 
     def collect_playblasts(self, parent_item, project_root):
         """
