@@ -225,11 +225,12 @@ class MayaSessionCollector(HookBaseClass):
         :param parent_item: Parent Item instance
         """
 
-        session_item = parent_item.create_item(
+        geo_item = parent_item.create_item(
             "maya.session.geometry",
             "Geometry",
             "All Session Geometry"
         )
+
         # get the icon path to display for this item
         icon_path = os.path.join(
             self.disk_location,
@@ -237,8 +238,8 @@ class MayaSessionCollector(HookBaseClass):
             "icons",
             "geometry.png"
         )
-        session_item.set_icon_from_path(icon_path)
 
+        geo_item.set_icon_from_path(icon_path)
 
     def collect_playblasts(self, parent_item, project_root):
         """

@@ -161,6 +161,12 @@ class MayaSessionPublishPlugin(HookBaseClass):
         :returns: dictionary with boolean keys accepted, required and enabled
         """
 
+        # if a publish template is configured, disable context change. This
+        # is a temporary measure until the publisher handles context switching
+        # natively.
+        if settings.get("Publish Template"):
+            item.context_change_allowed = False
+
         path = _session_path()
 
         if not path:

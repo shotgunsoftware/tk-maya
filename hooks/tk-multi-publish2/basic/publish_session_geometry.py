@@ -39,10 +39,10 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         """
 
         return """
-        This plugin publishes session geometry for the current session. Any
+        <p>This plugin publishes session geometry for the current session. Any
         session geometry will be exported to the path defined by this plugin's
         configured "Publish Template" setting. The plugin will fail to validate
-        if the "AbcExport" plugin is not enabled or cannot be found.
+        if the "AbcExport" plugin is not enabled or cannot be found.</p>
         """
 
     @property
@@ -153,6 +153,12 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
                 "is not available. Perhaps the plugin is not enabled?"
             )
             accepted = False
+
+        # because a publish template is configured, disable context change. This
+        # is a temporary measure until the publisher handles context switching
+        # natively.
+        if settings.get("Publish Template"):
+            item.context_change_allowed = False
 
         return {
             "accepted": accepted,
