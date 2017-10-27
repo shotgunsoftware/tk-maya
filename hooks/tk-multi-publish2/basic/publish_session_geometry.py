@@ -157,8 +157,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         # because a publish template is configured, disable context change. This
         # is a temporary measure until the publisher handles context switching
         # natively.
-        if settings.get("Publish Template"):
-            item.context_change_allowed = False
+        item.context_change_allowed = False
 
         return {
             "accepted": accepted,
