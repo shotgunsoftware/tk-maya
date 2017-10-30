@@ -198,12 +198,11 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         # ensure the fields work for the publish template
         missing_keys = publish_template.missing_keys(work_fields)
         if missing_keys:
-            self.logger.error(
-                "Work file '%s' missing keys required for the publish "
-                "template: %s" % (scene_path, missing_keys)
-            )
-            return False
-                
+            error_msg = "Work file '%s' missing keys required for the " \
+                        "publish template: %s" % (scene_path, missing_keys)
+            self.logger.error(error_msg)
+            raise Exception(error_msg)
+
         # create the publish path by applying the fields. store it in the item's
         # properties. This is the path we'll create and then publish in the base
         # publish plugin. Also set the publish_path to be explicit.

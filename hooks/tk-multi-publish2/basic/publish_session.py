@@ -207,11 +207,12 @@ class MayaSessionPublishPlugin(HookBaseClass):
         if not path:
             # the session still requires saving. provide a save button.
             # validation fails.
+            error_msg = "The Maya session has not been saved."
             self.logger.error(
-                "The Maya session has not been saved.",
+                error_msg,
                 extra=_get_save_as_action()
             )
-            return False
+            raise Exception(error_msg)
 
         # ensure we have an updated project root
         project_root = cmds.workspace(q=True, rootDirectory=True)
@@ -276,8 +277,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
                 (next_version_path, version) = self._get_next_version_info(
                     next_version_path, item)
 
+            error_msg = "The next version of this file already exists on disk."
             self.logger.error(
-                "The next version of this file already exists on disk.",
+                error_msg,
                 extra={
                     "action_button": {
                         "label": "Save to v%s" % (version,),
@@ -287,7 +289,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
                     }
                 }
             )
-            return False
+            raise Exception(error_msg)
 
         # ---- populate the necessary properties and call base class validation
 
