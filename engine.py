@@ -611,25 +611,43 @@ class MayaEngine(tank.platform.Engine):
         self.logger.info("Setting Maya project to '%s'", proj_path)
         pm.mel.setProject(proj_path)
 
-    def get_session_path(self):
+    def get_session_path(self, session=None):
         """
-        Returns the path to the current scene file if it resides on
-        disk. If unsaved, it returns an empty string.
+        Returns the absolute path to the current scene file if it resides
+        on disk. If the session has never been saved and isn't
+        associated with a file on disk yet, an empty string is returned.
 
-        :returns: Path to the current scene
+        :param session: An object representing the active document
+                        (for MDI applications).
+        :returns: The absolute path to the current scene file.
+        :raises TankError: Raises a `TankError` if the application is
+                           unable to determine the session that is
+                           being referred to.
         """
         path = cmds.file(query=True, sceneName=True)
 
-        if isinstance(path, unicode):
-            path = path.encode("utf-8")
+        # Querying the scene name in Maya returns a unicode string,
+        # so convert it to UTF-8.
+        return path.encode("utf-8")
 
-        return path
-
-    def get_session_dependencies(self):
+    def get_session_dependencies(self, session=None):
         """
-        Returns a list of file dependencies for this scene.
+        Returns a list of file dependencies for the current session.
 
-        :returns: List of files or folder paths constituting the scene dependencies.
+        :param session: An object representing the active document
+                        (for MDI applications).
+        :returns: A list of file dependencies required to load
+                  the session. The data returned is of the form:
+                  [
+                    {"path": "/foo/bar/hello.jpeg",
+                     "engine": "tk-maya",
+                     "type": "reference"
+                     },
+                    {"path": "/foo/bar/hello.obj",
+                     "engine": "tk-maya",
+                     "type": "file"
+                     },
+                  ]
         """
         dependencies = []
 
@@ -637,14 +655,37 @@ class MayaEngine(tank.platform.Engine):
         for ref_node in cmds.ls(type="reference"):
             try:
                 ref_file = cmds.referenceQuery(ref_node, filename=True)
-                dependencies.append(ref_file)
-            except Exception:
-                pass
+
+                # querying a file reference returns a unicode string,
+                # hence convert it to UTF-8 and add it as a dependency
+                dependencies.append({
+                    "path": ref_file.encode("utf-8"),
+                    "engine": self.name,
+                    "type": "reference",
+                })
+            except Exception as e:
+                # Log exceptions if they occur and continue
+                # to collect dependencies.
+                logging.exception("Failed to retrieve file path for" +
+                                  " %s: %e" % (ref_node, e))
 
         # include file paths from file nodes (textures)
         for file_node in cmds.ls(type="file"):
-            file_path = cmds.getAttr("%s.fileTextureName" % (file_node,))
-            dependencies.append(file_path)
+            try:
+                file_path = cmds.getAttr("%s.fileTextureName" % (file_node,))
+
+                # querying a file texture name returns a unicode string,
+                # hence convert it to UTF-8 and add it as a dependency
+                dependencies.append({
+                    "path": file_path.encode("utf-8"),
+                    "engine": self.name,
+                    "type": "file",
+                })
+            except Exception as e:
+                # Log exceptions if they occur and continue
+                # to collect dependencies.
+                logging.exception("Failed to retrieve file path for" +
+                                  " %s: %e" % (ref_node, e))
 
         return dependencies
 
