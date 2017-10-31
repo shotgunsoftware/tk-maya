@@ -194,7 +194,7 @@ class MayaStartVersionControlPlugin(HookBaseClass):
         version_path = publisher.util.get_version_path(path, "v001")
         if os.path.exists(version_path):
             error_msg = "A file already exists with a version number. Please " \
-                        "choose another name.",
+                        "choose another name."
             self.logger.error(
                 error_msg,
                 extra=_get_save_as_action()
