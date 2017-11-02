@@ -687,7 +687,13 @@ class MayaEngine(tank.platform.Engine):
                 logging.exception("Failed to retrieve file path for" +
                                   " %s: %e" % (ref_node, e))
 
-        return dependencies
+        # apply any custom filtering before returning
+        # the list of dependency data.
+        return self.execute_hook_method(
+            "hook_filter_dependencies",
+            "filter_dependencies",
+            dependencies=dependencies
+        )
 
     ##########################################################################################
     # panel support

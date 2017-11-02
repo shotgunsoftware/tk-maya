@@ -84,6 +84,12 @@ configuration:
         values:
             type: str
 
+    hook_filter_dependencies:
+        type: hook
+        default_value: "{self}/filter_dependencies.py"
+        description: "This hook is responsible for filtering the default file dependencies
+                      retrieved by the engine for a particular session."
+
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
         
