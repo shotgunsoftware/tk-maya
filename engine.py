@@ -611,15 +611,14 @@ class MayaEngine(tank.platform.Engine):
         self.logger.info("Setting Maya project to '%s'", proj_path)
         pm.mel.setProject(proj_path)
 
-    def get_session_path(self, session=None):
+    def get_session_path(self):
         """
-        Returns the absolute path to the current scene file if it resides
+        Returns the absolute path to the current session if it resides
         on disk. If the session has never been saved and isn't
         associated with a file on disk yet, an empty string is returned.
 
-        :param session: An object representing the active document
-                        (for MDI applications).
-        :returns: The absolute path to the current scene file.
+        :returns: The absolute path to the current session if it resides on
+                  disk, else returns None.
         :raises TankError: Raises a `TankError` if the application is
                            unable to determine the session that is
                            being referred to.
@@ -627,15 +626,13 @@ class MayaEngine(tank.platform.Engine):
         path = cmds.file(query=True, sceneName=True)
 
         # Querying the scene name in Maya returns a unicode string,
-        # so convert it to UTF-8.
-        return path.encode("utf-8")
+        # so convert it to UTF-8. Return None if the path is empty.
+        return path.encode("utf-8") if path else None
 
-    def get_session_dependencies(self, session=None):
+    def get_session_dependencies(self):
         """
         Returns a list of file dependencies for the current session.
 
-        :param session: An object representing the active document
-                        (for MDI applications).
         :returns: A list of file dependencies required to load
                   the session. The data returned is of the form:
                   [
