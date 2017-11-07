@@ -357,6 +357,17 @@ class MayaEngine(Engine):
             # always log the warning to the script editor:
             self.logger.warning(msg)
 
+            # In the case of Maya 2018 on Windows, we have the possility of locking
+            # up if we allow the PySide shim to import QtWebEngineWidgets. We can
+            # stop that happening here by setting the environment variable.
+
+            if current_os.startswith("win"):
+                self.logger.debug(
+                    "Maya 2018+ on Windows can deadlock if QtWebEngineWidgets "
+                    "is imported. Setting SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT=1..."
+                )
+                os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = "1"
+
         # Set the Maya project based on config
         self._set_project()
 
