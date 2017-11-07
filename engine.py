@@ -650,6 +650,87 @@ class MayaEngine(Engine):
         self.logger.info("Setting Maya project to '%s'", proj_path)
         pm.mel.setProject(proj_path)
 
+    def get_session_path(self):
+        """
+        Returns the absolute path to the current session if it resides
+        on disk. If the session has never been saved and isn't
+        associated with a file on disk yet, None is returned.
+
+        :returns: The absolute path to the current session if it resides on
+                  disk, else returns None.
+        :raises TankError: Raises a `TankError` if the application is
+                           unable to determine the session that is
+                           being referred to.
+        """
+        path = cmds.file(query=True, sceneName=True)
+
+        # Querying the scene name in Maya returns a unicode string,
+        # so convert it to UTF-8. Return None if the path is empty.
+        return path.encode("utf-8") if path else None
+
+    def get_session_dependencies(self):
+        """
+        Returns a list of file dependencies for the current session.
+
+        :returns: A list of file dependencies required to load
+                  the session. The data returned is of the form:
+                  [
+                    {"path": "/foo/bar/hello.jpeg",
+                     "engine": "tk-maya",
+                     "type": "reference"
+                     },
+                    {"path": "/foo/bar/hello.obj",
+                     "engine": "tk-maya",
+                     "type": "file"
+                     },
+                  ]
+        """
+        dependencies = []
+
+        # include file paths from file references
+        for ref_node in cmds.ls(type="reference"):
+            try:
+                ref_file = cmds.referenceQuery(ref_node, filename=True)
+
+                # querying a file reference returns a unicode string,
+                # hence convert it to UTF-8 and add it as a dependency
+                dependencies.append({
+                    "path": ref_file.encode("utf-8"),
+                    "engine": self.name,
+                    "type": "reference",
+                })
+            except Exception as e:
+                # Log exceptions if they occur and continue
+                # to collect dependencies.
+                logging.exception("Failed to retrieve file path for" +
+                                  " %s: %e" % (ref_node, e))
+
+        # include file paths from file nodes (textures)
+        for file_node in cmds.ls(type="file"):
+            try:
+                file_path = cmds.getAttr("%s.fileTextureName" % (file_node,))
+
+                # querying a file texture name returns a unicode string,
+                # hence convert it to UTF-8 and add it as a dependency
+                dependencies.append({
+                    "path": file_path.encode("utf-8"),
+                    "engine": self.name,
+                    "type": "file",
+                })
+            except Exception as e:
+                # Log exceptions if they occur and continue
+                # to collect dependencies.
+                logging.exception("Failed to retrieve file path for" +
+                                  " %s: %e" % (ref_node, e))
+
+        # apply any custom filtering before returning
+        # the list of dependency data.
+        return self.execute_hook_method(
+            "hook_filter_dependencies",
+            "filter_dependencies",
+            dependencies=dependencies
+        )
+
     ##########################################################################################
     # panel support
 
