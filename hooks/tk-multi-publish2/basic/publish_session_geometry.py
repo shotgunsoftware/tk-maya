@@ -176,15 +176,32 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         :returns: True if item is valid, False otherwise.
         """
 
+        path = _session_path()
+
+        # ---- ensure the session has been saved
+
+        if not path:
+            # the session still requires saving. provide a save button.
+            # validation fails.
+            error_msg = "The Maya session has not been saved."
+            self.logger.error(
+                error_msg,
+                extra=_get_save_as_action()
+            )
+            raise Exception(error_msg)
+
+        # get the normalized path
+        path = sgtk.util.ShotgunPath.normalize(path)
+
         # check that there is still geometry in the scene:
         if not cmds.ls(geometry=True, noIntermediate=True):
-            self.logger.warning(
+            error_msg = (
                 "Validation failed because there is no geometry in the scene "
-                "to be exported."
+                "to be exported. You can uncheck this plugin or create "
+                "geometry to export to avoid this error."
             )
-            return False
-
-        publisher = self.parent
+            self.logger.error(error_msg)
+            raise Exception(error_msg)
 
         # get the configured work file template
         work_template = item.parent.properties.get("work_template")
@@ -192,14 +209,13 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
 
         # get the current scene path and extract fields from it using the work
         # template:
-        scene_path = sgtk.util.ShotgunPath.normalize(_session_path())
-        work_fields = work_template.get_fields(scene_path)
+        work_fields = work_template.get_fields(path)
 
         # ensure the fields work for the publish template
         missing_keys = publish_template.missing_keys(work_fields)
         if missing_keys:
             error_msg = "Work file '%s' missing keys required for the " \
-                        "publish template: %s" % (scene_path, missing_keys)
+                        "publish template: %s" % (path, missing_keys)
             self.logger.error(error_msg)
             raise Exception(error_msg)
 
@@ -308,3 +324,27 @@ def _session_path():
 
     return path
 
+
+def _get_save_as_action():
+    """
+    Simple helper for returning a log action dict for saving the session
+    """
+
+    engine = sgtk.platform.current_engine()
+
+    # default save callback
+    callback = cmds.SaveScene
+
+    # if workfiles2 is configured, use that for file save
+    if "tk-multi-workfiles2" in engine.apps:
+        app = engine.apps["tk-multi-workfiles2"]
+        if hasattr(app, "show_file_save_dlg"):
+            callback = app.show_file_save_dlg
+
+    return {
+        "action_button": {
+            "label": "Save As...",
+            "tooltip": "Save the current session",
+            "callback": callback
+        }
+    }
