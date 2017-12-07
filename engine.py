@@ -25,6 +25,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import maya.utils
 from tank.platform import Engine
+from tank.util.filesystem import ensure_folder_exists
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
@@ -658,6 +659,10 @@ class MayaEngine(Engine):
         tmpl = self.tank.templates.get(setting)
         fields = self.context.as_template_fields(tmpl)
         proj_path = tmpl.apply_fields(fields)
+
+        # Ensure the project folder exists on disk
+        ensure_folder_exists(proj_path)
+            
         self.logger.info("Setting Maya project to '%s'", proj_path)
         pm.mel.setProject(proj_path)
 
