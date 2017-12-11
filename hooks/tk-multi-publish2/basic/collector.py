@@ -227,6 +227,30 @@ class MayaSessionCollector(HookBaseClass):
         :param parent_item: Parent Item instance
         """
 
+        geo_item = parent_item.create_item(
+            "maya.session.geometry",
+            "Geometry",
+            "All Session Geometry"
+        )
+
+        # get the icon path to display for this item
+        icon_path = os.path.join(
+            self.disk_location,
+            os.pardir,
+            "icons",
+            "geometry.png"
+        )
+
+        geo_item.set_icon_from_path(icon_path)
+
+    def _collect_session_cameras(self, parent_item):
+        """
+        Creates items for each camera to be exported.
+
+        :param parent_item:
+        :return:
+        """
+
         # get the icon path to display for camera items
         icon_path = os.path.join(
             self.disk_location,
@@ -256,14 +280,6 @@ class MayaSessionCollector(HookBaseClass):
             # camera this item represents!
             cam_item.properties["camera_name"] = camera_name
             cam_item.properties["camera_shape"] = camera_shape
-
-    def _collect_session_cameras(self, parent_item):
-        """
-        Creates items for each camera to be exported.
-
-        :param parent_item:
-        :return:
-        """
 
     def collect_playblasts(self, parent_item, project_root):
         """
