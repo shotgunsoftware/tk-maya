@@ -113,6 +113,8 @@ class MayaSessionCollector(HookBaseClass):
         if cmds.ls(geometry=True, noIntermediate=True):
             self._collect_session_geometry(item)
 
+        self._collect_session_cameras(item)
+
     def collect_current_maya_session(self, settings, parent_item):
         """
         Creates an item that represents the current maya session.
@@ -225,21 +227,43 @@ class MayaSessionCollector(HookBaseClass):
         :param parent_item: Parent Item instance
         """
 
-        geo_item = parent_item.create_item(
-            "maya.session.geometry",
-            "Geometry",
-            "All Session Geometry"
-        )
-
-        # get the icon path to display for this item
+        # get the icon path to display for camera items
         icon_path = os.path.join(
             self.disk_location,
             os.pardir,
             "icons",
-            "geometry.png"
+            "camera.png"
         )
 
-        geo_item.set_icon_from_path(icon_path)
+        for camera_shape in cmds.ls(cameras=True):
+
+            # try to determine the camera display name
+            try:
+                camera_name = cmds.listRelatives(camera_shape, parent=True)[0]
+            except Exception:
+                # could not determine the name, just use the shape
+                camera_name = camera_shape
+
+            cam_item = parent_item.create_item(
+                "maya.session.camera",
+                "Camera",
+                camera_name
+            )
+
+            cam_item.set_icon_from_path(icon_path)
+
+            # store the camera name so that any attached plugin knows which
+            # camera this item represents!
+            cam_item.properties["camera_name"] = camera_name
+            cam_item.properties["camera_shape"] = camera_shape
+
+    def _collect_session_cameras(self, parent_item):
+        """
+        Creates items for each camera to be exported.
+
+        :param parent_item:
+        :return:
+        """
 
     def collect_playblasts(self, parent_item, project_root):
         """
