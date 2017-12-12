@@ -252,8 +252,21 @@ class MayaSessionCollector(HookBaseClass):
         :param str project_root: The maya project root to search for playblasts
         """
 
+        movie_dir_name = None
+
+        # try to query the file fule folder name for movies. This will give
+        # us the directory name set for the project where movies will be
+        # written
+        if "movie" in cmds.workspace(fileRuleList=True):
+            # this could return an empty string
+            movie_dir_name = cmds.workspace(fileRuleEntry='movie')
+
+        if not movie_dir_name:
+            # fall back to the default
+            movie_dir_name = "movies"
+
         # ensure the movies dir exists
-        movies_dir = os.path.join(project_root, "movies")
+        movies_dir = os.path.join(project_root, movie_dir_name)
         if not os.path.exists(movies_dir):
             return
 
