@@ -254,7 +254,7 @@ class MayaSessionCollector(HookBaseClass):
 
         movie_dir_name = None
 
-        # try to query the file fule folder name for movies. This will give
+        # try to query the file rule folder name for movies. This will give
         # us the directory name set for the project where movies will be
         # written
         if "movie" in cmds.workspace(fileRuleList=True):
