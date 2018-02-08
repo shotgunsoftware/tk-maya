@@ -75,6 +75,14 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
                 "description": "Template path for published work files. Should"
                                "correspond to a template defined in "
                                "templates.yml.",
+            },
+            "Exported Attributes": {
+                "type" : "list",
+                "default": [],
+                "values" : {
+                    "type": "str"
+                },
+                "description": "List of extra attributes to be exported with Alembic."
             }
         }
 
@@ -265,6 +273,10 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             # write uv's (only the current uv set gets written)
             "-uvWrite"
         ]
+
+        # add the extra attributes we defined in our settings
+        for attr in settings['Exported Attributes'].value:
+            alembic_args.append("-attr {}".format(attr))
 
         # find the animated frame range to use:
         start_frame, end_frame = _find_scene_animation_range()
