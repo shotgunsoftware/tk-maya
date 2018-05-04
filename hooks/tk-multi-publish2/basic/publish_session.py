@@ -12,6 +12,7 @@ import os
 import maya.cmds as cmds
 import maya.mel as mel
 import sgtk
+from sgtk.util.filesystem import ensure_folder_exists
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -416,6 +417,10 @@ def _save_session(path):
         maya_file_type = "mayaAscii"
     elif path.lower().endswith(".mb"):
         maya_file_type = "mayaBinary"
+
+    # Maya won't ensure that the folder is created when saving, so we must make sure it exists
+    folder = os.path.dirname(path)
+    ensure_folder_exists(folder)
 
     cmds.file(rename=path)
 
