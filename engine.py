@@ -435,7 +435,11 @@ class MayaEngine(Engine):
             # that has a callback registered with the new context baked in.
             # This will ensure that the context_from_path call that occurs
             # after a File->Open receives an up-to-date "previous" context.
-            self.__watcher.stop_watching()
+            
+            # If we switch from an env where this is False to one that is 
+            # True, we won't have a watcher instance, so we check for it first.
+            if hasattr(self, "__watcher"):
+                self.__watcher.stop_watching()
             cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name:on_scene_event_callback(
                 engine_name=en,
                 prev_context=pc,
