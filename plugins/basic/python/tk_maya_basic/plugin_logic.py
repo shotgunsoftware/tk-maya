@@ -15,6 +15,11 @@ import pymel.core as pm
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaUI as OpenMayaUI
 
+try:
+    import shiboken2 as shiboken
+except ImportError:
+    import shiboken
+
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
 import sgtk
@@ -43,11 +48,6 @@ class ProgressHandler(QtCore.QObject):
     PROGRESS_INTERVAL = 150 # milliseconds
 
     def __init__(self):
-        try:
-            import shiboken2 as shiboken
-        except ImportError:
-            import shiboken
-
         ptr = OpenMayaUI.MQtUtil.mainWindow()
         parent = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
 
@@ -57,7 +57,7 @@ class ProgressHandler(QtCore.QObject):
         self._message = None
         self._timer = QtCore.QTimer(parent=self)
 
-        self._timer.timeout.connect(self._set_progress)
+        self._timer.timeout.connect(self._update_progress)
         self._timer.start(self.PROGRESS_INTERVAL)
 
     @property
@@ -67,11 +67,11 @@ class ProgressHandler(QtCore.QObject):
         """
         return self._timer
 
-    def _set_progress(self):
+    def _update_progress(self):
         """
         Sets progress. Must be run from the main thread!
         """
-        if self._message and self._progress_value:
+        if self._message is not None and self._progress_value is not None:
             _show_progress_bar(self._progress_value, self._message)
             self._message = None
             self._progress_value = None
@@ -80,7 +80,8 @@ class ProgressHandler(QtCore.QObject):
         """
         Callback function that reports back on the toolkit and engine bootstrap progress.
 
-        This function is executed in the main thread by the main event loop.
+        .. note:: This method is, and must remain, thread safe. It will be called from
+            a non-main thread.
 
         :param progress_value: Current progress value, ranging from 0.0 to 1.0.
         :param message: Progress message to report.
@@ -88,13 +89,12 @@ class ProgressHandler(QtCore.QObject):
 
         logger.debug("Bootstrapping Shotgun: %s" % message)
 
-        # Show the progress bar, and update its value and message.
-        # _show_progress_bar(progress_value, message)
+        # Set some state that will trigger our timer to update the progress bar.
         self._progress_value = progress_value
         self._message = message
 
 
-PROGRESS_HANDLER = ProgressHandler()
+progress_handler = ProgressHandler()
 
 
 def bootstrap():
@@ -154,7 +154,7 @@ def _login_user():
     try:
         plugin_engine.bootstrap(
             user,
-            progress_callback=PROGRESS_HANDLER._handle_bootstrap_progress,
+            progress_callback=progress_handler._handle_bootstrap_progress,
             completed_callback=_handle_bootstrap_completed,
             failed_callback=_handle_bootstrap_failed
         )
