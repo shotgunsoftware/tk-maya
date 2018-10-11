@@ -173,7 +173,7 @@ def _handle_bootstrap_completed(engine):
 
     :param engine: Launched :class:`sgtk.platform.Engine` instance.
     """
-    PROGRESS_HANDLER.timer.stop()
+    progress_handler.timer.stop()
 
     # Needed global to re-import the toolkit core.
     global sgtk
@@ -207,7 +207,7 @@ def _handle_bootstrap_failed(phase, exception):
                   ``ToolkitManager.TOOLKIT_BOOTSTRAP_PHASE`` or ``ToolkitManager.ENGINE_STARTUP_PHASE``.
     :param exception: Python exception raised while bootstrapping.
     """
-    PROGRESS_HANDLER.timer.stop()
+    progress_handler.timer.stop()
 
     # Needed global to re-import the toolkit core.
     global sgtk
