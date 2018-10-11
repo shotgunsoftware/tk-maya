@@ -13,6 +13,12 @@ import logging
 import maya.utils
 import pymel.core as pm
 import maya.OpenMaya as OpenMaya
+import maya.OpenMayaUI as OpenMayaUI
+
+try:
+    import shiboken2 as shiboken
+except ImportError:
+    import shiboken
 
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
@@ -32,6 +38,63 @@ MENU_LOGIN = "ShotgunMenuLogin"
 MENU_LABEL = "Shotgun"
 
 logger = sgtk.LogManager.get_logger(__name__)
+
+class ProgressHandler(QtCore.QObject):
+    """
+    An object that wraps a QTimer that is used to periodically check
+    for updates that need to be made to the progress bar in Maya. This
+    will always execute progress updates on the main thread.
+    """
+    PROGRESS_INTERVAL = 150 # milliseconds
+
+    def __init__(self):
+        ptr = OpenMayaUI.MQtUtil.mainWindow()
+        parent = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+
+        super(ProgressHandler, self).__init__(parent=parent)
+
+        self._progress_value = None
+        self._message = None
+        self._timer = QtCore.QTimer(parent=self)
+
+        self._timer.timeout.connect(self._update_progress)
+        self._timer.start(self.PROGRESS_INTERVAL)
+
+    @property
+    def timer(self):
+        """
+        The QTimer instance that's updating progress.
+        """
+        return self._timer
+
+    def _update_progress(self):
+        """
+        Sets progress. Must be run from the main thread!
+        """
+        if self._message is not None and self._progress_value is not None:
+            _show_progress_bar(self._progress_value, self._message)
+            self._message = None
+            self._progress_value = None
+
+    def _handle_bootstrap_progress(self, progress_value, message):
+        """
+        Callback function that reports back on the toolkit and engine bootstrap progress.
+
+        .. note:: This method is, and must remain, thread safe. It will be called from
+            a non-main thread.
+
+        :param progress_value: Current progress value, ranging from 0.0 to 1.0.
+        :param message: Progress message to report.
+        """
+
+        logger.debug("Bootstrapping Shotgun: %s" % message)
+
+        # Set some state that will trigger our timer to update the progress bar.
+        self._progress_value = progress_value
+        self._message = message
+
+
+progress_handler = ProgressHandler()
 
 
 def bootstrap():
@@ -91,7 +154,7 @@ def _login_user():
     try:
         plugin_engine.bootstrap(
             user,
-            progress_callback=_handle_bootstrap_progress,
+            progress_callback=progress_handler._handle_bootstrap_progress,
             completed_callback=_handle_bootstrap_completed,
             failed_callback=_handle_bootstrap_failed
         )
@@ -102,22 +165,6 @@ def _login_user():
         logger.exception("Shotgun reported the following exception during startup:")
 
 
-def _handle_bootstrap_progress(progress_value, message):
-    """
-    Callback function that reports back on the toolkit and engine bootstrap progress.
-
-    This function is executed in the main thread by the main event loop.
-
-    :param progress_value: Current progress value, ranging from 0.0 to 1.0.
-    :param message: Progress message to report.
-    """
-
-    logger.debug("Bootstrapping Shotgun: %s" % message)
-
-    # Show the progress bar, and update its value and message.
-    _show_progress_bar(progress_value, message)
-
-
 def _handle_bootstrap_completed(engine):
     """
     Callback function that handles cleanup after successful completion of the bootstrap.
@@ -126,6 +173,7 @@ def _handle_bootstrap_completed(engine):
 
     :param engine: Launched :class:`sgtk.platform.Engine` instance.
     """
+    progress_handler.timer.stop()
 
     # Needed global to re-import the toolkit core.
     global sgtk
@@ -159,6 +207,7 @@ def _handle_bootstrap_failed(phase, exception):
                   ``ToolkitManager.TOOLKIT_BOOTSTRAP_PHASE`` or ``ToolkitManager.ENGINE_STARTUP_PHASE``.
     :param exception: Python exception raised while bootstrapping.
     """
+    progress_handler.timer.stop()
 
     # Needed global to re-import the toolkit core.
     global sgtk
