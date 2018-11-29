@@ -380,6 +380,7 @@ class MayaEngine(Engine):
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 
+        self.__watcher = None
         if self.get_setting("automatic_context_switch", True):
             # need to watch some scene events in case the engine needs rebuilding:
             cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name:on_scene_event_callback(en, pc, mn)
@@ -430,16 +431,16 @@ class MayaEngine(Engine):
         :param old_context: The context being changed away from.
         :param new_context: The new context being changed to.
         """
+        # If we have a watcher, we need to stop watching.
+        # If we will be watching in the new context we need to replace it with
+        # a new watcher that has a callback registered with the new context baked in.
+        # This will ensure that the context_from_path call that occurs after a
+        # File->Open receives an up-to-date "previous" context.
+        # If we aren't watching in the new context, this ensures we've stopped.
+        if self.__watcher is not None:
+            self.__watcher.stop_watching()
+
         if self.get_setting("automatic_context_switch", True):
-            # We need to stop watching, and then replace with a new watcher
-            # that has a callback registered with the new context baked in.
-            # This will ensure that the context_from_path call that occurs
-            # after a File->Open receives an up-to-date "previous" context.
-            
-            # If we switch from an env where this is False to one that is 
-            # True, we won't have a watcher instance, so we check for it first.
-            if hasattr(self, "__watcher"):
-                self.__watcher.stop_watching()
             cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name:on_scene_event_callback(
                 engine_name=en,
                 prev_context=pc,
