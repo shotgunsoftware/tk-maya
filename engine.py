@@ -578,6 +578,16 @@ class MayaEngine(Engine):
             self.logger.error("PySide could not be imported! Apps using pyside will not "
                            "operate correctly! Error reported: %s", e)
 
+    def _create_dialog(self, *args, **kwargs):
+        """
+
+        """
+        # TODO: only OSX
+        # TODO: get an explanation and document why we're having to do this
+        w = super(MayaEngine, self)._create_dialog(*args, **kwargs)
+        w.setProperty("saveWindowPref", True )
+        return w
+
     def _get_dialog_parent(self):
         """
         Get the QWidget parent for all dialogs created through
