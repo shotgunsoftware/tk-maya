@@ -580,13 +580,22 @@ class MayaEngine(Engine):
 
     def _create_dialog(self, *args, **kwargs):
         """
+        Overrides the base behavior of _create_dialog on OS X to set an additional property
+        on the created dialog to resolve window parenting issues. On Windows or Linux, the
+        base implementation is used unaltered.
 
+        :returns: The newly-created dialog.
         """
-        # TODO: only OSX
-        # TODO: get an explanation and document why we're having to do this
-        w = super(MayaEngine, self)._create_dialog(*args, **kwargs)
-        w.setProperty("saveWindowPref", True )
-        return w
+        dialog = super(MayaEngine, self)._create_dialog(*args, **kwargs)
+
+        # TODO: Get an explanation and document why we're having to do this. It appears to be
+        # a Maya-only solution, because similar problems in other integrations, namely Nuke,
+        # are not resolved in the same way. This fix comes to us from the Maya dev team, but
+        # we've not yet spoken with someone that can explain why it fixes the problem.
+        if sys.platform == "darwin":
+            dialog.setProperty("saveWindowPref", True )
+
+        return dialog
 
     def _get_dialog_parent(self):
         """
