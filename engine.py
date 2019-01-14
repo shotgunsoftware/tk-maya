@@ -226,6 +226,8 @@ class MayaEngine(Engine):
     Toolkit engine for Maya.
     """
 
+    __DIALOG_SIZE_CACHE = dict()
+
     @property
     def context_change_allowed(self):
         """
@@ -583,7 +585,7 @@ class MayaEngine(Engine):
             self.logger.error("PySide could not be imported! Apps using pyside will not "
                            "operate correctly! Error reported: %s", e)
 
-    def _create_dialog(self, *args, **kwargs):
+    def _create_dialog(self, title, *args, **kwargs):
         """
         Overrides the base behavior of _create_dialog on OS X to set an additional property
         on the created dialog to resolve window parenting issues. On Windows or Linux, the
@@ -591,14 +593,39 @@ class MayaEngine(Engine):
 
         :returns: The newly-created dialog.
         """
-        dialog = super(MayaEngine, self)._create_dialog(*args, **kwargs)
+        dialog = super(MayaEngine, self)._create_dialog(title, *args, **kwargs)
 
         # TODO: Get an explanation and document why we're having to do this. It appears to be
         # a Maya-only solution, because similar problems in other integrations, namely Nuke,
         # are not resolved in the same way. This fix comes to us from the Maya dev team, but
         # we've not yet spoken with someone that can explain why it fixes the problem.
         if sys.platform == "darwin":
-            dialog.setProperty("saveWindowPref", True )
+            from sgtk.platform.qt import QtCore, QtGui
+
+            # When using the recipe here to get Z-depth ordering correct we also
+            # inherit another feature that results in window size and position being
+            # remembered. This size/pos retention happens across app boundaries, so
+            # we would end up with one app inheriting the size from a previously
+            # launched app, which was weird. To counteract that, we keep track of
+            # the dialog's size before Maya gets ahold of it, and then resize it
+            # right after it's shown. We'll also move the dialog to the center of
+            # the desktop.
+            center_screen = QtGui.QApplication.instance().desktop().availableGeometry(dialog).center()
+            self.__DIALOG_SIZE_CACHE[title] = dialog.size()
+
+            dialog.setWindowFlags(QtCore.Qt.Window)
+            dialog.setProperty("saveWindowPref", True)
+            dialog._base_show = dialog.show
+
+            def _show_dialog():
+                dialog._base_show()
+                # The resize has to happen after the dialog is shown, and we need
+                # to move the dialog after the resize, since center of screen will be
+                # relative to the final size of the dialog.
+                dialog.resize(self.__DIALOG_SIZE_CACHE[title])
+                dialog.move(center_screen - dialog.rect().center())
+
+            dialog.show = _show_dialog
 
         return dialog
 
