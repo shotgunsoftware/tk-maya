@@ -585,22 +585,29 @@ class MayaEngine(Engine):
             self.logger.error("PySide could not be imported! Apps using pyside will not "
                            "operate correctly! Error reported: %s", e)
 
-    def _create_dialog(self, title, *args, **kwargs):
+    def show_dialog(self, title, *args, **kwargs):
         """
-        Overrides the base behavior of _create_dialog on OS X to set an additional property
-        on the created dialog to resolve window parenting issues. On Windows or Linux, the
-        base implementation is used unaltered.
+        If on Windows or Linux, this method will call through to the base implementation of
+        this method without alteration. On OSX, we'll do some additional work to ensure that
+        window parenting works properly, which requires some extra logic on that operating
+        system beyond setting the dialog's parent.
 
-        :returns: The newly-created dialog.
+        :param str title: The title of the dialog.
+
+        :returns: the created widget_class instance
         """
-        dialog = super(MayaEngine, self)._create_dialog(title, *args, **kwargs)
+        if sys.platform != "darwin":
+            return super(MayaEngine, self).show_dialog(title, *args, **kwargs)
+        else:
+            if not self.has_ui:
+                self.log_error("Sorry, this environment does not support UI display! Cannot show "
+                               "the requested window '%s'." % title)
+                return None
 
-        # TODO: Get an explanation and document why we're having to do this. It appears to be
-        # a Maya-only solution, because similar problems in other integrations, namely Nuke,
-        # are not resolved in the same way. This fix comes to us from the Maya dev team, but
-        # we've not yet spoken with someone that can explain why it fixes the problem.
-        if sys.platform == "darwin":
             from sgtk.platform.qt import QtCore, QtGui
+            
+            # create the dialog:
+            dialog, widget = self._create_dialog_with_widget(title, *args, **kwargs)
 
             # When using the recipe here to get Z-depth ordering correct we also
             # inherit another feature that results in window size and position being
@@ -613,21 +620,22 @@ class MayaEngine(Engine):
             center_screen = QtGui.QApplication.instance().desktop().availableGeometry(dialog).center()
             self.__DIALOG_SIZE_CACHE[title] = dialog.size()
 
+            # TODO: Get an explanation and document why we're having to do this. It appears to be
+            # a Maya-only solution, because similar problems in other integrations, namely Nuke,
+            # are not resolved in the same way. This fix comes to us from the Maya dev team, but
+            # we've not yet spoken with someone that can explain why it fixes the problem.
             dialog.setWindowFlags(QtCore.Qt.Window)
             dialog.setProperty("saveWindowPref", True)
-            dialog._base_show = dialog.show
+            dialog.show()
 
-            def _show_dialog():
-                dialog._base_show()
-                # The resize has to happen after the dialog is shown, and we need
-                # to move the dialog after the resize, since center of screen will be
-                # relative to the final size of the dialog.
-                dialog.resize(self.__DIALOG_SIZE_CACHE[title])
-                dialog.move(center_screen - dialog.rect().center())
-
-            dialog.show = _show_dialog
-
-        return dialog
+            # The resize has to happen after the dialog is shown, and we need
+            # to move the dialog after the resize, since center of screen will be
+            # relative to the final size of the dialog.
+            dialog.resize(self.__DIALOG_SIZE_CACHE[title])
+            dialog.move(center_screen - dialog.rect().center())
+            
+            # lastly, return the instantiated widget
+            return widget
 
     def _get_dialog_parent(self):
         """
