@@ -8,7 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-import os
+import os.path
 import maya.cmds as cmds
 import sgtk
 
@@ -30,7 +30,7 @@ class MayaStartVersionControlPlugin(HookBaseClass):
         # look for icon one level up from this hook's folder in "icons" folder
         return os.path.join(
             self.disk_location,
-            os.pardir,
+            os.path.pardir,
             "icons",
             "version_up.png"
         )

@@ -8,8 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-import os
-import pprint
+import os.path
 import maya.cmds as cmds
 import maya.mel as mel
 import sgtk

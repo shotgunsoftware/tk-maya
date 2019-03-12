@@ -79,38 +79,36 @@ def dock_panel(engine, shotgun_panel, title):
     # Use the proper Maya panel docking method according to the Maya version.
     if mel.eval("getApplicationVersionAsFloat()") < 2017:
 
-        import pymel.core as pm
-
         # When the Maya panel already exists, it can be deleted safely since its embedded
         # Shotgun app panel has already been reparented under Maya main window.
-        if pm.control(maya_panel_name, query=True, exists=True):
+        if cmds.control(maya_panel_name, query=True, exists=True):
             engine.logger.debug("Deleting existing Maya panel %s.", maya_panel_name)
-            pm.deleteUI(maya_panel_name)
+            cmds.deleteUI(maya_panel_name)
 
         # Create a new Maya window.
-        maya_window = pm.window()
+        maya_window = cmds.window()
         engine.logger.debug("Created Maya window %s.", maya_window)
 
         # Add a layout to the Maya window.
-        maya_layout = pm.formLayout(parent=maya_window)
+        maya_layout = cmds.formLayout(parent=maya_window)
         engine.logger.debug("Created Maya layout %s.", maya_layout)
 
         # Reparent the Shotgun app panel under the Maya window layout.
         engine.logger.debug("Reparenting Shotgun app panel %s under Maya layout %s.", shotgun_panel_name, maya_layout)
-        pm.control(shotgun_panel_name, edit=True, parent=maya_layout)
+        cmds.control(shotgun_panel_name, edit=True, parent=maya_layout)
 
         # Keep the Shotgun app panel sides aligned with the Maya window layout sides.
-        pm.formLayout(maya_layout,
-                      edit=True,
-                      attachForm=[(shotgun_panel_name, 'top', 1),
-                                  (shotgun_panel_name, 'left', 1),
-                                  (shotgun_panel_name, 'bottom', 1),
-                                  (shotgun_panel_name, 'right', 1)]
+        cmds.formLayout(maya_layout,
+                        edit=True,
+                        attachForm=[(shotgun_panel_name, 'top', 1),
+                                    (shotgun_panel_name, 'left', 1),
+                                    (shotgun_panel_name, 'bottom', 1),
+                                    (shotgun_panel_name, 'right', 1)]
         )
 
         # Dock the Maya window into a new tab of Maya Channel Box dock area.
         engine.logger.debug("Creating Maya panel %s.", maya_panel_name)
-        pm.dockControl(maya_panel_name, area="right", content=maya_window, label=title)
+        cmds.dockControl(maya_panel_name, area="right", content=maya_window, label=title)
 
         # Since Maya does not give us any hints when a panel is being closed,
         # install an event filter on Maya dock control to monitor its close event

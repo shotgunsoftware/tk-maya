@@ -8,10 +8,9 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-import logging
-
+import maya.cmds as cmds
+import maya.mel as mel
 import maya.utils
-import pymel.core as pm
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaUI as OpenMayaUI
 
@@ -122,7 +121,7 @@ def shutdown():
         _delete_login_menu()
 
 
-def _login_user():
+def _login_user(*args):
     """
     Logs in the user to Shotgun and starts the engine.
     """
@@ -258,12 +257,10 @@ def _show_progress_bar(progress_value, message):
 
     # Show the main progress bar (normally in the Help Line) making sure it uses
     # the bootstrap progress configuration (since it might have been taken over by another process).
-    main_progress_bar = pm.ui.MainProgressBar(minValue=0, maxValue=100, interruptable=False)
-    main_progress_bar.beginProgress()
+    # Set the main progress bar value and message too.
+    cmds.progressBar(mel.eval("$_ = $gMainProgressBar"), e=True, minValue=0, maxValue=100, isInterruptable=False,
+                     beginProgress=True, progress=int(progress_value * 100.0), status="Shotgun: %s" % message)
 
-    # Set the main progress bar value and message.
-    main_progress_bar.setProgress(int(progress_value * 100.0))
-    main_progress_bar.setStatus("Shotgun: %s" % message)
 
 
 def _hide_progress_bar():
@@ -272,8 +269,7 @@ def _hide_progress_bar():
     """
 
     # Hide the main progress bar (normally in the Help Line).
-    main_progress_bar = pm.getMainProgressBar()
-    main_progress_bar.endProgress()
+    cmds.progressBar(mel.eval("$_ = $gMainProgressBar"), e=True, endProgress=True)
 
 
 def _create_login_menu():
@@ -282,27 +278,27 @@ def _create_login_menu():
     """
 
     # Creates the menu entry in the application menu bar.
-    menu = pm.menu(MENU_LOGIN, label=MENU_LABEL, parent=pm.melGlobals["gMainWindow"])
+    menu = cmds.menu(MENU_LOGIN, label=MENU_LABEL, parent=mel.eval("$_ = $gMainWindow"))
 
     # Add the login menu item.
-    pm.menuItem(
+    cmds.menuItem(
         parent=menu,
         label="Log In to Shotgun...",
-        command=pm.Callback(_login_user)
+        command=_login_user
     )
 
-    pm.menuItem(parent=menu, divider=True)
+    cmds.menuItem(parent=menu, divider=True)
 
     # Add the website menu items.
-    pm.menuItem(
+    cmds.menuItem(
         parent=menu,
         label="Learn about Shotgun...",
-        command=pm.Callback(_jump_to_website)
+        command=_jump_to_website
     )
-    pm.menuItem(
+    cmds.menuItem(
         parent=menu,
         label="Try Shotgun for Free...",
-        command=pm.Callback(_jump_to_signup)
+        command=_jump_to_signup
     )
 
 
@@ -311,18 +307,18 @@ def _delete_login_menu():
     Deletes the displayed Shotgun user login menu.
     """
 
-    if pm.menu(MENU_LOGIN, exists=True):
-        pm.deleteUI(MENU_LOGIN)
+    if cmds.menu(MENU_LOGIN, exists=True):
+        cmds.deleteUI(MENU_LOGIN)
 
 
-def _jump_to_website():
+def _jump_to_website(*args):
     """
     Jumps to the Shotgun website in the default web browser.
     """
     QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://www.shotgunsoftware.com"))
 
 
-def _jump_to_signup():
+def _jump_to_signup(*args):
     """
     Jumps to the Shotgun signup page in the default web browser.
     """
