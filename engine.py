@@ -384,7 +384,7 @@ class MayaEngine(Engine):
                 os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = "1"
 
         # Set the Maya project based on config
-        self._set_project()
+        self.execute_hook("hook_scene_setup", context=self.context)
 
         # add qt paths and dlls
         self._init_pyside()
@@ -467,7 +467,7 @@ class MayaEngine(Engine):
             )
 
         # Set the Maya project to match the new context.
-        self._set_project()
+        self.execute_hook("hook_scene_setup", context=self.context)
 
     def _run_app_instance_commands(self):
         """
@@ -719,19 +719,22 @@ class MayaEngine(Engine):
     ##########################################################################################
     # scene and project management
 
-    def _set_project(self):
+    def set_project(self):
         """
         Set the maya project
         """
-        setting = self.get_setting("template_project")
-        if setting is None:
+        tmpl = self.get_template("template_project")
+        if not tmpl:
             return
 
-        tmpl = self.tank.templates.get(setting)
         fields = self.context.as_template_fields(tmpl)
         proj_path = tmpl.apply_fields(fields)
         self.logger.info("Setting Maya project to '%s'", proj_path)
-        pm.mel.setProject(proj_path)
+        if proj_path.strip('/') != cmds.workspace(q=True, rootDirectory=True).strip('/'):
+            try:
+                cmds.workspace(proj_path, newWorkspace=True)
+            except:
+                cmds.workspace(proj_path, openWorkspace=True)
 
     ##########################################################################################
     # panel support
