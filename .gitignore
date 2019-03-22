@@ -31,3 +31,5 @@ pip-log.txt
 
 # Max OS X Desktop Services Store files
 .DS_Store
+
+*.pyc

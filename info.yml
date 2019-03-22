@@ -84,6 +84,12 @@ configuration:
         values:
             type: str
 
+    # hooks
+    hook_scene_setup:
+        type: hook
+        default_value: "{self}/scene_setup.py"
+        description: Hook to run to set stuff up in the maya scene, mostly post-context change.
+
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
         
