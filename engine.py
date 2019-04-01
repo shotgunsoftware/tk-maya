@@ -383,8 +383,8 @@ class MayaEngine(Engine):
                 )
                 os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = "1"
 
-        # Set the Maya project based on config
-        self.execute_hook("hook_scene_setup", context=self.context)
+        # # Set the Maya project based on config
+        # self.execute_hook("hook_scene_setup", context=self.context)
 
         # add qt paths and dlls
         self._init_pyside()
@@ -434,6 +434,9 @@ class MayaEngine(Engine):
         Called when all apps have initialized
         """
         self.create_shotgun_menu()
+
+        # Set the Maya project based on config
+        self.execute_hook("hook_scene_setup", context=self.context)
 
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
@@ -733,7 +736,7 @@ class MayaEngine(Engine):
         if proj_path.strip('/') != cmds.workspace(q=True, rootDirectory=True).strip('/'):
             try:
                 cmds.workspace(proj_path, newWorkspace=True)
-            except:
+            except RuntimeError:
                 cmds.workspace(proj_path, openWorkspace=True)
 
     ##########################################################################################
