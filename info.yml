@@ -69,6 +69,20 @@ configuration:
                      empty if you do not wish the Maya project to be automatically set."
         allows_empty: True
 
+    template_image_file_format:
+        type: template
+        description: "Template to use to determine where to render images to.
+                     This should be a string specifying the template to use but can also be
+                     empty if you do not wish the Maya render paths to be automatically set."
+        allows_empty: True
+
+    template_rib_file_format:
+        type: template
+        description: "Template to use to determine where to export ribs archives to.
+                     This should be a string specifying the template to use but can also be
+                     empty if you do not wish the Maya rib paths to be automatically set."
+        allows_empty: True
+
     use_sgtk_as_menu_name:
         type: bool
         description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Shotgun'
