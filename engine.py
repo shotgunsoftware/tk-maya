@@ -719,7 +719,7 @@ class MayaEngine(Engine):
         fields = self.context.as_template_fields(tmpl)
         proj_path = tmpl.apply_fields(fields)
         self.logger.info("Setting Maya project to '%s'", proj_path)
-        mel.eval('setProject "%s"' % proj_path)
+        mel.eval('setProject "%s"' % proj_path.replace('\\', '\\\\'))
 
     ##########################################################################################
     # panel support
