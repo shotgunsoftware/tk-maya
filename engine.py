@@ -139,7 +139,7 @@ def refresh_engine(engine_name, prev_context, menu_name):
     # API instance.
     try:
         tk = tank.tank_from_path(new_path)
-        logger.debug("Extracted sgtk instance: '%r' from path: '%r'", (tk, new_path))
+        logger.debug("Extracted sgtk instance: '%r' from path: '%r'", tk, new_path)
 
     except tank.TankError, e:
         logger.exception("Could not execute tank_from_path('%s')" % new_path)
@@ -155,7 +155,7 @@ def refresh_engine(engine_name, prev_context, menu_name):
 
     # and construct the new context for this path:
     ctx = tk.context_from_path(new_path, prev_context)
-    logger.debug("Given the path: '%s' the following context was extracted: '%r'", (new_path, ctx))
+    logger.debug("Given the path: '%s' the following context was extracted: '%r'", new_path, ctx)
 
     if ctx != tank.platform.current_engine().context:
         logger.debug("Changing the context to '%r", ctx)
