@@ -26,6 +26,10 @@ import maya.cmds as cmds
 import maya.utils
 from tank.platform import Engine
 
+# Although the engine has logging already, this logger is needed for callback based logging
+# where an engine may not be present.
+logger = tank.LogManager.get_logger(__name__)
+
 ###############################################################################################
 # methods to support the state when the engine cannot start up
 # for example if a non-tank file is loaded in maya
@@ -49,7 +53,7 @@ class SceneEventWatcher(object):
         """
         Constructor.
 
-        :param cb_fn: Callcack to invoke everytime a scene event happens.
+        :param cb_fn: Callback to invoke every time a scene event happens.
         :param scene_events: List of scene events to watch for. Defaults to new, open and save.
         :param run_once: If True, the watcher will notify only on the first event. Defaults to False.
         """
@@ -102,7 +106,7 @@ class SceneEventWatcher(object):
     @staticmethod
     def __maya_exiting_callback(watcher):
         """
-        Called on Maya exit - should clean up any existing calbacks
+        Called on Maya exit - should clean up any existing callbacks
         """
         watcher.stop_watching()
 
@@ -110,16 +114,19 @@ def refresh_engine(engine_name, prev_context, menu_name):
     """
     refresh the current engine
     """
+    logger.debug("Refreshing the engine, previous context: '%r'", prev_context)
     current_engine = tank.platform.current_engine()
 
     if not current_engine:
         # If we don't have an engine for some reason then we don't have
         # anything to do.
+        logger.debug("No currently initialized engine found; aborting the refresh of the engine")
         return
 
     if pm.sceneName() == "":
         # This is a File->New call, so we just leave the engine in the current
         # context and move on.
+        logger.debug("New file call, aborting the refresh of the engine.")
         return
 
     # determine the tk instance and ctx to use:
@@ -132,7 +139,10 @@ def refresh_engine(engine_name, prev_context, menu_name):
     # API instance.
     try:
         tk = tank.tank_from_path(new_path)
+        logger.debug("Extracted sgtk instance: '%r' from path: '%r'", tk, new_path)
+
     except tank.TankError, e:
+        logger.exception("Could not execute tank_from_path('%s')" % new_path)
         OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
         # build disabled menu
         create_sgtk_disabled_menu(menu_name)
@@ -145,8 +155,10 @@ def refresh_engine(engine_name, prev_context, menu_name):
 
     # and construct the new context for this path:
     ctx = tk.context_from_path(new_path, prev_context)
+    logger.debug("Given the path: '%s' the following context was extracted: '%r'", new_path, ctx)
 
     if ctx != tank.platform.current_engine().context:
+        logger.debug("Changing the context to '%r", ctx)
         current_engine.change_context(ctx)
 
 
@@ -156,7 +168,8 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
     """
     try:
         refresh_engine(engine_name, prev_context, menu_name)
-    except Exception:
+    except Exception as e:
+        logger.exception("Could not refresh the engine; error: '%s'" % e)
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         message = ""
         message += "Message: Shotgun encountered a problem changing the Engine's context.\n"
