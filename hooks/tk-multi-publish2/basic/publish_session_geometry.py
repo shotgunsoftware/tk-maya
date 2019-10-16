@@ -273,7 +273,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
 
         # Set the output path: 
         # Note: The AbcExport command expects forward slashes!
-        alembic_args.append("-file %s" % publish_path.replace("\\", "/"))
+        alembic_args.append("-file '%s'" % publish_path.replace("\\", "/"))
 
         # build the export command.  Note, use AbcExport -help in Maya for
         # more detailed Alembic export help
