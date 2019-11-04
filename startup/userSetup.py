@@ -130,10 +130,10 @@ def start_toolkit():
     sgtk.LogManager().initialize_base_file_handler("tk-maya")
 
     if os.environ.get("SGTK_LOAD_MAYA_PLUGINS"):
-        # Plugins will take care of initalizing everything
+        # Plugins will take care of initializing everything
         start_toolkit_with_plugins()
     else:
-        # Rely on the classic boostrapping method
+        # Rely on the classic bootstrapping method
         start_toolkit_classic()
 
     # Check if a file was specified to open and open it.
