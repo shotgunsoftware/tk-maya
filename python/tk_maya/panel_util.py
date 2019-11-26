@@ -60,7 +60,7 @@ def _find_widget(widget_name):
     """
     Given a name, return the first corresponding
     QT widget that is found.
-    
+
     :param widget_name: QT object name to look for
     :returns: QWidget object or None if nothing was found
     """
@@ -75,7 +75,7 @@ def _on_parent_closed_callback(widget_id):
     Callback which fires when a panel is closed.
     This will locate the widget with the given id
     and close and delete this.
-    
+
     :param widget_id: Object name of widget to close
     """
     widget = _find_widget(widget_id)
@@ -96,7 +96,7 @@ def _on_parent_closed_callback(widget_id):
 def _on_parent_refresh_callback(widget_id):
     """
     Callback which fires when a UI refresh is needed.
-    
+
     :param widget_id: Object name of widget to refresh
     """
     widget = _find_widget(widget_id)
@@ -123,7 +123,7 @@ class CloseEventFilter(QtCore.QObject):
     def set_associated_widget(self, widget_id):
         """
         Set the widget that should be closed
-        
+
         :param widget_id: Object name of widget to close
         """
         self._widget_id = widget_id
@@ -131,7 +131,7 @@ class CloseEventFilter(QtCore.QObject):
     def eventFilter(self, obj, event):
         """
         QT Event filter callback
-        
+
         :param obj: The object where the event originated from
         :param event: The actual event object
         :returns: True if event was consumed, False if not

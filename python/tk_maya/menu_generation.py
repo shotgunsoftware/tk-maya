@@ -41,7 +41,7 @@ class MenuGenerator(object):
     def create_menu(self, *args):
         """
         Render the entire Shotgun menu.
-        In order to have commands enable/disable themselves based on the enable_callback, 
+        In order to have commands enable/disable themselves based on the enable_callback,
         re-create the menu items every time.
         """
         self._menu_handle.deleteAllItems()
@@ -295,8 +295,8 @@ class AppCommand(object):
 
     def _execute_deferred(self):
         """
-        Execute the callback deferred to avoid potential problems with the command resulting in the menu 
-        being deleted, e.g. if the context changes resulting in an engine restart! - this was causing a 
+        Execute the callback deferred to avoid potential problems with the command resulting in the menu
+        being deleted, e.g. if the context changes resulting in an engine restart! - this was causing a
         segmentation fault crash on Linux
         """
         # note that we use a single shot timer instead of cmds.evalDeferred as we were experiencing

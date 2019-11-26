@@ -33,5 +33,3 @@ base_configuration:
 # will be called sgtk_plugin_review_maya and will be located in a python subfolder
 # once the plugin has been built.
 plugin_id: "basic.maya"
-
-
