@@ -96,16 +96,23 @@ def dock_panel(engine, shotgun_panel, title):
         engine.logger.debug("Created Maya layout %s.", maya_layout)
 
         # Reparent the Shotgun app panel under the Maya window layout.
-        engine.logger.debug("Reparenting Shotgun app panel %s under Maya layout %s.", shotgun_panel_name, maya_layout)
+        engine.logger.debug(
+            "Reparenting Shotgun app panel %s under Maya layout %s.",
+            shotgun_panel_name,
+            maya_layout,
+        )
         pm.control(shotgun_panel_name, edit=True, parent=maya_layout)
 
         # Keep the Shotgun app panel sides aligned with the Maya window layout sides.
-        pm.formLayout(maya_layout,
-                      edit=True,
-                      attachForm=[(shotgun_panel_name, 'top', 1),
-                                  (shotgun_panel_name, 'left', 1),
-                                  (shotgun_panel_name, 'bottom', 1),
-                                  (shotgun_panel_name, 'right', 1)]
+        pm.formLayout(
+            maya_layout,
+            edit=True,
+            attachForm=[
+                (shotgun_panel_name, "top", 1),
+                (shotgun_panel_name, "left", 1),
+                (shotgun_panel_name, "bottom", 1),
+                (shotgun_panel_name, "right", 1),
+            ],
         )
 
         # Dock the Maya window into a new tab of Maya Channel Box dock area.
@@ -120,8 +127,10 @@ def dock_panel(engine, shotgun_panel, title):
 
         # Once Maya will have completed its UI update and be idle,
         # raise (with "r=True") the new dock tab to the top.
-        maya.utils.executeDeferred("import maya.cmds as cmds\n" \
-                                   "cmds.dockControl('%s', edit=True, r=True)" % maya_panel_name)
+        maya.utils.executeDeferred(
+            "import maya.cmds as cmds\n"
+            "cmds.dockControl('%s', edit=True, r=True)" % maya_panel_name
+        )
 
     else:  # Maya 2017 and later
 
@@ -150,20 +159,28 @@ def dock_panel(engine, shotgun_panel, title):
                 # We encased this workaround in a try/except since we cannot be sure
                 # that it will still work without errors in future versions of Maya.
                 try:
-                    engine.logger.debug("Forcing Maya to refresh workspace panel %s size.", maya_panel_name)
+                    engine.logger.debug(
+                        "Forcing Maya to refresh workspace panel %s size.",
+                        maya_panel_name,
+                    )
 
                     # Create a new empty workspace control tab.
-                    name = cmds.workspaceControl(uuid.uuid4().hex,
-                                                 tabToControl=(maya_panel_name, -1),  # -1 to append a new tab
-                                                 uiScript="",
-                                                 r=True)  # raise at the top of its workspace area
+                    name = cmds.workspaceControl(
+                        uuid.uuid4().hex,
+                        tabToControl=(maya_panel_name, -1),  # -1 to append a new tab
+                        uiScript="",
+                        r=True,
+                    )  # raise at the top of its workspace area
                     # Delete the empty workspace control.
                     cmds.deleteUI(name)
                     # Delete the empty workspace control state that was created
                     # when deleting the empty workspace control.
                     cmds.workspaceControlState(name, remove=True)
                 except:
-                    engine.logger.debug("Cannot force Maya to refresh workspace panel %s size.", maya_panel_name)
+                    engine.logger.debug(
+                        "Cannot force Maya to refresh workspace panel %s size.",
+                        maya_panel_name,
+                    )
 
             return maya_panel_name
 
@@ -171,7 +188,9 @@ def dock_panel(engine, shotgun_panel, title):
         # This MEL function is declared in Maya startup script file UIComponents.mel.
         # It returns an empty string when a dock area cannot be found, but Maya will
         # retrieve the Channel Box dock area even when it is not shown in the current workspace.
-        dock_area = mel.eval('getUIComponentDockControl("Channel Box / Layer Editor", false)')
+        dock_area = mel.eval(
+            'getUIComponentDockControl("Channel Box / Layer Editor", false)'
+        )
         engine.logger.debug("Retrieved Maya dock area %s.", dock_area)
 
         # This UI script will be called to build the UI of the new dock tab.
@@ -182,31 +201,35 @@ def dock_panel(engine, shotgun_panel, title):
         # Note that this script will be saved automatically with the workspace control state
         # in the Maya layout preference file when the user quits Maya, and will be executed
         # automatically when Maya is restarted later by the user.
-        ui_script = "import sys\n" \
-                    "import maya.api.OpenMaya\n" \
-                    "import maya.utils\n" \
-                    "for m in sys.modules:\n" \
-                    "    if 'tk_maya.panel_generation' in m:\n" \
-                    "        try:\n" \
-                    "            sys.modules[m].build_workspace_control_ui('%(panel_name)s')\n" \
-                    "        except Exception, e:\n" \
-                    "            msg = 'Shotgun: Cannot restore %(panel_name)s: %%s' %% e\n" \
-                    "            fct = maya.api.OpenMaya.MGlobal.displayError\n" \
-                    "            maya.utils.executeInMainThreadWithResult(fct, msg)\n" \
-                    "        break\n" \
-                    "else:\n" \
-                    "    msg = 'Shotgun: Cannot restore %(panel_name)s: Shotgun is not currently running'\n" \
-                    "    fct = maya.api.OpenMaya.MGlobal.displayError\n" \
-                    "    maya.utils.executeInMainThreadWithResult(fct, msg)\n" \
-                    % {"panel_name": shotgun_panel_name}
+        ui_script = (
+            "import sys\n"
+            "import maya.api.OpenMaya\n"
+            "import maya.utils\n"
+            "for m in sys.modules:\n"
+            "    if 'tk_maya.panel_generation' in m:\n"
+            "        try:\n"
+            "            sys.modules[m].build_workspace_control_ui('%(panel_name)s')\n"
+            "        except Exception, e:\n"
+            "            msg = 'Shotgun: Cannot restore %(panel_name)s: %%s' %% e\n"
+            "            fct = maya.api.OpenMaya.MGlobal.displayError\n"
+            "            maya.utils.executeInMainThreadWithResult(fct, msg)\n"
+            "        break\n"
+            "else:\n"
+            "    msg = 'Shotgun: Cannot restore %(panel_name)s: Shotgun is not currently running'\n"
+            "    fct = maya.api.OpenMaya.MGlobal.displayError\n"
+            "    maya.utils.executeInMainThreadWithResult(fct, msg)\n"
+            % {"panel_name": shotgun_panel_name}
+        )
 
         # Dock the Shotgun app panel into a new workspace control in the active Maya workspace.
         engine.logger.debug("Creating Maya workspace panel %s.", maya_panel_name)
 
-        kwargs = {"uiScript": ui_script,
-                  "retain": False,  # delete the dock tab when it is closed
-                  "label": title,
-                  "r": True}  # raise at the top of its workspace area
+        kwargs = {
+            "uiScript": ui_script,
+            "retain": False,  # delete the dock tab when it is closed
+            "label": title,
+            "r": True,
+        }  # raise at the top of its workspace area
 
         # When we are in a Maya workspace where the Channel Box dock area can be found,
         # dock the Shotgun app panel into a new tab of this Channel Box dock area
@@ -256,8 +279,11 @@ def build_workspace_control_ui(shotgun_panel_name):
 
             maya_panel_name = workspace_control.objectName()
 
-            engine.logger.debug("Reparenting Shotgun app panel %s under Maya workspace panel %s.",
-                                shotgun_panel_name, maya_panel_name)
+            engine.logger.debug(
+                "Reparenting Shotgun app panel %s under Maya workspace panel %s.",
+                shotgun_panel_name,
+                maya_panel_name,
+            )
 
             # When possible, give a minimum width to the workspace control;
             # otherwise, it will use the width of the currently displayed tab.
@@ -269,12 +295,17 @@ def build_workspace_control_ui(shotgun_panel_name):
             if size_hint.isValid():
                 # Use the widget recommended width as the workspace control minimum width.
                 minimum_width = size_hint.width()
-                engine.logger.debug("Setting Maya workspace panel %s minimum width to %s.",
-                                    maya_panel_name, minimum_width)
+                engine.logger.debug(
+                    "Setting Maya workspace panel %s minimum width to %s.",
+                    maya_panel_name,
+                    minimum_width,
+                )
                 workspace_control.setMinimumWidth(minimum_width)
             else:
                 # The widget has no recommended size.
-                engine.logger.debug("Cannot set Maya workspace panel %s minimum width.", maya_panel_name)
+                engine.logger.debug(
+                    "Cannot set Maya workspace panel %s minimum width.", maya_panel_name
+                )
 
             # Reparent the Shotgun app panel widget under Maya workspace control.
             widget.setParent(workspace_control)
@@ -285,16 +316,26 @@ def build_workspace_control_ui(shotgun_panel_name):
             # Install an event filter on Maya workspace control to monitor
             # its close event in order to reparent the Shotgun app panel widget
             # under Maya main window for later use.
-            engine.logger.debug("Installing a close event filter on Maya workspace panel %s.", maya_panel_name)
-            panel_util.install_event_filter_by_widget(workspace_control, shotgun_panel_name)
+            engine.logger.debug(
+                "Installing a close event filter on Maya workspace panel %s.",
+                maya_panel_name,
+            )
+            panel_util.install_event_filter_by_widget(
+                workspace_control, shotgun_panel_name
+            )
 
             # Delete any leftover workspace control state to avoid a spurious deletion
             # of our workspace control when the user switches to another workspace and back.
             if cmds.workspaceControlState(maya_panel_name, exists=True):
                 # Once Maya will have completed its UI update and be idle,
                 # delete the leftover workspace control state.
-                engine.logger.debug("Deleting leftover Maya workspace control state %s.", maya_panel_name)
-                maya.utils.executeDeferred(cmds.workspaceControlState, maya_panel_name, remove=True)
+                engine.logger.debug(
+                    "Deleting leftover Maya workspace control state %s.",
+                    maya_panel_name,
+                )
+                maya.utils.executeDeferred(
+                    cmds.workspaceControlState, maya_panel_name, remove=True
+                )
 
             break
     else:
@@ -315,5 +356,8 @@ def build_workspace_control_ui(shotgun_panel_name):
                 break
         else:
             # The Shotgun app panel that needs to be restored is not in the context configuration.
-            engine.logger.error("Cannot restore %s: Shotgun app panel not found. " \
-                             "Make sure the app is in the context configuration. ", shotgun_panel_name)
+            engine.logger.error(
+                "Cannot restore %s: Shotgun app panel not found. "
+                "Make sure the app is in the context configuration. ",
+                shotgun_panel_name,
+            )

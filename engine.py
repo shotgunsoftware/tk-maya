@@ -34,6 +34,7 @@ logger = tank.LogManager.get_logger(__name__)
 # methods to support the state when the engine cannot start up
 # for example if a non-tank file is loaded in maya
 
+
 class SceneEventWatcher(object):
     """
     Encapsulates event handling for multiple scene events and routes them
@@ -45,11 +46,17 @@ class SceneEventWatcher(object):
     Specifying run_once=True in the constructor causes all events to be
     cleaned up after the first one has triggered
     """
-    def __init__(self, cb_fn,
-                 scene_events = [OpenMaya.MSceneMessage.kAfterOpen,
-                                 OpenMaya.MSceneMessage.kAfterSave,
-                                 OpenMaya.MSceneMessage.kAfterNew],
-                 run_once=False):
+
+    def __init__(
+        self,
+        cb_fn,
+        scene_events=[
+            OpenMaya.MSceneMessage.kAfterOpen,
+            OpenMaya.MSceneMessage.kAfterSave,
+            OpenMaya.MSceneMessage.kAfterNew,
+        ],
+        run_once=False,
+    ):
         """
         Constructor.
 
@@ -60,7 +67,7 @@ class SceneEventWatcher(object):
         self.__message_ids = []
         self.__cb_fn = cb_fn
         self.__scene_events = scene_events
-        self.__run_once=run_once
+        self.__run_once = run_once
 
         # register scene event callbacks:
         self.start_watching()
@@ -75,16 +82,22 @@ class SceneEventWatcher(object):
         # now add callbacks to watch for some scene events:
         for ev in self.__scene_events:
             try:
-                msg_id = OpenMaya.MSceneMessage.addCallback(ev, SceneEventWatcher.__scene_event_callback, self);
+                msg_id = OpenMaya.MSceneMessage.addCallback(
+                    ev, SceneEventWatcher.__scene_event_callback, self
+                )
             except Exception:
                 # report warning...
                 continue
-            self.__message_ids.append(msg_id);
+            self.__message_ids.append(msg_id)
 
         # create a callback that will be run when Maya
         # exits so we can do some clean-up:
-        msg_id = OpenMaya.MSceneMessage.addCallback(OpenMaya.MSceneMessage.kMayaExiting, SceneEventWatcher.__maya_exiting_callback, self)
-        self.__message_ids.append(msg_id);
+        msg_id = OpenMaya.MSceneMessage.addCallback(
+            OpenMaya.MSceneMessage.kMayaExiting,
+            SceneEventWatcher.__maya_exiting_callback,
+            self,
+        )
+        self.__message_ids.append(msg_id)
 
     def stop_watching(self):
         """
@@ -110,6 +123,7 @@ class SceneEventWatcher(object):
         """
         watcher.stop_watching()
 
+
 def refresh_engine(engine_name, prev_context, menu_name):
     """
     refresh the current engine
@@ -120,7 +134,9 @@ def refresh_engine(engine_name, prev_context, menu_name):
     if not current_engine:
         # If we don't have an engine for some reason then we don't have
         # anything to do.
-        logger.debug("No currently initialized engine found; aborting the refresh of the engine")
+        logger.debug(
+            "No currently initialized engine found; aborting the refresh of the engine"
+        )
         return
 
     if pm.sceneName() == "":
@@ -155,7 +171,9 @@ def refresh_engine(engine_name, prev_context, menu_name):
 
     # and construct the new context for this path:
     ctx = tk.context_from_path(new_path, prev_context)
-    logger.debug("Given the path: '%s' the following context was extracted: '%r'", new_path, ctx)
+    logger.debug(
+        "Given the path: '%s' the following context was extracted: '%r'", new_path, ctx
+    )
 
     if ctx != tank.platform.current_engine().context:
         logger.debug("Changing the context to '%r", ctx)
@@ -172,11 +190,13 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
         logger.exception("Could not refresh the engine; error: '%s'" % e)
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         message = ""
-        message += "Message: Shotgun encountered a problem changing the Engine's context.\n"
+        message += (
+            "Message: Shotgun encountered a problem changing the Engine's context.\n"
+        )
         message += "Please contact support@shotgunsoftware.com\n\n"
         message += "Exception: %s - %s\n" % (exc_type, exc_value)
         message += "Traceback (most recent call last):\n"
-        message += "\n".join( traceback.format_tb(exc_traceback))
+        message += "\n".join(traceback.format_tb(exc_traceback))
         OpenMaya.MGlobal.displayError(message)
 
 
@@ -184,16 +204,20 @@ def sgtk_disabled_message():
     """
     Explain why tank is disabled.
     """
-    msg = ("Shotgun integration is disabled because it cannot recognize "
-           "the currently opened file.  Try opening another file or restarting "
-           "Maya.")
+    msg = (
+        "Shotgun integration is disabled because it cannot recognize "
+        "the currently opened file.  Try opening another file or restarting "
+        "Maya."
+    )
 
-    cmds.confirmDialog( title="Sgtk is disabled",
-                message=msg,
-                button=["Ok"],
-                defaultButton="Ok",
-                cancelButton="Ok",
-                dismissString="Ok" )
+    cmds.confirmDialog(
+        title="Sgtk is disabled",
+        message=msg,
+        button=["Ok"],
+        defaultButton="Ok",
+        cancelButton="Ok",
+        dismissString="Ok",
+    )
 
 
 def create_sgtk_disabled_menu(menu_name):
@@ -210,9 +234,14 @@ def create_sgtk_disabled_menu(menu_name):
 
     # create a new shotgun disabled menu if one doesn't exist already.
     if not pm.menu("ShotgunMenuDisabled", exists=True):
-        sg_menu = pm.menu("ShotgunMenuDisabled", label=menu_name, parent=pm.melGlobals["gMainWindow"])
-        pm.menuItem(label="Sgtk is disabled.", parent=sg_menu,
-                    command=lambda arg: sgtk_disabled_message())
+        sg_menu = pm.menu(
+            "ShotgunMenuDisabled", label=menu_name, parent=pm.melGlobals["gMainWindow"]
+        )
+        pm.menuItem(
+            label="Sgtk is disabled.",
+            parent=sg_menu,
+            command=lambda arg: sgtk_disabled_message(),
+        )
 
 
 def remove_sgtk_disabled_menu():
@@ -231,8 +260,10 @@ def remove_sgtk_disabled_menu():
 
     return False
 
+
 ###############################################################################################
 # The Tank Maya engine
+
 
 class MayaEngine(Engine):
     """
@@ -281,7 +312,11 @@ class MayaEngine(Engine):
             # group(1) 'Maya' match (name)
             # group(2) LT, IO, etc ... match (flavor)
             # group(3) 2017 ... match (version)
-            matches = re.search(r"(maya)\s+([a-zA-Z]+)?\s*(.*)", maya_installed_version_string, re.IGNORECASE)
+            matches = re.search(
+                r"(maya)\s+([a-zA-Z]+)?\s*(.*)",
+                maya_installed_version_string,
+                re.IGNORECASE,
+            )
             host_info["name"] = matches.group(1).capitalize().rstrip().lstrip()
             host_info["version"] = matches.group(3)
             if matches.group(2):
@@ -303,6 +338,7 @@ class MayaEngine(Engine):
         # unicode characters returned by the shotgun api need to be converted
         # to display correctly in all of the app windows
         from tank.platform.qt import QtCore
+
         # tell QT to interpret C strings as utf-8
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
         QtCore.QTextCodec.setCodecForCStrings(utf8)
@@ -317,8 +353,10 @@ class MayaEngine(Engine):
         # check that we are running an ok version of maya
         current_os = cmds.about(operatingSystem=True)
         if current_os not in ["mac", "win64", "linux64"]:
-            raise tank.TankError("The current platform is not supported! Supported platforms "
-                                 "are Mac, Linux 64 and Windows 64.")
+            raise tank.TankError(
+                "The current platform is not supported! Supported platforms "
+                "are Mac, Linux 64 and Windows 64."
+            )
 
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
@@ -346,13 +384,17 @@ class MayaEngine(Engine):
             raise tank.TankError(msg)
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
-            msg = ("The Shotgun Pipeline Toolkit has not yet been fully tested with Maya %s.  "
-                   "You can continue to use Toolkit but you may experience bugs or instability."
-                   "\n\nPlease report any issues to: support@shotgunsoftware.com"
-                   % (maya_ver))
+            msg = (
+                "The Shotgun Pipeline Toolkit has not yet been fully tested with Maya %s.  "
+                "You can continue to use Toolkit but you may experience bugs or instability."
+                "\n\nPlease report any issues to: support@shotgunsoftware.com"
+                % (maya_ver)
+            )
 
             # determine if we should show the compatibility warning dialog:
-            show_warning_dlg = self.has_ui and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
+            show_warning_dlg = (
+                self.has_ui and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
+            )
             if show_warning_dlg:
                 # make sure we only show it once per session:
                 os.environ["SGTK_COMPATIBILITY_DIALOG_SHOWN"] = "1"
@@ -361,13 +403,15 @@ class MayaEngine(Engine):
                 major_version_number_str = maya_ver.split(" ")[0].split(".")[0]
                 if major_version_number_str and major_version_number_str.isdigit():
                     # check against the compatibility_dialog_min_version setting:
-                    if int(major_version_number_str) < self.get_setting("compatibility_dialog_min_version"):
+                    if int(major_version_number_str) < self.get_setting(
+                        "compatibility_dialog_min_version"
+                    ):
                         show_warning_dlg = False
 
             if show_warning_dlg:
                 # Note, title is padded to try to ensure dialog isn't insanely narrow!
-                title = "Warning - Shotgun Pipeline Toolkit Compatibility!                          " # padded!
-                cmds.confirmDialog(title = title, message = msg, button = "Ok")
+                title = "Warning - Shotgun Pipeline Toolkit Compatibility!                          "  # padded!
+                cmds.confirmDialog(title=title, message=msg, button="Ok")
 
             # always log the warning to the script editor:
             self.logger.warning(msg)
@@ -398,7 +442,9 @@ class MayaEngine(Engine):
         self.__watcher = None
         if self.get_setting("automatic_context_switch", True):
             # need to watch some scene events in case the engine needs rebuilding:
-            cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name:on_scene_event_callback(en, pc, mn)
+            cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name: on_scene_event_callback(
+                en, pc, mn
+            )
             self.__watcher = SceneEventWatcher(cb_fn)
             self.logger.debug("Registered open and save callbacks.")
 
@@ -416,7 +462,11 @@ class MayaEngine(Engine):
         # only create the shotgun menu if not in batch mode and menu doesn't already exist
         if self.has_ui and not pm.menu("ShotgunMenu", exists=True):
 
-            self._menu_handle = pm.menu("ShotgunMenu", label=self._menu_name, parent=pm.melGlobals["gMainWindow"])
+            self._menu_handle = pm.menu(
+                "ShotgunMenu",
+                label=self._menu_name,
+                parent=pm.melGlobals["gMainWindow"],
+            )
             # create our menu handler
             tk_maya = self.import_module("tk_maya")
             self._menu_generator = tk_maya.MenuGenerator(self, self._menu_handle)
@@ -456,10 +506,8 @@ class MayaEngine(Engine):
             self.__watcher.stop_watching()
 
         if self.get_setting("automatic_context_switch", True):
-            cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name:on_scene_event_callback(
-                engine_name=en,
-                prev_context=pc,
-                menu_name=mn,
+            cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name: on_scene_event_callback(
+                engine_name=en, prev_context=pc, menu_name=mn
             )
             self.__watcher = SceneEventWatcher(cb_fn)
             self.logger.debug(
@@ -481,7 +529,9 @@ class MayaEngine(Engine):
             app_instance = value["properties"].get("app")
             if app_instance:
                 # Add entry 'command name: command function' to the command dictionary of this app instance.
-                command_dict = app_instance_commands.setdefault(app_instance.instance_name, {})
+                command_dict = app_instance_commands.setdefault(
+                    app_instance.instance_name, {}
+                )
                 command_dict[command_name] = value["callback"]
 
         # Run the series of app instance commands listed in the 'run_at_startup' setting.
@@ -497,15 +547,21 @@ class MayaEngine(Engine):
             if command_dict is None:
                 self.logger.warning(
                     "%s configuration setting 'run_at_startup' requests app '%s' that is not installed.",
-                    self.name, app_instance_name)
+                    self.name,
+                    app_instance_name,
+                )
             else:
                 if not setting_command_name:
                     # Run all commands of the given app instance.
                     # Run these commands once Maya will have completed its UI update and be idle
                     # in order to run them after the ones that restore the persisted Shotgun app panels.
                     for (command_name, command_function) in command_dict.iteritems():
-                        self.logger.debug("%s startup running app '%s' command '%s'.",
-                                       self.name, app_instance_name, command_name)
+                        self.logger.debug(
+                            "%s startup running app '%s' command '%s'.",
+                            self.name,
+                            app_instance_name,
+                            command_name,
+                        )
                         maya.utils.executeDeferred(command_function)
                 else:
                     # Run the command whose name is listed in the 'run_at_startup' setting.
@@ -513,16 +569,25 @@ class MayaEngine(Engine):
                     # in order to run it after the ones that restore the persisted Shotgun app panels.
                     command_function = command_dict.get(setting_command_name)
                     if command_function:
-                        self.logger.debug("%s startup running app '%s' command '%s'.",
-                                       self.name, app_instance_name, setting_command_name)
+                        self.logger.debug(
+                            "%s startup running app '%s' command '%s'.",
+                            self.name,
+                            app_instance_name,
+                            setting_command_name,
+                        )
                         maya.utils.executeDeferred(command_function)
                     else:
-                        known_commands = ', '.join("'%s'" % name for name in command_dict)
+                        known_commands = ", ".join(
+                            "'%s'" % name for name in command_dict
+                        )
                         self.logger.warning(
                             "%s configuration setting 'run_at_startup' requests app '%s' unknown command '%s'. "
                             "Known commands: %s",
-                            self.name, app_instance_name, setting_command_name, known_commands)
-
+                            self.name,
+                            app_instance_name,
+                            setting_command_name,
+                            known_commands,
+                        )
 
     def destroy_engine(self):
         """
@@ -562,29 +627,39 @@ class MayaEngine(Engine):
             from PySide import QtGui
         except:
             # must be a very old version of Maya.
-            self.logger.debug("PySide not detected - it will be added to the setup now...")
+            self.logger.debug(
+                "PySide not detected - it will be added to the setup now..."
+            )
         else:
             # looks like pyside is already working! No need to do anything
             self.logger.debug("PySide detected - the existing version will be used.")
             return
 
         if sys.platform == "darwin":
-            pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_mac", "python")
+            pyside_path = os.path.join(
+                self.disk_location, "resources", "pyside112_py26_qt471_mac", "python"
+            )
             self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
             sys.path.append(pyside_path)
 
         elif sys.platform == "win32":
             # default windows version of pyside for 2011 and 2012
-            pyside_path = os.path.join(self.disk_location, "resources","pyside111_py26_qt471_win64", "python")
+            pyside_path = os.path.join(
+                self.disk_location, "resources", "pyside111_py26_qt471_win64", "python"
+            )
             self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
             sys.path.append(pyside_path)
-            dll_path = os.path.join(self.disk_location, "resources","pyside111_py26_qt471_win64", "lib")
+            dll_path = os.path.join(
+                self.disk_location, "resources", "pyside111_py26_qt471_win64", "lib"
+            )
             path = os.environ.get("PATH", "")
             path += ";%s" % dll_path
             os.environ["PATH"] = path
 
         elif sys.platform == "linux2":
-            pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_linux", "python")
+            pyside_path = os.path.join(
+                self.disk_location, "resources", "pyside112_py26_qt471_linux", "python"
+            )
             self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
             sys.path.append(pyside_path)
 
@@ -595,8 +670,11 @@ class MayaEngine(Engine):
         try:
             from PySide import QtGui
         except Exception as e:
-            self.logger.error("PySide could not be imported! Apps using pyside will not "
-                           "operate correctly! Error reported: %s", e)
+            self.logger.error(
+                "PySide could not be imported! Apps using pyside will not "
+                "operate correctly! Error reported: %s",
+                e,
+            )
 
     def show_dialog(self, title, *args, **kwargs):
         """
@@ -613,12 +691,14 @@ class MayaEngine(Engine):
             return super(MayaEngine, self).show_dialog(title, *args, **kwargs)
         else:
             if not self.has_ui:
-                self.log_error("Sorry, this environment does not support UI display! Cannot show "
-                               "the requested window '%s'." % title)
+                self.log_error(
+                    "Sorry, this environment does not support UI display! Cannot show "
+                    "the requested window '%s'." % title
+                )
                 return None
 
             from sgtk.platform.qt import QtCore, QtGui
-            
+
             # create the dialog:
             dialog, widget = self._create_dialog_with_widget(title, *args, **kwargs)
 
@@ -630,7 +710,12 @@ class MayaEngine(Engine):
             # the dialog's size before Maya gets ahold of it, and then resize it
             # right after it's shown. We'll also move the dialog to the center of
             # the desktop.
-            center_screen = QtGui.QApplication.instance().desktop().availableGeometry(dialog).center()
+            center_screen = (
+                QtGui.QApplication.instance()
+                .desktop()
+                .availableGeometry(dialog)
+                .center()
+            )
             self.__DIALOG_SIZE_CACHE[title] = dialog.size()
 
             # TODO: Get an explanation and document why we're having to do this. It appears to be
@@ -646,7 +731,7 @@ class MayaEngine(Engine):
             # relative to the final size of the dialog.
             dialog.resize(self.__DIALOG_SIZE_CACHE[title])
             dialog.move(center_screen - dialog.rect().center())
-            
+
             # lastly, return the instantiated widget
             return widget
 
@@ -791,7 +876,9 @@ class MayaEngine(Engine):
                     widget_instance = widget
                     # Reparent the Shotgun app panel widget under Maya main window
                     # to prevent it from being deleted with the existing Maya panel.
-                    self.logger.debug("Reparenting widget %s under Maya main window.", widget_id)
+                    self.logger.debug(
+                        "Reparenting widget %s under Maya main window.", widget_id
+                    )
                     parent = self._get_dialog_parent()
                     widget_instance.setParent(parent)
                     # The Shotgun app panel was retrieved from under an existing Maya panel.
@@ -810,7 +897,9 @@ class MayaEngine(Engine):
             # The Shotgun app panel was just created.
 
         # Dock the Shotgun app panel into a new Maya panel in the active Maya window.
-        maya_panel_name = tk_maya.panel_generation.dock_panel(self, widget_instance, title)
+        maya_panel_name = tk_maya.panel_generation.dock_panel(
+            self, widget_instance, title
+        )
 
         # Add the new panel to the dictionary of Maya panels that have been created by the engine.
         # The panel entry has a Maya panel name key and an app widget instance value.
@@ -839,7 +928,9 @@ class MayaEngine(Engine):
                 self.logger.debug("Closing dialog %s.", dialog_window_title)
                 dialog.close()
             except Exception as exception:
-                self.logger.error("Cannot close dialog %s: %s", dialog_window_title, exception)
+                self.logger.error(
+                    "Cannot close dialog %s: %s", dialog_window_title, exception
+                )
 
         # Loop through the dictionary of Maya panels that have been created by the engine.
         for (maya_panel_name, widget_instance) in self._maya_panel_dict.iteritems():
@@ -848,15 +939,19 @@ class MayaEngine(Engine):
                 try:
                     # Reparent the Shotgun app panel widget under Maya main window
                     # to prevent it from being deleted with the existing Maya panel.
-                    self.logger.debug("Reparenting widget %s under Maya main window.",
-                                   widget_instance.objectName())
+                    self.logger.debug(
+                        "Reparenting widget %s under Maya main window.",
+                        widget_instance.objectName(),
+                    )
                     parent = self._get_dialog_parent()
                     widget_instance.setParent(parent)
                     # The Maya panel can now be deleted safely.
                     self.logger.debug("Deleting Maya panel %s.", maya_panel_name)
                     pm.deleteUI(maya_panel_name)
                 except Exception as exception:
-                    self.logger.error("Cannot delete Maya panel %s: %s", maya_panel_name, exception)
+                    self.logger.error(
+                        "Cannot delete Maya panel %s: %s", maya_panel_name, exception
+                    )
 
         # Clear the dictionary of Maya panels now that they were deleted.
         self._maya_panel_dict = {}

@@ -1,11 +1,11 @@
-﻿# Copyright (c) 2017 Shotgun Software Inc.
-# 
+# Copyright (c) 2017 Shotgun Software Inc.
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import glob
@@ -52,11 +52,11 @@ class MayaSessionCollector(HookBaseClass):
                 "type": "template",
                 "default": None,
                 "description": "Template path for artist work files. Should "
-                               "correspond to a template defined in "
-                               "templates.yml. If configured, is made available"
-                               "to publish plugins via the collected item's "
-                               "properties. ",
-            },
+                "correspond to a template defined in "
+                "templates.yml. If configured, is made available"
+                "to publish plugins via the collected item's "
+                "properties. ",
+            }
         }
 
         # update the base settings with these settings
@@ -90,9 +90,9 @@ class MayaSessionCollector(HookBaseClass):
                     "action_button": {
                         "label": "Change Project",
                         "tooltip": "Change to a different Maya project",
-                        "callback": lambda: mel.eval('setProject ""')
+                        "callback": lambda: mel.eval('setProject ""'),
                     }
-                }
+                },
             )
 
             self.collect_playblasts(item, project_root)
@@ -105,9 +105,9 @@ class MayaSessionCollector(HookBaseClass):
                     "action_button": {
                         "label": "Set Project",
                         "tooltip": "Set the Maya project",
-                        "callback": lambda: mel.eval('setProject ""')
+                        "callback": lambda: mel.eval('setProject ""'),
                     }
-                }
+                },
             )
 
         if cmds.ls(geometry=True, noIntermediate=True):
@@ -136,18 +136,11 @@ class MayaSessionCollector(HookBaseClass):
 
         # create the session item for the publish hierarchy
         session_item = parent_item.create_item(
-            "maya.session",
-            "Maya Session",
-            display_name
+            "maya.session", "Maya Session", display_name
         )
 
         # get the icon path to display for this item
-        icon_path = os.path.join(
-            self.disk_location,
-            os.pardir,
-            "icons",
-            "maya.png"
-        )
+        icon_path = os.path.join(self.disk_location, os.pardir, "icons", "maya.png")
         session_item.set_icon_from_path(icon_path)
 
         # discover the project root which helps in discovery of other
@@ -161,7 +154,8 @@ class MayaSessionCollector(HookBaseClass):
         if work_template_setting:
 
             work_template = publisher.engine.get_template_by_name(
-                work_template_setting.value)
+                work_template_setting.value
+            )
 
             # store the template on the item for use by publish plugins. we
             # can't evaluate the fields here because there's no guarantee the
@@ -193,11 +187,7 @@ class MayaSessionCollector(HookBaseClass):
 
         self.logger.info(
             "Processing alembic cache folder: %s" % (cache_dir,),
-            extra={
-                "action_show_folder": {
-                    "path": cache_dir
-                }
-            }
+            extra={"action_show_folder": {"path": cache_dir}},
         )
 
         # look for alembic files in the cache folder
@@ -213,10 +203,7 @@ class MayaSessionCollector(HookBaseClass):
 
             # allow the base class to collect and create the item. it knows how
             # to handle alembic files
-            super(MayaSessionCollector, self)._collect_file(
-                parent_item,
-                cache_path
-            )
+            super(MayaSessionCollector, self)._collect_file(parent_item, cache_path)
 
     def _collect_session_geometry(self, parent_item):
         """
@@ -226,18 +213,11 @@ class MayaSessionCollector(HookBaseClass):
         """
 
         geo_item = parent_item.create_item(
-            "maya.session.geometry",
-            "Geometry",
-            "All Session Geometry"
+            "maya.session.geometry", "Geometry", "All Session Geometry"
         )
 
         # get the icon path to display for this item
-        icon_path = os.path.join(
-            self.disk_location,
-            os.pardir,
-            "icons",
-            "geometry.png"
-        )
+        icon_path = os.path.join(self.disk_location, os.pardir, "icons", "geometry.png")
 
         geo_item.set_icon_from_path(icon_path)
 
@@ -259,7 +239,7 @@ class MayaSessionCollector(HookBaseClass):
         # written
         if "movie" in cmds.workspace(fileRuleList=True):
             # this could return an empty string
-            movie_dir_name = cmds.workspace(fileRuleEntry='movie')
+            movie_dir_name = cmds.workspace(fileRuleEntry="movie")
 
         if not movie_dir_name:
             # fall back to the default
@@ -272,11 +252,7 @@ class MayaSessionCollector(HookBaseClass):
 
         self.logger.info(
             "Processing movies folder: %s" % (movies_dir,),
-            extra={
-                "action_show_folder": {
-                    "path": movies_dir
-                }
-            }
+            extra={"action_show_folder": {"path": movies_dir}},
         )
 
         # look for movie files in the movies folder
@@ -294,8 +270,7 @@ class MayaSessionCollector(HookBaseClass):
             # allow the base class to collect and create the item. it knows how
             # to handle movie files
             item = super(MayaSessionCollector, self)._collect_file(
-                parent_item,
-                movie_path
+                parent_item, movie_path
             )
 
             # the item has been created. update the display name to include
@@ -320,9 +295,7 @@ class MayaSessionCollector(HookBaseClass):
             # use the render settings api to get a path where the frame number
             # spec is replaced with a '*' which we can use to glob
             (frame_glob,) = cmds.renderSettings(
-                genericFrameImageName="*",
-                fullPath=True,
-                layer=layer
+                genericFrameImageName="*", fullPath=True, layer=layer
             )
 
             # see if there are any files on disk that match this pattern
@@ -332,9 +305,7 @@ class MayaSessionCollector(HookBaseClass):
                 # we only need one path to publish, so take the first one and
                 # let the base class collector handle it
                 item = super(MayaSessionCollector, self)._collect_file(
-                    parent_item,
-                    rendered_paths[0],
-                    frame_sequence=True
+                    parent_item, rendered_paths[0], frame_sequence=True
                 )
 
                 # the item has been created. update the display name to include
