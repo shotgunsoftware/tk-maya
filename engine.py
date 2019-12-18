@@ -324,7 +324,7 @@ class MayaEngine(Engine):
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
-        if maya_ver.startswith(("2014", "2015", "2016", "2017", "2018", "2019")):
+        if maya_ver.startswith(("2014", "2015", "2016", "2017", "2018", "2019", "2020")):
             self.logger.debug("Running Maya version %s", maya_ver)
 
             # In the case of Maya 2018 on Windows, we have the possility of locking
