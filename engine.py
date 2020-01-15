@@ -630,7 +630,7 @@ class MayaEngine(Engine):
             # the dialog's size before Maya gets ahold of it, and then resize it
             # right after it's shown. We'll also move the dialog to the center of
             # the desktop.
-            center_screen = QtGui.QApplication.instance().desktop().availableGeometry(dialog).center()
+            center_screen = QtGui.QApplication.desktop().availableGeometry(dialog).center()
             self.__DIALOG_SIZE_CACHE[title] = dialog.size()
 
             # TODO: Get an explanation and document why we're having to do this. It appears to be
