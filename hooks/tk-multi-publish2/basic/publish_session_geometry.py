@@ -1,11 +1,11 @@
 ﻿# Copyright (c) 2017 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
@@ -73,8 +73,8 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
                 "type": "template",
                 "default": None,
                 "description": "Template path for published work files. Should"
-                               "correspond to a template defined in "
-                               "templates.yml.",
+                "correspond to a template defined in "
+                "templates.yml.",
             }
         }
 
@@ -147,7 +147,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         item.properties["publish_template"] = publish_template
 
         # check that the AbcExport command is available!
-        if not mel.eval("exists \"AbcExport\""):
+        if not mel.eval('exists "AbcExport"'):
             self.logger.debug(
                 "Item not accepted because alembic export command 'AbcExport' "
                 "is not available. Perhaps the plugin is not enabled?"
@@ -159,10 +159,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         # natively.
         item.context_change_allowed = False
 
-        return {
-            "accepted": accepted,
-            "checked": True
-        }
+        return {"accepted": accepted, "checked": True}
 
     def validate(self, settings, item):
         """
@@ -184,10 +181,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             # the session still requires saving. provide a save button.
             # validation fails.
             error_msg = "The Maya session has not been saved."
-            self.logger.error(
-                error_msg,
-                extra=_get_save_as_action()
-            )
+            self.logger.error(error_msg, extra=_get_save_as_action())
             raise Exception(error_msg)
 
         # get the normalized path
@@ -214,8 +208,10 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         # ensure the fields work for the publish template
         missing_keys = publish_template.missing_keys(work_fields)
         if missing_keys:
-            error_msg = "Work file '%s' missing keys required for the " \
-                        "publish template: %s" % (path, missing_keys)
+            error_msg = (
+                "Work file '%s' missing keys required for the "
+                "publish template: %s" % (path, missing_keys)
+            )
             self.logger.error(error_msg)
             raise Exception(error_msg)
 
@@ -225,14 +221,12 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         item.properties["path"] = publish_template.apply_fields(work_fields)
         item.properties["publish_path"] = item.properties["path"]
 
-
         # use the work file's version number when publishing
         if "version" in work_fields:
             item.properties["publish_version"] = work_fields["version"]
 
         # run the base class validation
-        return super(MayaSessionGeometryPublishPlugin, self).validate(
-            settings, item)
+        return super(MayaSessionGeometryPublishPlugin, self).validate(settings, item)
 
     def publish(self, settings, item):
         """
@@ -263,7 +257,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             # write shading group set assignments (Maya 2015+)
             "-writeFaceSets",
             # write uv's (only the current uv set gets written)
-            "-uvWrite"
+            "-uvWrite",
         ]
 
         # find the animated frame range to use:
@@ -271,13 +265,13 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         if start_frame and end_frame:
             alembic_args.append("-fr %d %d" % (start_frame, end_frame))
 
-        # Set the output path: 
+        # Set the output path:
         # Note: The AbcExport command expects forward slashes!
         alembic_args.append("-file '%s'" % publish_path.replace("\\", "/"))
 
         # build the export command.  Note, use AbcExport -help in Maya for
         # more detailed Alembic export help
-        abc_export_cmd = ("AbcExport -j \"%s\"" % " ".join(alembic_args))
+        abc_export_cmd = 'AbcExport -j "%s"' % " ".join(alembic_args)
 
         # ...and execute it:
         try:
@@ -345,6 +339,6 @@ def _get_save_as_action():
         "action_button": {
             "label": "Save As...",
             "tooltip": "Save the current session",
-            "callback": callback
+            "callback": callback,
         }
     }

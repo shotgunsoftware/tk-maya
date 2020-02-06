@@ -18,6 +18,7 @@ import maya.utils
 
 PLUGIN_FILENAME = "shotgun.py"
 
+
 def maya_useNewAPI():
     """
     The presence of this function lets Maya know that this plug-in uses Python API 2.0 objects.
@@ -86,6 +87,7 @@ def initializePlugin(mobject):
 
     try:
         from sgtk_plugin_basic_maya import manifest
+
         running_as_standalone_plugin = True
     except ImportError:
         running_as_standalone_plugin = False
@@ -113,9 +115,7 @@ def initializePlugin(mobject):
     # Set the plug-in vendor name and version number to display in Maya Plug-in Information window
     # alongside the plug-in name set by Maya from the name of this file minus its '.py' extension.
     OpenMaya2.MFnPlugin(
-        mobject,
-        vendor=constants.PLUGIN_AUTHOR,
-        version=constants.PLUGIN_VERSION
+        mobject, vendor=constants.PLUGIN_AUTHOR, version=constants.PLUGIN_VERSION
     )
 
     # Bootstrap the plug-in logic once Maya has settled.
@@ -138,5 +138,5 @@ def uninitializePlugin(mobject):
 
     # Shutdown the plug-in logic.
     from tk_maya_basic import plugin_logic
-    plugin_logic.shutdown()
 
+    plugin_logic.shutdown()

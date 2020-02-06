@@ -10,6 +10,7 @@
 
 import os
 
+
 def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     """
     Bootstraps the engine using the plug-in manifest data to drive some bootstrap options.
@@ -34,7 +35,9 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
     toolkit_mgr.base_configuration = plugin_info["base_configuration"]
     toolkit_mgr.plugin_id = plugin_info["plugin_id"]
     plugin_root_path = os.environ.get("TK_MAYA_BASIC_ROOT")
-    toolkit_mgr.bundle_cache_fallback_paths = [os.path.join(plugin_root_path, "bundle_cache")]
+    toolkit_mgr.bundle_cache_fallback_paths = [
+        os.path.join(plugin_root_path, "bundle_cache")
+    ]
 
     # Retrieve the Shotgun entity type and id when they exist in the environment.
     entity = toolkit_mgr.get_entity_from_environment()
@@ -51,7 +54,7 @@ def bootstrap(sg_user, progress_callback, completed_callback, failed_callback):
         "tk-maya",
         entity,
         completed_callback=completed_callback,
-        failed_callback=failed_callback
+        failed_callback=failed_callback,
     )
 
 
@@ -69,6 +72,7 @@ def _get_plugin_info():
         # first, see if we can get the info from the manifest. if we can, no
         # need to parse info.yml
         from sgtk_plugin_basic_maya import manifest
+
         plugin_id = manifest.plugin_id
         base_configuration = manifest.base_configuration
     except ImportError:
@@ -80,13 +84,7 @@ def _get_plugin_info():
 
         # build the path to the info.yml file
         plugin_info_yml = os.path.abspath(
-            os.path.join(
-                __file__,
-                "..",
-                "..",
-                "..",
-                "info.yml"
-            )
+            os.path.join(__file__, "..", "..", "..", "info.yml")
         )
 
         # open the yaml file and read the data
@@ -96,10 +94,7 @@ def _get_plugin_info():
             base_configuration = info_yml["base_configuration"]
 
     # return a dictionary with the required info
-    return dict(
-        plugin_id=plugin_id,
-        base_configuration=base_configuration,
-    )
+    return dict(plugin_id=plugin_id, base_configuration=base_configuration,)
 
 
 def shutdown():
@@ -109,6 +104,7 @@ def shutdown():
 
     # Re-import the toolkit core to ensure usage of a swapped in version.
     import sgtk
+
     logger = sgtk.LogManager.get_logger(__name__)
     engine = sgtk.platform.current_engine()
 

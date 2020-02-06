@@ -26,10 +26,7 @@ class MayaLauncher(SoftwareLauncher):
     # matching against supplied versions and products. Similar to the glob
     # strings, these allow us to alter the regex matching for any of the
     # variable components of the path in one place
-    COMPONENT_REGEX_LOOKUP = {
-        "version": "[\d.]+",
-        "mach": "x\d+"
-    }
+    COMPONENT_REGEX_LOOKUP = {"version": "[\d.]+", "mach": "x\d+"}
 
     # This dictionary defines a list of executable template strings for each
     # of the supported operating systems. The templates are used for both
@@ -50,7 +47,7 @@ class MayaLauncher(SoftwareLauncher):
             # /usr/autodesk/maya2016/bin/maya
             "/usr/autodesk/maya{version}/bin/maya",
             "/usr/autodesk/maya{version}-{mach}/bin/maya",
-        ]
+        ],
     }
 
     @property
@@ -99,14 +96,14 @@ class MayaLauncher(SoftwareLauncher):
                 maya_module_paths = maya_module_paths.split(os.pathsep)
 
             for find_plugin in find_plugins:
-                load_plugin = os.path.join(
-                    self.disk_location, "plugins", find_plugin
-                )
+                load_plugin = os.path.join(self.disk_location, "plugins", find_plugin)
                 if os.path.exists(load_plugin):
                     # If the plugin path exists, add it to the list of MAYA_MODULE_PATHS
                     # so Maya can find it and to the list of SGTK_LOAD_MAYA_PLUGINS so
                     # the startup's userSetup.py file knows what plugins to load.
-                    self.logger.debug("Preparing to launch builtin plugin '%s'" % load_plugin)
+                    self.logger.debug(
+                        "Preparing to launch builtin plugin '%s'" % load_plugin
+                    )
                     load_maya_plugins.append(load_plugin)
                     if load_plugin not in maya_module_paths:
                         # Insert at beginning of list to give priority to toolkit plugins
@@ -116,8 +113,7 @@ class MayaLauncher(SoftwareLauncher):
                 else:
                     # Report the missing plugin directory
                     self.logger.warning(
-                        "Resolved plugin path '%s' does not exist!" %
-                        load_plugin
+                        "Resolved plugin path '%s' does not exist!" % load_plugin
                     )
 
             # Add MAYA_MODULE_PATH and SGTK_LOAD_MAYA_PLUGINS to the launch
@@ -132,7 +128,9 @@ class MayaLauncher(SoftwareLauncher):
         else:
             # Prepare the launch environment with variables required by the
             # classic bootstrap approach.
-            self.logger.debug("Preparing Maya Launch via Toolkit Classic methodology ...")
+            self.logger.debug(
+                "Preparing Maya Launch via Toolkit Classic methodology ..."
+            )
             required_env["SGTK_ENGINE"] = self.engine_name
             required_env["SGTK_CONTEXT"] = sgtk.context.serialize(self.context)
 
@@ -159,15 +157,13 @@ class MayaLauncher(SoftwareLauncher):
         engine_icon = os.path.join(self.disk_location, "icon_256.png")
 
         self.logger.debug(
-            "Looking for Application icon for executable '%s' ..." %
-            exec_path
+            "Looking for Application icon for executable '%s' ..." % exec_path
         )
         icon_base_path = ""
         if sys.platform == "darwin" and "Maya.app" in exec_path:
             # e.g. /Applications/Autodesk/maya2016.5/Maya.app/Contents
             icon_base_path = os.path.join(
-                "".join(exec_path.partition("Maya.app")[0:2]),
-                "Contents"
+                "".join(exec_path.partition("Maya.app")[0:2]), "Contents"
             )
 
         elif sys.platform in ["win32", "linux2"] and "bin" in exec_path:
@@ -192,8 +188,8 @@ class MayaLauncher(SoftwareLauncher):
 
         # Record what the resolved icon path was.
         self.logger.debug(
-            "Resolved icon path '%s' from input executable '%s'." %
-            (icon_path, exec_path)
+            "Resolved icon path '%s' from input executable '%s'."
+            % (icon_path, exec_path)
         )
         return icon_path
 
@@ -213,8 +209,7 @@ class MayaLauncher(SoftwareLauncher):
                 supported_sw_versions.append(sw_version)
             else:
                 self.logger.debug(
-                    "SoftwareVersion %s is not supported: %s" %
-                    (sw_version, reason)
+                    "SoftwareVersion %s is not supported: %s" % (sw_version, reason)
                 )
 
         return supported_sw_versions
@@ -235,8 +230,7 @@ class MayaLauncher(SoftwareLauncher):
             self.logger.debug("Processing template %s.", executable_template)
 
             executable_matches = self._glob_and_match(
-                executable_template,
-                self.COMPONENT_REGEX_LOOKUP
+                executable_template, self.COMPONENT_REGEX_LOOKUP
             )
 
             # Extract all products from that executable.
@@ -251,7 +245,7 @@ class MayaLauncher(SoftwareLauncher):
                         executable_version,
                         "Maya",
                         executable_path,
-                        self._icon_from_executable(executable_path)
+                        self._icon_from_executable(executable_path),
                     )
                 )
 

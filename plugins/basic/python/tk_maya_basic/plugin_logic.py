@@ -28,6 +28,7 @@ import sgtk
 # import PySide packages without having to worry about the version to use
 # (PySide in Maya 2014-2015-2016 and PySide2 in Maya 2017 and later).
 from sgtk.util.qt_importer import QtImporter
+
 qt_importer = QtImporter()
 QtCore = qt_importer.QtCore
 QtGui = qt_importer.QtGui
@@ -39,13 +40,15 @@ MENU_LABEL = "Shotgun"
 
 logger = sgtk.LogManager.get_logger(__name__)
 
+
 class ProgressHandler(QtCore.QObject):
     """
     An object that wraps a QTimer that is used to periodically check
     for updates that need to be made to the progress bar in Maya. This
     will always execute progress updates on the main thread.
     """
-    PROGRESS_INTERVAL = 150 # milliseconds
+
+    PROGRESS_INTERVAL = 150  # milliseconds
 
     def __init__(self):
         ptr = OpenMayaUI.MQtUtil.mainWindow()
@@ -156,7 +159,7 @@ def _login_user():
             user,
             progress_callback=progress_handler._handle_bootstrap_progress,
             completed_callback=_handle_bootstrap_completed,
-            failed_callback=_handle_bootstrap_failed
+            failed_callback=_handle_bootstrap_failed,
         )
     except Exception as e:
         # return to normal state
@@ -191,9 +194,7 @@ def _handle_bootstrap_completed(engine):
     # running as a standalone plugin
     if sgtk.platform.current_engine().context.project is None:
         sgtk.platform.current_engine().register_command(
-            "Log Out of Shotgun",
-            _logout_user,
-            {"type": "context_menu"}
+            "Log Out of Shotgun", _logout_user, {"type": "context_menu"}
         )
 
 
@@ -222,8 +223,12 @@ def _handle_bootstrap_failed(phase, exception):
     # Report the encountered exception.
     # the message displayed last will be the one visible in the script editor,
     # so make sure this is the error message summary.
-    OpenMaya.MGlobal.displayError("An exception was raised during Shotgun startup: %s" % exception)
-    OpenMaya.MGlobal.displayError("For details, see log files in %s" % sgtk.LogManager().log_folder)
+    OpenMaya.MGlobal.displayError(
+        "An exception was raised during Shotgun startup: %s" % exception
+    )
+    OpenMaya.MGlobal.displayError(
+        "For details, see log files in %s" % sgtk.LogManager().log_folder
+    )
     OpenMaya.MGlobal.displayError("Error loading Shotgun integration.")
 
     # Clear the user's credentials to log him/her out.
@@ -258,7 +263,9 @@ def _show_progress_bar(progress_value, message):
 
     # Show the main progress bar (normally in the Help Line) making sure it uses
     # the bootstrap progress configuration (since it might have been taken over by another process).
-    main_progress_bar = pm.ui.MainProgressBar(minValue=0, maxValue=100, interruptable=False)
+    main_progress_bar = pm.ui.MainProgressBar(
+        minValue=0, maxValue=100, interruptable=False
+    )
     main_progress_bar.beginProgress()
 
     # Set the main progress bar value and message.
@@ -286,9 +293,7 @@ def _create_login_menu():
 
     # Add the login menu item.
     pm.menuItem(
-        parent=menu,
-        label="Log In to Shotgun...",
-        command=pm.Callback(_login_user)
+        parent=menu, label="Log In to Shotgun...", command=pm.Callback(_login_user)
     )
 
     pm.menuItem(parent=menu, divider=True)
@@ -297,12 +302,12 @@ def _create_login_menu():
     pm.menuItem(
         parent=menu,
         label="Learn about Shotgun...",
-        command=pm.Callback(_jump_to_website)
+        command=pm.Callback(_jump_to_website),
     )
     pm.menuItem(
         parent=menu,
         label="Try Shotgun for Free...",
-        command=pm.Callback(_jump_to_signup)
+        command=pm.Callback(_jump_to_signup),
     )
 
 
@@ -326,4 +331,6 @@ def _jump_to_signup():
     """
     Jumps to the Shotgun signup page in the default web browser.
     """
-    QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://www.shotgunsoftware.com/signup"))
+    QtGui.QDesktopServices.openUrl(
+        QtCore.QUrl("https://www.shotgunsoftware.com/signup")
+    )

@@ -1,11 +1,11 @@
 # Copyright (c) 2015 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 # Metadata defining the behaviour and requirements for this engine
@@ -27,7 +27,7 @@ configuration:
                      value to the current major version + 1."
         default_value: 2015
 
-    debug_logging: 
+    debug_logging:
         type: bool
         description: Controls whether debug messages should be emitted to the logger
         default_value: false
@@ -86,12 +86,11 @@ configuration:
 
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
-        
-# More verbose description of this item 
+
+# More verbose description of this item
 display_name: "Shotgun Engine for Maya"
 description: "Shotgun Integration in Maya"
 
 # Required minimum versions for this item to run
 requires_shotgun_version:
 requires_core_version: "v0.18.8"
-

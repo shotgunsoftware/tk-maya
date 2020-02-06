@@ -17,6 +17,7 @@ import os
 import maya.OpenMaya as OpenMaya
 import maya.cmds as cmds
 
+
 def start_toolkit_classic():
     """
     Parse enviornment variables for an engine name and
@@ -24,6 +25,7 @@ def start_toolkit_classic():
     the tk-maya engine and environment.
     """
     import sgtk
+
     logger = sgtk.LogManager.get_logger(__name__)
 
     logger.debug("Launching toolkit in classic mode.")
@@ -55,12 +57,12 @@ def start_toolkit_classic():
 
     try:
         # Start up the toolkit engine from the environment data
-        logger.debug("Launching engine instance '%s' for context %s" % (env_engine, env_context))
+        logger.debug(
+            "Launching engine instance '%s' for context %s" % (env_engine, env_context)
+        )
         engine = sgtk.platform.start_engine(env_engine, context.sgtk, context)
     except Exception as e:
-        OpenMaya.MGlobal.displayError(
-            "Shotgun: Could not start engine: %s" % e
-        )
+        OpenMaya.MGlobal.displayError("Shotgun: Could not start engine: %s" % e)
         return
 
 
@@ -70,6 +72,7 @@ def start_toolkit_with_plugins():
     ultimately startup Toolkit and the tk-maya engine and environment.
     """
     import sgtk
+
     logger = sgtk.LogManager.get_logger(__name__)
 
     logger.debug("Launching maya in plugin mode")
@@ -139,14 +142,14 @@ def start_toolkit():
     # Check if a file was specified to open and open it.
     file_to_open = os.environ.get("SGTK_FILE_TO_OPEN")
     if file_to_open:
-        OpenMaya.MGlobal.displayInfo(
-            "Shotgun: Opening '%s'..." % file_to_open
-        )
+        OpenMaya.MGlobal.displayInfo("Shotgun: Opening '%s'..." % file_to_open)
         cmds.file(file_to_open, force=True, open=True)
 
     # Clean up temp env variables.
     del_vars = [
-        "SGTK_ENGINE", "SGTK_CONTEXT", "SGTK_FILE_TO_OPEN",
+        "SGTK_ENGINE",
+        "SGTK_CONTEXT",
+        "SGTK_FILE_TO_OPEN",
         "SGTK_LOAD_MAYA_PLUGINS",
     ]
     for var in del_vars:
