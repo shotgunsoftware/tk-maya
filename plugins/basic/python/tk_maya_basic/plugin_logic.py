@@ -158,7 +158,7 @@ def _login_user():
             completed_callback=_handle_bootstrap_completed,
             failed_callback=_handle_bootstrap_failed
         )
-    except Exception, e:
+    except Exception as e:
         # return to normal state
         _handle_bootstrap_failed(phase=None, exception=e)
         # also print the full call stack

@@ -141,7 +141,7 @@ def refresh_engine(engine_name, prev_context, menu_name):
         tk = tank.tank_from_path(new_path)
         logger.debug("Extracted sgtk instance: '%r' from path: '%r'", tk, new_path)
 
-    except tank.TankError, e:
+    except tank.TankError as e:
         logger.exception("Could not execute tank_from_path('%s')" % new_path)
         OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
         # build disabled menu
@@ -594,7 +594,7 @@ class MayaEngine(Engine):
         # now try to import it
         try:
             from PySide import QtGui
-        except Exception, e:
+        except Exception as e:
             self.logger.error("PySide could not be imported! Apps using pyside will not "
                            "operate correctly! Error reported: %s", e)
 
@@ -838,7 +838,7 @@ class MayaEngine(Engine):
                 # Close the dialog and let its close callback remove it from the original dialog list.
                 self.logger.debug("Closing dialog %s.", dialog_window_title)
                 dialog.close()
-            except Exception, exception:
+            except Exception as exception:
                 self.logger.error("Cannot close dialog %s: %s", dialog_window_title, exception)
 
         # Loop through the dictionary of Maya panels that have been created by the engine.
@@ -855,7 +855,7 @@ class MayaEngine(Engine):
                     # The Maya panel can now be deleted safely.
                     self.logger.debug("Deleting Maya panel %s.", maya_panel_name)
                     pm.deleteUI(maya_panel_name)
-                except Exception, exception:
+                except Exception as exception:
                     self.logger.error("Cannot delete Maya panel %s: %s", maya_panel_name, exception)
 
         # Clear the dictionary of Maya panels now that they were deleted.

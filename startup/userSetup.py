@@ -46,7 +46,7 @@ def start_toolkit_classic():
     try:
         # Deserialize the environment context
         context = sgtk.context.deserialize(env_context)
-    except Exception, e:
+    except Exception as e:
         OpenMaya.MGlobal.displayError(
             "Shotgun: Could not create context! Shotgun Pipeline Toolkit will "
             "be disabled. Details: %s" % e
@@ -57,7 +57,7 @@ def start_toolkit_classic():
         # Start up the toolkit engine from the environment data
         logger.debug("Launching engine instance '%s' for context %s" % (env_engine, env_context))
         engine = sgtk.platform.start_engine(env_engine, context.sgtk, context)
-    except Exception, e:
+    except Exception as e:
         OpenMaya.MGlobal.displayError(
             "Shotgun: Could not start engine: %s" % e
         )
@@ -120,7 +120,7 @@ def start_toolkit():
     # Verify sgtk can be loaded.
     try:
         import sgtk
-    except Exception, e:
+    except Exception as e:
         OpenMaya.MGlobal.displayError(
             "Shotgun: Could not import sgtk! Disabling for now: %s" % e
         )
