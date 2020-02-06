@@ -60,7 +60,7 @@ def start_toolkit_classic():
         logger.debug(
             "Launching engine instance '%s' for context %s" % (env_engine, env_context)
         )
-        engine = sgtk.platform.start_engine(env_engine, context.sgtk, context)
+        sgtk.platform.start_engine(env_engine, context.sgtk, context)
     except Exception as e:
         OpenMaya.MGlobal.displayError("Shotgun: Could not start engine: %s" % e)
         return

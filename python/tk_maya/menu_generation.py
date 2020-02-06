@@ -315,7 +315,7 @@ class AppCommand(object):
         """
         try:
             self.callback()
-        except Exception as e:
+        except Exception:
             current_engine = tank.platform.current_engine()
             current_engine.logger.exception("An exception was raised from Toolkit")
 
