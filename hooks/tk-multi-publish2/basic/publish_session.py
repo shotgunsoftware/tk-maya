@@ -1,11 +1,11 @@
 # Copyright (c) 2017 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
@@ -84,7 +84,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
         however only the most recent publish will be available to other users.
         Warnings will be provided during validation if there are previous
         publishes.
-        """ % (loader_url,)
+        """ % (
+            loader_url,
+        )
 
     @property
     def settings(self):
@@ -115,8 +117,8 @@ class MayaSessionPublishPlugin(HookBaseClass):
                 "type": "template",
                 "default": None,
                 "description": "Template path for published work files. Should"
-                               "correspond to a template defined in "
-                               "templates.yml.",
+                "correspond to a template defined in "
+                "templates.yml.",
             }
         }
 
@@ -175,18 +177,13 @@ class MayaSessionPublishPlugin(HookBaseClass):
             # provide a save button. the session will need to be saved before
             # validation will succeed.
             self.logger.warn(
-                "The Maya session has not been saved.",
-                extra=_get_save_as_action()
+                "The Maya session has not been saved.", extra=_get_save_as_action()
             )
 
         self.logger.info(
-            "Maya '%s' plugin accepted the current Maya session." %
-            (self.name,)
+            "Maya '%s' plugin accepted the current Maya session." % (self.name,)
         )
-        return {
-            "accepted": True,
-            "checked": True
-        }
+        return {"accepted": True, "checked": True}
 
     def validate(self, settings, item):
         """
@@ -209,10 +206,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
             # the session still requires saving. provide a save button.
             # validation fails.
             error_msg = "The Maya session has not been saved."
-            self.logger.error(
-                error_msg,
-                extra=_get_save_as_action()
-            )
+            self.logger.error(error_msg, extra=_get_save_as_action())
             raise Exception(error_msg)
 
         # ensure we have an updated project root
@@ -227,9 +221,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
                     "action_button": {
                         "label": "Set Project",
                         "tooltip": "Set the maya project",
-                        "callback": lambda: mel.eval('setProject ""')
+                        "callback": lambda: mel.eval('setProject ""'),
                     }
-                }
+                },
             )
 
         # ---- check the session against any attached work template
@@ -252,15 +246,14 @@ class MayaSessionPublishPlugin(HookBaseClass):
                         "action_button": {
                             "label": "Save File",
                             "tooltip": "Save the current Maya session to a "
-                                       "different file name",
+                            "different file name",
                             # will launch wf2 if configured
-                            "callback": _get_save_as_action()
+                            "callback": _get_save_as_action(),
                         }
-                    }
+                    },
                 )
             else:
-                self.logger.debug(
-                    "Work template configured and matches session file.")
+                self.logger.debug("Work template configured and matches session file.")
         else:
             self.logger.debug("No work template configured.")
 
@@ -276,7 +269,8 @@ class MayaSessionPublishPlugin(HookBaseClass):
             # the next one until we get one that doesn't exist.
             while os.path.exists(next_version_path):
                 (next_version_path, version) = self._get_next_version_info(
-                    next_version_path, item)
+                    next_version_path, item
+                )
 
             error_msg = "The next version of this file already exists on disk."
             self.logger.error(
@@ -285,10 +279,10 @@ class MayaSessionPublishPlugin(HookBaseClass):
                     "action_button": {
                         "label": "Save to v%s" % (version,),
                         "tooltip": "Save to the next available version number, "
-                                   "v%s" % (version,),
-                        "callback": lambda: _save_session(next_version_path)
+                        "v%s" % (version,),
+                        "callback": lambda: _save_session(next_version_path),
                     }
-                }
+                },
             )
             raise Exception(error_msg)
 
@@ -297,7 +291,8 @@ class MayaSessionPublishPlugin(HookBaseClass):
         # populate the publish template on the item if found
         publish_template_setting = settings.get("Publish Template")
         publish_template = publisher.engine.get_template_by_name(
-            publish_template_setting.value)
+            publish_template_setting.value
+        )
         if publish_template:
             item.properties["publish_template"] = publish_template
 
@@ -329,8 +324,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
         item.properties["path"] = path
 
         # add dependencies for the base class to register when publishing
-        item.properties["publish_dependencies"] = \
-            _maya_find_additional_session_dependencies()
+        item.properties[
+            "publish_dependencies"
+        ] = _maya_find_additional_session_dependencies()
 
         # let the base class register the publish
         super(MayaSessionPublishPlugin, self).publish(settings, item)
@@ -384,8 +380,9 @@ def _maya_find_additional_session_dependencies():
 
         # get path and make it platform dependent
         # (maya uses C:/style/paths)
-        texture_path = cmds.getAttr(
-            "%s.fileTextureName" % file_node).replace("/", os.path.sep)
+        texture_path = cmds.getAttr("%s.fileTextureName" % file_node).replace(
+            "/", os.path.sep
+        )
         if texture_path:
             ref_paths.add(texture_path)
 
@@ -452,6 +449,6 @@ def _get_save_as_action():
         "action_button": {
             "label": "Save As...",
             "tooltip": "Save the current session",
-            "callback": callback
+            "callback": callback,
         }
     }
