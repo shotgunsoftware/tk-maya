@@ -310,6 +310,8 @@ class AppCommand(object):
         #
         # As the primary purpose of this method is to detach the executing code from the menu invocation,
         # using a singleShot timer achieves this without the odd behaviour exhibited by evalDeferred.
+        # This logic is also used in the plugin_logic.py Command class.
+
         QtCore.QTimer.singleShot(0, self._execute_within_exception_trap)
 
     def _execute_within_exception_trap(self):

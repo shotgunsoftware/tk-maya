@@ -308,16 +308,18 @@ def _create_login_menu():
     )
 
     # Add the login menu item.
-    cmds.menuItem(parent=menu, label="Log In to Shotgun...", command=_login_user)
+    cmds.menuItem(
+        parent=menu, label="Log In to Shotgun...", command=Callback(_login_user)
+    )
 
     cmds.menuItem(parent=menu, divider=True)
 
     # Add the website menu items.
     cmds.menuItem(
-        parent=menu, label="Learn about Shotgun...", command=_jump_to_website,
+        parent=menu, label="Learn about Shotgun...", command=Callback(_jump_to_website),
     )
     cmds.menuItem(
-        parent=menu, label="Try Shotgun for Free...", command=_jump_to_signup,
+        parent=menu, label="Try Shotgun for Free...", command=Callback(_jump_to_signup),
     )
 
 
@@ -343,3 +345,40 @@ def _jump_to_signup():
     QtGui.QDesktopServices.openUrl(
         QtCore.QUrl("https://www.shotgunsoftware.com/signup")
     )
+
+
+class Callback(object):
+    def __init__(self, callback):
+        self.callback = callback
+
+    def __call__(self, *args):
+        """
+        Execute the callback deferred to avoid potential problems with the command resulting in the menu
+        being deleted, e.g. if the context changes resulting in an engine restart! - this was causing a
+        segmentation fault crash on Linux.
+
+        :param state: The state of the menu item.
+        :return: None
+        """
+        # note that we use a single shot timer instead of cmds.evalDeferred as we were experiencing
+        # odd behaviour when the deferred command presented a modal dialog that then performed a file
+        # operation that resulted in a QMessageBox being shown - the deferred command would then run
+        # a second time, presumably from the event loop of the modal dialog from the first command!
+        #
+        # As the primary purpose of this method is to detach the executing code from the menu invocation,
+        # using a singleShot timer achieves this without the odd behaviour exhibited by evalDeferred.
+
+        # This logic is borrowed from the menu_generation.py AppCommand class.
+
+        QtCore.QTimer.singleShot(0, self._execute_within_exception_trap)
+
+    def _execute_within_exception_trap(self):
+        """
+        Execute the callback and log any exception that gets raised which may otherwise have been
+        swallowed by the deferred execution of the callback.
+        """
+        try:
+            self.callback()
+        except Exception:
+            current_engine = sgtk.platform.current_engine()
+            current_engine.logger.exception("An exception was raised from Toolkit")
