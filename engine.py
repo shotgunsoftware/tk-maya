@@ -864,7 +864,7 @@ class MayaEngine(Engine):
 
         :returns: the created widget_class instance
         """
-        from sgtk.platform.qt import QtCore, QtGui
+        from sgtk.platform.qt import QtGui
 
         tk_maya = self.import_module("tk_maya")
 
