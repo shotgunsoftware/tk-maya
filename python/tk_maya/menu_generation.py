@@ -115,13 +115,15 @@ class MenuGenerator(object):
 
         # link to UI
         cmds.menuItem(
-            label="Jump to Shotgun", parent=ctx_menu, command=self._jump_to_sg
+            label="Jump to Shotgun", parent=ctx_menu, command=Callback(self._jump_to_sg)
         )
 
         # Add the menu item only when there are some file system locations.
         if ctx.filesystem_locations:
             cmds.menuItem(
-                label="Jump to File System", parent=ctx_menu, command=self._jump_to_fs,
+                label="Jump to File System",
+                parent=ctx_menu,
+                command=Callback(self._jump_to_fs),
             )
 
         # divider (apps may register entries below this divider)
@@ -129,7 +131,7 @@ class MenuGenerator(object):
 
         return ctx_menu
 
-    def _jump_to_sg(self, state):
+    def _jump_to_sg(self):
         """
         Jump to shotgun, launch web browser
         :param state: The state of the menu item
@@ -138,7 +140,7 @@ class MenuGenerator(object):
         url = self._engine.context.shotgun_url
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
-    def _jump_to_fs(self, state):
+    def _jump_to_fs(self):
         """
         Jump from context to File system action.
         :param state: The state of the menu item
@@ -201,7 +203,44 @@ class MenuGenerator(object):
                     cmd_obj.add_command_to_menu(self._menu_path)
 
 
-class AppCommand(object):
+class Callback(object):
+    def __init__(self, callback):
+        self.callback = callback
+
+    def __call__(self, *args):
+        """
+        Execute the callback deferred to avoid potential problems with the command resulting in the menu
+        being deleted, e.g. if the context changes resulting in an engine restart! - this was causing a
+        segmentation fault crash on Linux.
+
+        :param state: The state of the menu item.
+        :return: None
+        """
+        # note that we use a single shot timer instead of cmds.evalDeferred as we were experiencing
+        # odd behaviour when the deferred command presented a modal dialog that then performed a file
+        # operation that resulted in a QMessageBox being shown - the deferred command would then run
+        # a second time, presumably from the event loop of the modal dialog from the first command!
+        #
+        # As the primary purpose of this method is to detach the executing code from the menu invocation,
+        # using a singleShot timer achieves this without the odd behaviour exhibited by evalDeferred.
+
+        # This logic is implemented in the plugin_logic.py Callback class.
+
+        QtCore.QTimer.singleShot(0, self._execute_within_exception_trap)
+
+    def _execute_within_exception_trap(self):
+        """
+        Execute the callback and log any exception that gets raised which may otherwise have been
+        swallowed by the deferred execution of the callback.
+        """
+        try:
+            self.callback()
+        except Exception:
+            current_engine = sgtk.platform.current_engine()
+            current_engine.logger.exception("An exception was raised from Toolkit")
+
+
+class AppCommand(Callback):
     """
     Wraps around a single command that you get from engine.commands
     """
@@ -209,8 +248,8 @@ class AppCommand(object):
     def __init__(self, name, command_dict):
         self.name = name
         self.properties = command_dict["properties"]
-        self.callback = command_dict["callback"]
         self.favourite = False
+        super(AppCommand, self).__init__(command_dict["callback"])
 
     def get_app_name(self):
         """
@@ -284,7 +323,7 @@ class AppCommand(object):
         # finally create the command menu item:
         params = {
             "label": parts[-1],  # self.name,
-            "command": self._execute_deferred,
+            "command": self,
             "parent": parent_menu,
         }
         if "tooltip" in self.properties:
@@ -293,37 +332,6 @@ class AppCommand(object):
             params["enable"] = self.properties["enable_callback"]()
 
         cmds.menuItem(**params)
-
-    def _execute_deferred(self, state=False):
-        """
-        Execute the callback deferred to avoid potential problems with the command resulting in the menu
-        being deleted, e.g. if the context changes resulting in an engine restart! - this was causing a
-        segmentation fault crash on Linux.
-
-        :param state: The state of the menu item.
-        :return: None
-        """
-        # note that we use a single shot timer instead of cmds.evalDeferred as we were experiencing
-        # odd behaviour when the deferred command presented a modal dialog that then performed a file
-        # operation that resulted in a QMessageBox being shown - the deferred command would then run
-        # a second time, presumably from the event loop of the modal dialog from the first command!
-        #
-        # As the primary purpose of this method is to detach the executing code from the menu invocation,
-        # using a singleShot timer achieves this without the odd behaviour exhibited by evalDeferred.
-        # This logic is also used in the plugin_logic.py Command class.
-
-        QtCore.QTimer.singleShot(0, self._execute_within_exception_trap)
-
-    def _execute_within_exception_trap(self):
-        """
-        Execute the callback and log any exception that gets raised which may otherwise have been
-        swallowed by the deferred execution of the callback.
-        """
-        try:
-            self.callback()
-        except Exception:
-            current_engine = sgtk.platform.current_engine()
-            current_engine.logger.exception("An exception was raised from Toolkit")
 
     def _find_sub_menu_item(self, menu, label):
         """
