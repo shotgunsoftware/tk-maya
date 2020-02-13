@@ -89,7 +89,7 @@ def _on_parent_closed_callback(widget_id):
         else:  # Maya 2017 and later
             # Reparent the Shotgun app panel widget under Maya main window for later use.
             ptr = OpenMayaUI.MQtUtil.mainWindow()
-            main_window = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+            main_window = shiboken.wrapInstance(int(ptr), QtGui.QMainWindow)
             widget.setParent(main_window)
 
 

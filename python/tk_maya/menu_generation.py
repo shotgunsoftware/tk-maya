@@ -13,16 +13,13 @@ Menu handling for Maya
 
 """
 
-import tank
+import sgtk
 import sys
 import os
 import unicodedata
-import maya.OpenMaya as OpenMaya
-import pymel.core as pm
 import maya.cmds as cmds
-import maya
-from tank.platform.qt import QtGui, QtCore
-from pymel.core import Callback
+from sgtk.platform.qt import QtGui, QtCore
+from tank_vendor import six
 
 
 class MenuGenerator(object):
@@ -30,9 +27,9 @@ class MenuGenerator(object):
     Menu generation functionality for Maya
     """
 
-    def __init__(self, engine, menu_handle):
+    def __init__(self, engine, menu_path):
         self._engine = engine
-        self._menu_handle = menu_handle
+        self._menu_path = menu_path
         self._dialogs = []
 
     ##########################################################################################
@@ -44,11 +41,11 @@ class MenuGenerator(object):
         In order to have commands enable/disable themselves based on the enable_callback,
         re-create the menu items every time.
         """
-        self._menu_handle.deleteAllItems()
+        cmds.menu(self._menu_path, edit=True, deleteAllItems=True)
 
         # now add the context item on top of the main menu
         self._context_menu = self._add_context_menu()
-        pm.menuItem(divider=True, parent=self._menu_handle)
+        cmds.menuItem(divider=True, parent=self._menu_path)
 
         # now enumerate all items and create menu objects for them
         menu_items = []
@@ -69,31 +66,31 @@ class MenuGenerator(object):
                     and cmd.name == menu_name
                 ):
                     # found our match!
-                    cmd.add_command_to_menu(self._menu_handle)
+                    cmd.add_command_to_menu(self._menu_path)
                     # mark as a favourite item
                     cmd.favourite = True
 
-        pm.menuItem(divider=True, parent=self._menu_handle)
+        cmds.menuItem(divider=True, parent=self._menu_path)
 
         # now go through all of the menu items.
         # separate them out into various sections
         commands_by_app = {}
 
-        for cmd in menu_items:
+        for command in menu_items:
 
-            if cmd.get_type() == "context_menu":
+            if command.get_type() == "context_menu":
                 # context menu!
-                cmd.add_command_to_menu(self._context_menu)
+                command.add_command_to_menu(self._context_menu)
 
             else:
                 # normal menu
-                app_name = cmd.get_app_name()
+                app_name = command.get_app_name()
                 if app_name is None:
                     # un-parented app
                     app_name = "Other Items"
                 if not app_name in commands_by_app:
                     commands_by_app[app_name] = []
-                commands_by_app[app_name].append(cmd)
+                commands_by_app[app_name].append(command)
 
         # now add all apps to main menu
         self._add_app_menu(commands_by_app)
@@ -112,38 +109,40 @@ class MenuGenerator(object):
         # create the menu object
         # the label expects a unicode object so we cast it to support when the context may
         # contain info with non-ascii characters
-        ctx_menu = pm.subMenuItem(
-            label=ctx_name.decode("utf-8"), parent=self._menu_handle
+        ctx_menu = cmds.menuItem(
+            label=six.ensure_str(ctx_name), parent=self._menu_path, subMenu=True
         )
 
         # link to UI
-        pm.menuItem(
-            label="Jump to Shotgun", parent=ctx_menu, command=Callback(self._jump_to_sg)
+        cmds.menuItem(
+            label="Jump to Shotgun", parent=ctx_menu, command=self._jump_to_sg
         )
 
         # Add the menu item only when there are some file system locations.
         if ctx.filesystem_locations:
-            pm.menuItem(
-                label="Jump to File System",
-                parent=ctx_menu,
-                command=Callback(self._jump_to_fs),
+            cmds.menuItem(
+                label="Jump to File System", parent=ctx_menu, command=self._jump_to_fs,
             )
 
         # divider (apps may register entries below this divider)
-        pm.menuItem(divider=True, parent=ctx_menu)
+        cmds.menuItem(divider=True, parent=ctx_menu)
 
         return ctx_menu
 
-    def _jump_to_sg(self):
+    def _jump_to_sg(self, state):
         """
         Jump to shotgun, launch web browser
+        :param state: The state of the menu item
+        :return: None
         """
         url = self._engine.context.shotgun_url
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
-    def _jump_to_fs(self):
+    def _jump_to_fs(self, state):
         """
-        Jump from context to FS
+        Jump from context to File system action.
+        :param state: The state of the menu item
+        :return: None
         """
         # launch one window for each location on disk
         paths = self._engine.context.filesystem_locations
@@ -178,15 +177,17 @@ class MenuGenerator(object):
             if len(commands_by_app[app_name]) > 1:
                 # more than one menu entry fort his app
                 # make a sub menu and put all items in the sub menu
-                app_menu = pm.subMenuItem(label=app_name, parent=self._menu_handle)
+                app_menu = cmds.menuItem(
+                    label=app_name, parent=self._menu_path, subMenu=True
+                )
 
-                # get the list of menu cmds for this app
-                cmds = commands_by_app[app_name]
+                # get the list of menu commands for this app
+                commands = commands_by_app[app_name]
                 # make sure it is in alphabetical order
-                cmds.sort(key=lambda x: x.name)
+                commands.sort(key=lambda x: x.name)
 
-                for cmd in cmds:
-                    cmd.add_command_to_menu(app_menu)
+                for cmd_obj in commands:
+                    cmd_obj.add_command_to_menu(app_menu)
 
             else:
 
@@ -197,7 +198,7 @@ class MenuGenerator(object):
                 cmd_obj = commands_by_app[app_name][0]
                 if not cmd_obj.favourite:
                     # skip favourites since they are already on the menu
-                    cmd_obj.add_command_to_menu(self._menu_handle)
+                    cmd_obj.add_command_to_menu(self._menu_path)
 
 
 class AppCommand(object):
@@ -245,7 +246,7 @@ class AppCommand(object):
             app = self.properties["app"]
             doc_url = app.documentation_url
             # deal with nuke's inability to handle unicode. #fail
-            if doc_url.__class__ == unicode:
+            if type(doc_url) == six.text_type:
                 doc_url = unicodedata.normalize("NFKD", doc_url).encode(
                     "ascii", "ignore"
                 )
@@ -278,12 +279,12 @@ class AppCommand(object):
             else:
                 # create new sub menu
                 params = {"label": item_label, "parent": parent_menu, "subMenu": True}
-                parent_menu = pm.menuItem(**params)
+                parent_menu = cmds.menuItem(**params)
 
         # finally create the command menu item:
         params = {
             "label": parts[-1],  # self.name,
-            "command": Callback(self._execute_deferred),
+            "command": self._execute_deferred,
             "parent": parent_menu,
         }
         if "tooltip" in self.properties:
@@ -291,13 +292,16 @@ class AppCommand(object):
         if "enable_callback" in self.properties:
             params["enable"] = self.properties["enable_callback"]()
 
-        pm.menuItem(**params)
+        cmds.menuItem(**params)
 
-    def _execute_deferred(self):
+    def _execute_deferred(self, state=False):
         """
         Execute the callback deferred to avoid potential problems with the command resulting in the menu
         being deleted, e.g. if the context changes resulting in an engine restart! - this was causing a
-        segmentation fault crash on Linux
+        segmentation fault crash on Linux.
+
+        :param state: The state of the menu item.
+        :return: None
         """
         # note that we use a single shot timer instead of cmds.evalDeferred as we were experiencing
         # odd behaviour when the deferred command presented a modal dialog that then performed a file
@@ -316,22 +320,22 @@ class AppCommand(object):
         try:
             self.callback()
         except Exception:
-            current_engine = tank.platform.current_engine()
+            current_engine = sgtk.platform.current_engine()
             current_engine.logger.exception("An exception was raised from Toolkit")
 
     def _find_sub_menu_item(self, menu, label):
         """
         Find the 'sub-menu' menu item with the given label
         """
-        items = pm.menu(menu, query=True, itemArray=True)
+        items = cmds.menu(menu, query=True, itemArray=True)
         for item in items:
             item_path = "%s|%s" % (menu, item)
 
             # only care about menuItems that have sub-menus:
-            if not pm.menuItem(item_path, query=True, subMenu=True):
+            if not cmds.menuItem(item_path, query=True, subMenu=True):
                 continue
 
-            item_label = pm.menuItem(item_path, query=True, label=True)
+            item_label = cmds.menuItem(item_path, query=True, label=True)
             if item_label == label:
                 return item_path
 

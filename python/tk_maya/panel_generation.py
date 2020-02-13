@@ -271,7 +271,7 @@ def build_workspace_control_ui(shotgun_panel_name):
 
     # Retrieve the calling Maya workspace control.
     ptr = MQtUtil.getCurrentParent()
-    workspace_control = wrapInstance(long(ptr), QtWidgets.QWidget)
+    workspace_control = wrapInstance(int(ptr), QtWidgets.QWidget)
 
     # Search for the Shotgun app panel widget.
     for widget in QtWidgets.QApplication.allWidgets():
