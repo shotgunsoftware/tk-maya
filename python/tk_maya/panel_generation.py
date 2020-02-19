@@ -8,6 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
+import sys
 import maya.cmds as cmds
 import maya.mel as mel
 import maya.utils
@@ -17,7 +18,13 @@ from . import panel_util
 
 # Prefix prepended to the Shotgun app panel unique identifier to create
 # the name given to the Qt widget at the root of the Shotgun app panel.
-SHOTGUN_APP_PANEL_PREFIX = "panel_"
+# Due to us needing to update the panel code that gets embedded with the
+# cmds.workspaceControl command to support python 3, we don't want to restore
+# the panel if it was created in an earlier version of `tk-maya` that didn't
+# support python 3 when running in Python 3. So we provide a different prefix name
+# if you are running in Python 3, so as to not attempt restoring an older panel that
+# won't compile in Python 3.
+SHOTGUN_APP_PANEL_PREFIX = "panel_py3_" if sys.version_info.major == 3 else "panel_"
 
 # Prefix prepended to the Shotgun app panel name to create the name
 # given to the Maya panel embedding the Shotgun app panel widget.
@@ -203,7 +210,6 @@ def dock_panel(engine, shotgun_panel, title):
         # automatically when Maya is restarted later by the user.
         ui_script = (
             "import sys\n"
-            "import maya.api.OpenMaya\n"
             "import maya.utils\n"
             "for m in sys.modules:\n"
             "    if 'tk_maya.panel_generation' in m:\n"
