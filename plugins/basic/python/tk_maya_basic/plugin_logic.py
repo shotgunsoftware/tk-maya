@@ -381,4 +381,4 @@ class Callback(object):
             self.callback()
         except Exception:
             current_engine = sgtk.platform.current_engine()
-            current_engine.logger.exception("An exception was raised from Toolkit")
+            current_engine.logger.exception("An exception was raised from a menu item:")
