@@ -207,13 +207,13 @@ class Callback(object):
     def __init__(self, callback):
         self.callback = callback
 
-    def __call__(self, *_args):
+    def __call__(self, *_):
         """
         Execute the callback deferred to avoid potential problems with the command resulting in the menu
         being deleted, e.g. if the context changes resulting in an engine restart! - this was causing a
         segmentation fault crash on Linux.
 
-        :param _args: Accepts any args so that a callback might throw at it.
+        :param _: Accepts any args so that a callback might throw at it.
         For example a menu callback will pass the menu state. We accept these and ignore them.
         """
         # note that we use a single shot timer instead of cmds.evalDeferred as we were experiencing
