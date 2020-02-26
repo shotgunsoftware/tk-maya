@@ -277,22 +277,6 @@ class AppCommand(Callback):
 
         return None
 
-    def get_documentation_url_str(self):
-        """
-        Returns the documentation as a str
-        """
-        if "app" in self.properties:
-            app = self.properties["app"]
-            doc_url = app.documentation_url
-            # deal with nuke's inability to handle unicode. #fail
-            if type(doc_url) == six.text_type:
-                doc_url = unicodedata.normalize("NFKD", doc_url).encode(
-                    "ascii", "ignore"
-                )
-            return doc_url
-
-        return None
-
     def get_type(self):
         """
         returns the command type. Returns node, custom_pane or default
@@ -305,7 +289,7 @@ class AppCommand(Callback):
         """
 
         # create menu sub-tree if need to:
-        # Support menu items seperated by '/'
+        # Support menu items separated by '/'
         parent_menu = menu
         parts = self.name.split("/")
         for item_label in parts[:-1]:
