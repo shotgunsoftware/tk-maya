@@ -11,7 +11,6 @@
 import os
 import maya.cmds as cmds
 import sgtk
-import six
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
