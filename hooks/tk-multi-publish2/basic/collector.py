@@ -125,7 +125,7 @@ class MayaSessionCollector(HookBaseClass):
         publisher = self.parent
 
         # get the path to the current file
-        path = cmds.file(query=True, sn=True)
+        path = publisher.engine.maya_scene_path()
 
         # determine the display name for the item
         if path:

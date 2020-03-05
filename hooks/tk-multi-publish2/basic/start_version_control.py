@@ -11,6 +11,7 @@
 import os
 import maya.cmds as cmds
 import sgtk
+import six
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -117,7 +118,8 @@ class MayaStartVersionControlPlugin(HookBaseClass):
         :returns: dictionary with boolean keys accepted, required and enabled
         """
 
-        path = _session_path()
+        publisher = self.parent
+        path = publisher.engine.maya_scene_path()
 
         if path:
             version_number = self._get_version_number(path, item)
@@ -160,7 +162,7 @@ class MayaStartVersionControlPlugin(HookBaseClass):
         """
 
         publisher = self.parent
-        path = _session_path()
+        path = publisher.engine.maya_scene_path()
 
         if not path:
             # the session still requires saving. provide a save button.
@@ -201,7 +203,7 @@ class MayaStartVersionControlPlugin(HookBaseClass):
 
         # get the path in a normalized state. no trailing separator, separators
         # are appropriate for current os, no double separators, etc.
-        path = sgtk.util.ShotgunPath.normalize(_session_path())
+        path = sgtk.util.ShotgunPath.normalize(publisher.engine.maya_scene_path())
 
         # ensure the session is saved in its current state
         _save_session(path)
@@ -262,19 +264,6 @@ class MayaStartVersionControlPlugin(HookBaseClass):
             version_number = publisher.util.get_version_number(path)
 
         return version_number
-
-
-def _session_path():
-    """
-    Return the path to the current session
-    :return:
-    """
-    path = cmds.file(query=True, sn=True)
-
-    if isinstance(path, unicode):
-        path = path.encode("utf-8")
-
-    return path
 
 
 def _save_session(path):

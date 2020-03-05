@@ -13,6 +13,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 import sgtk
 from sgtk.util.filesystem import ensure_folder_exists
+import six
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -170,7 +171,8 @@ class MayaSessionPublishPlugin(HookBaseClass):
         if settings.get("Publish Template").value:
             item.context_change_allowed = False
 
-        path = _session_path()
+        publisher = self.parent
+        path = publisher.engine.maya_scene_path()
 
         if not path:
             # the session has not been saved before (no path determined).
@@ -198,7 +200,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         """
 
         publisher = self.parent
-        path = _session_path()
+        path = publisher.engine.maya_scene_path()
 
         # ---- ensure the session has been saved
 
@@ -313,9 +315,10 @@ class MayaSessionPublishPlugin(HookBaseClass):
         :param item: Item to process
         """
 
+        publisher = self.parent
         # get the path in a normalized state. no trailing separator, separators
         # are appropriate for current os, no double separators, etc.
-        path = sgtk.util.ShotgunPath.normalize(_session_path())
+        path = sgtk.util.ShotgunPath.normalize(publisher.engine.maya_scene_path())
 
         # ensure the session is saved
         _save_session(path)
@@ -387,19 +390,6 @@ def _maya_find_additional_session_dependencies():
             ref_paths.add(texture_path)
 
     return list(ref_paths)
-
-
-def _session_path():
-    """
-    Return the path to the current session
-    :return:
-    """
-    path = cmds.file(query=True, sn=True)
-
-    if isinstance(path, unicode):
-        path = path.encode("utf-8")
-
-    return path
 
 
 def _save_session(path):
