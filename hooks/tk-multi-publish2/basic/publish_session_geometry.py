@@ -12,6 +12,7 @@ import os
 import maya.cmds as cmds
 import maya.mel as mel
 import sgtk
+import six
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -172,8 +173,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         :returns: True if item is valid, False otherwise.
         """
 
-        publisher = self.parent
-        path = publisher.engine.maya_scene_path()
+        path = _session_path()
 
         # ---- ensure the session has been saved
 
@@ -304,6 +304,19 @@ def _find_scene_animation_range():
     end = int(cmds.playbackOptions(q=True, max=True))
 
     return start, end
+
+
+def _session_path():
+    """
+    Return the path to the current session
+    :return:
+    """
+    path = cmds.file(query=True, sn=True)
+
+    if path is not None:
+        path = six.ensure_str(path)
+
+    return path
 
 
 def _get_save_as_action():

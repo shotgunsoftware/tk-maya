@@ -25,8 +25,6 @@ import maya.utils
 import maya.mel as mel
 from sgtk.platform import Engine
 
-from tank_vendor import six
-
 # Although the engine has logging already, this logger is needed for callback based logging
 # where an engine may not be present.
 logger = sgtk.LogManager.get_logger(__name__)
@@ -125,6 +123,29 @@ class SceneEventWatcher(object):
         watcher.stop_watching()
 
 
+def maya_scene_path():
+    """
+    Returns the path to the current scene.
+    :return: str
+    """
+    # This logic is borrowed from the pymel implementation of sceneName().
+
+    # Get the name for untitled files in Maya.
+    untitled_file_name = mel.eval("untitledFileName()")
+    path = OpenMaya.MFileIO.currentFile()
+
+    file_name = os.path.basename(path)
+    # Don't just use cmds.file(q=1, sceneName=1)
+    # because it was sometimes returning an empty string,
+    # even when there was a valid file
+    # Check both the OpenMaya.MFileIO.currentFile() and the cmds.file(q=1, sceneName=1)
+    # so as to be sure that no file is open. This should mean that if someone does have
+    # a file open and it's named after the untitledFileName we should still be able to return the path.
+    if file_name.startswith(untitled_file_name) and cmds.file(q=1, sceneName=1) == "":
+        return None
+    return path
+
+
 def refresh_engine(engine_name, prev_context, menu_name):
     """
     refresh the current engine
@@ -141,7 +162,7 @@ def refresh_engine(engine_name, prev_context, menu_name):
         return
 
     # Get the path of the current open Maya scene file.
-    new_path = MayaEngine.maya_scene_path()
+    new_path = maya_scene_path()
 
     if new_path is None:
         # This is a File->New call, so we just leave the engine in the current
@@ -969,31 +990,3 @@ class MayaEngine(Engine):
 
         # Clear the dictionary of Maya panels now that they were deleted.
         self._maya_panel_dict = {}
-
-    @classmethod
-    def maya_scene_path(cls):
-        """
-        Returns the path to the current scene.
-        :return: str
-        """
-        # This logic is borrowed from the pymel implementation of sceneName().
-
-        # Get the name for untitled files in Maya.
-        untitled_file_name = mel.eval("untitledFileName()")
-        path = OpenMaya.MFileIO.currentFile()
-
-        file_name = os.path.basename(path)
-        # Don't just use cmds.file(q=1, sceneName=1)
-        # because it was sometimes returning an empty string,
-        # even when there was a valid file
-        # Check both the OpenMaya.MFileIO.currentFile() and the cmds.file(q=1, sceneName=1)
-        # so as to be sure that no file is open. This should mean that if someone does have
-        # a file open and it's named after the untitledFileName we should still be able to return the path.
-        if (
-            file_name.startswith(untitled_file_name)
-            and cmds.file(q=1, sceneName=1) == ""
-        ):
-            return None
-
-        if path is not None:
-            return six.ensure_str(path)
