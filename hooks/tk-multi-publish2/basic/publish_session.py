@@ -13,7 +13,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 import sgtk
 from sgtk.util.filesystem import ensure_folder_exists
-import six
+from tank_vendor import six
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -171,8 +171,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         if settings.get("Publish Template").value:
             item.context_change_allowed = False
 
-        publisher = self.parent
-        path = publisher.engine.maya_scene_path()
+        path = _session_path()
 
         if not path:
             # the session has not been saved before (no path determined).
@@ -200,7 +199,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         """
 
         publisher = self.parent
-        path = publisher.engine.maya_scene_path()
+        path = _session_path()
 
         # ---- ensure the session has been saved
 

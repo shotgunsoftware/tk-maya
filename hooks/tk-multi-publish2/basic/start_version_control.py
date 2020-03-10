@@ -11,7 +11,8 @@
 import os
 import maya.cmds as cmds
 import sgtk
-import six
+
+from tank_vendor import six
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
