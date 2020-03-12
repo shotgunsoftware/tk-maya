@@ -9,30 +9,29 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 """
-A Maya engine for Tank.
+A Maya engine for Shotgun Toolkit.
 
 """
 
-import tank
+import sgtk
 import sys
 import traceback
 import re
-import time
 import os
 import logging
 import maya.OpenMaya as OpenMaya
-import pymel.core as pm
 import maya.cmds as cmds
 import maya.utils
-from tank.platform import Engine
+import maya.mel as mel
+from sgtk.platform import Engine
 
 # Although the engine has logging already, this logger is needed for callback based logging
 # where an engine may not be present.
-logger = tank.LogManager.get_logger(__name__)
+logger = sgtk.LogManager.get_logger(__name__)
 
 ###############################################################################################
 # methods to support the state when the engine cannot start up
-# for example if a non-tank file is loaded in maya
+# for example if a non-sgtk file is loaded in maya
 
 
 class SceneEventWatcher(object):
@@ -124,12 +123,35 @@ class SceneEventWatcher(object):
         watcher.stop_watching()
 
 
+def maya_scene_path():
+    """
+    Returns the path to the current scene.
+    :return: str
+    """
+    # This logic is borrowed from the pymel implementation of sceneName().
+
+    # Get the name for untitled files in Maya.
+    untitled_file_name = mel.eval("untitledFileName()")
+    path = OpenMaya.MFileIO.currentFile()
+
+    file_name = os.path.basename(path)
+    # Don't just use cmds.file(q=1, sceneName=1)
+    # because it was sometimes returning an empty string,
+    # even when there was a valid file
+    # Check both the OpenMaya.MFileIO.currentFile() and the cmds.file(q=1, sceneName=1)
+    # so as to be sure that no file is open. This should mean that if someone does have
+    # a file open and it's named after the untitledFileName we should still be able to return the path.
+    if file_name.startswith(untitled_file_name) and cmds.file(q=1, sceneName=1) == "":
+        return None
+    return path
+
+
 def refresh_engine(engine_name, prev_context, menu_name):
     """
     refresh the current engine
     """
     logger.debug("Refreshing the engine, previous context: '%r'", prev_context)
-    current_engine = tank.platform.current_engine()
+    current_engine = sgtk.platform.current_engine()
 
     if not current_engine:
         # If we don't have an engine for some reason then we don't have
@@ -139,26 +161,23 @@ def refresh_engine(engine_name, prev_context, menu_name):
         )
         return
 
-    if pm.sceneName() == "":
+    # Get the path of the current open Maya scene file.
+    new_path = maya_scene_path()
+
+    if new_path is None:
         # This is a File->New call, so we just leave the engine in the current
         # context and move on.
         logger.debug("New file call, aborting the refresh of the engine.")
         return
 
-    # determine the tk instance and ctx to use:
-    tk = current_engine.sgtk
-
-    # loading a scene file
-    new_path = pm.sceneName().abspath()
-
     # this file could be in another project altogether, so create a new
     # API instance.
     try:
-        tk = tank.tank_from_path(new_path)
+        tk = sgtk.sgtk_from_path(new_path)
         logger.debug("Extracted sgtk instance: '%r' from path: '%r'", tk, new_path)
 
-    except tank.TankError as e:
-        logger.exception("Could not execute tank_from_path('%s')" % new_path)
+    except sgtk.TankError as e:
+        logger.exception("Could not execute sgtk_from_path('%s')" % new_path)
         OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
         # build disabled menu
         create_sgtk_disabled_menu(menu_name)
@@ -175,7 +194,7 @@ def refresh_engine(engine_name, prev_context, menu_name):
         "Given the path: '%s' the following context was extracted: '%r'", new_path, ctx
     )
 
-    if ctx != tank.platform.current_engine().context:
+    if ctx != sgtk.platform.current_engine().context:
         logger.debug("Changing the context to '%r", ctx)
         current_engine.change_context(ctx)
 
@@ -202,7 +221,7 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
 
 def sgtk_disabled_message():
     """
-    Explain why tank is disabled.
+    Explain why sgtk is disabled.
     """
     msg = (
         "Shotgun integration is disabled because it cannot recognize "
@@ -229,15 +248,20 @@ def create_sgtk_disabled_menu(menu_name):
         return
 
     # destroy any pre-existing shotgun menu - the one that holds the apps
-    if pm.menu("ShotgunMenu", exists=True):
-        pm.deleteUI("ShotgunMenu")
+    if cmds.menu("ShotgunMenu", exists=True):
+        cmds.deleteUI("ShotgunMenu")
 
     # create a new shotgun disabled menu if one doesn't exist already.
-    if not pm.menu("ShotgunMenuDisabled", exists=True):
-        sg_menu = pm.menu(
-            "ShotgunMenuDisabled", label=menu_name, parent=pm.melGlobals["gMainWindow"]
+    if not cmds.menu("ShotgunMenuDisabled", exists=True):
+        sg_menu = cmds.menu(
+            "ShotgunMenuDisabled",
+            label=menu_name,
+            # Get the mel global variable value for main window.
+            # In order to get the global variable in mel.eval we have to assign it to another temporary value
+            # so that it returns the result.
+            parent=mel.eval("$retvalue = $gMainWindow;"),
         )
-        pm.menuItem(
+        cmds.menuItem(
             label="Sgtk is disabled.",
             parent=sg_menu,
             command=lambda arg: sgtk_disabled_message(),
@@ -254,8 +278,8 @@ def remove_sgtk_disabled_menu():
         # don't create menu in batch mode
         return False
 
-    if pm.menu("ShotgunMenuDisabled", exists=True):
-        pm.deleteUI("ShotgunMenuDisabled")
+    if cmds.menu("ShotgunMenuDisabled", exists=True):
+        cmds.deleteUI("ShotgunMenuDisabled")
         return True
 
     return False
@@ -337,7 +361,7 @@ class MayaEngine(Engine):
         """
         # unicode characters returned by the shotgun api need to be converted
         # to display correctly in all of the app windows
-        from tank.platform.qt import QtCore
+        from sgtk.platform.qt import QtCore
 
         # tell QT to interpret C strings as utf-8
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
@@ -353,7 +377,7 @@ class MayaEngine(Engine):
         # check that we are running an ok version of maya
         current_os = cmds.about(operatingSystem=True)
         if current_os not in ["mac", "win64", "linux64"]:
-            raise tank.TankError(
+            raise sgtk.TankError(
                 "The current platform is not supported! Supported platforms "
                 "are Mac, Linux 64 and Windows 64."
             )
@@ -383,7 +407,7 @@ class MayaEngine(Engine):
             # raise an exception so that we bail out here with an error message
             # that will hopefully make sense for the user.
             msg = "Shotgun integration is not compatible with Maya versions older than 2014."
-            raise tank.TankError(msg)
+            raise sgtk.TankError(msg)
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
             msg = (
@@ -462,18 +486,25 @@ class MayaEngine(Engine):
         """
 
         # only create the shotgun menu if not in batch mode and menu doesn't already exist
-        if self.has_ui and not pm.menu("ShotgunMenu", exists=True):
+        if self.has_ui and not cmds.menu("ShotgunMenu", exists=True):
 
-            self._menu_handle = pm.menu(
+            self._menu_path = cmds.menu(
                 "ShotgunMenu",
                 label=self._menu_name,
-                parent=pm.melGlobals["gMainWindow"],
+                # Get the mel global variable value for main window.
+                # In order to get the global variable in mel.eval we have to assign it to another temporary value
+                # so that it returns the result.
+                parent=mel.eval("$retvalue = $gMainWindow;"),
             )
             # create our menu handler
             tk_maya = self.import_module("tk_maya")
-            self._menu_generator = tk_maya.MenuGenerator(self, self._menu_handle)
+            self._menu_generator = tk_maya.MenuGenerator(self, self._menu_path)
             # hook things up so that the menu is created every time it is clicked
-            self._menu_handle.postMenuCommand(self._menu_generator.create_menu)
+            cmds.menu(
+                self._menu_path,
+                edit=True,
+                postMenuCommand=self._menu_generator.create_menu,
+            )
 
             # Restore the persisted Shotgun app panels.
             tk_maya.panel_generation.restore_panels(self)
@@ -527,7 +558,7 @@ class MayaEngine(Engine):
 
         # Build a dictionary mapping app instance names to dictionaries of commands they registered with the engine.
         app_instance_commands = {}
-        for (command_name, value) in self.commands.iteritems():
+        for (command_name, value) in self.commands.items():
             app_instance = value["properties"].get("app")
             if app_instance:
                 # Add entry 'command name: command function' to the command dictionary of this app instance.
@@ -557,7 +588,7 @@ class MayaEngine(Engine):
                     # Run all commands of the given app instance.
                     # Run these commands once Maya will have completed its UI update and be idle
                     # in order to run them after the ones that restore the persisted Shotgun app panels.
-                    for (command_name, command_function) in command_dict.iteritems():
+                    for (command_name, command_function) in command_dict.items():
                         self.logger.debug(
                             "%s startup running app '%s' command '%s'.",
                             self.name,
@@ -605,8 +636,8 @@ class MayaEngine(Engine):
             self.__watcher.stop_watching()
 
         # clean up UI:
-        if self.has_ui and pm.menu(self._menu_handle, exists=True):
-            pm.deleteUI(self._menu_handle)
+        if self.has_ui and cmds.menu(self._menu_path, exists=True):
+            cmds.deleteUI(self._menu_path)
 
     def _init_pyside(self):
         """
@@ -740,7 +771,7 @@ class MayaEngine(Engine):
         show_dialog & show_modal.
         """
         # Find a parent for the dialog - this is the Maya mainWindow()
-        from tank.platform.qt import QtGui
+        from sgtk.platform.qt import QtGui
         import maya.OpenMayaUI as OpenMayaUI
 
         try:
@@ -749,7 +780,7 @@ class MayaEngine(Engine):
             import shiboken
 
         ptr = OpenMayaUI.MQtUtil.mainWindow()
-        parent = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+        parent = shiboken.wrapInstance(int(ptr), QtGui.QMainWindow)
 
         return parent
 
@@ -811,11 +842,16 @@ class MayaEngine(Engine):
         if setting is None:
             return
 
-        tmpl = self.tank.templates.get(setting)
+        tmpl = self.sgtk.templates.get(setting)
         fields = self.context.as_template_fields(tmpl)
         proj_path = tmpl.apply_fields(fields)
         self.logger.info("Setting Maya project to '%s'", proj_path)
-        pm.mel.setProject(proj_path)
+
+        # Since we are inserting this path into another string that will be executed in mel
+        # We need to double up and backslashes.
+        proj_path = proj_path.replace("\\", "\\\\")
+
+        mel.eval('setProject("{0}")'.format(proj_path))
 
     ##########################################################################################
     # panel support
@@ -833,7 +869,7 @@ class MayaEngine(Engine):
 
         :returns: the created widget_class instance
         """
-        from tank.platform.qt import QtCore, QtGui
+        from sgtk.platform.qt import QtGui
 
         tk_maya = self.import_module("tk_maya")
 
@@ -867,7 +903,7 @@ class MayaEngine(Engine):
         # make a unique id for the app widget based off of the panel id
         widget_id = tk_maya.panel_generation.SHOTGUN_APP_PANEL_PREFIX + panel_id
 
-        if pm.control(widget_id, query=1, exists=1):
+        if cmds.control(widget_id, query=1, exists=1):
             self.logger.debug("Reparent existing toolkit widget %s.", widget_id)
             # Find the Shotgun app panel widget for later use.
             for widget in QtGui.QApplication.allWidgets():
@@ -932,9 +968,9 @@ class MayaEngine(Engine):
                 )
 
         # Loop through the dictionary of Maya panels that have been created by the engine.
-        for (maya_panel_name, widget_instance) in self._maya_panel_dict.iteritems():
+        for (maya_panel_name, widget_instance) in self._maya_panel_dict.items():
             # Make sure the Maya panel is still opened.
-            if pm.control(maya_panel_name, query=True, exists=True):
+            if cmds.control(maya_panel_name, query=True, exists=True):
                 try:
                     # Reparent the Shotgun app panel widget under Maya main window
                     # to prevent it from being deleted with the existing Maya panel.
@@ -946,7 +982,7 @@ class MayaEngine(Engine):
                     widget_instance.setParent(parent)
                     # The Maya panel can now be deleted safely.
                     self.logger.debug("Deleting Maya panel %s.", maya_panel_name)
-                    pm.deleteUI(maya_panel_name)
+                    cmds.deleteUI(maya_panel_name)
                 except Exception as exception:
                     self.logger.error(
                         "Cannot delete Maya panel %s: %s", maya_panel_name, exception

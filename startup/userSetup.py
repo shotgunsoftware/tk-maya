@@ -158,4 +158,6 @@ def start_toolkit():
 
 
 # Fire up Toolkit and the environment engine when there's time.
-cmds.evalDeferred("start_toolkit()")
+# TODO: Changed to lowestpriority due to issues on Mac Maya preview build, however this might
+#  only need to be a temporary fix as the real cause of the performance issues is unknown.
+cmds.evalDeferred("start_toolkit()", lowestPriority=True)

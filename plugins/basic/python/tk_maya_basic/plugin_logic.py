@@ -11,9 +11,10 @@
 import logging
 
 import maya.utils
-import pymel.core as pm
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaUI as OpenMayaUI
+import maya.mel as mel
+import maya.cmds as cmds
 
 try:
     import shiboken2 as shiboken
@@ -52,7 +53,7 @@ class ProgressHandler(QtCore.QObject):
 
     def __init__(self):
         ptr = OpenMayaUI.MQtUtil.mainWindow()
-        parent = shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+        parent = shiboken.wrapInstance(int(ptr), QtGui.QMainWindow)
 
         super(ProgressHandler, self).__init__(parent=parent)
 
@@ -263,14 +264,15 @@ def _show_progress_bar(progress_value, message):
 
     # Show the main progress bar (normally in the Help Line) making sure it uses
     # the bootstrap progress configuration (since it might have been taken over by another process).
-    main_progress_bar = pm.ui.MainProgressBar(
-        minValue=0, maxValue=100, interruptable=False
+    cmds.progressBar(
+        _get_main_progress_bar_name(),
+        edit=True,
+        beginProgress=True,
+        isMainProgressBar=True,
+        isInterruptable=False,
+        progress=int(progress_value * 100.0),
+        status="Shotgun: %s" % message,
     )
-    main_progress_bar.beginProgress()
-
-    # Set the main progress bar value and message.
-    main_progress_bar.setProgress(int(progress_value * 100.0))
-    main_progress_bar.setStatus("Shotgun: %s" % message)
 
 
 def _hide_progress_bar():
@@ -279,8 +281,15 @@ def _hide_progress_bar():
     """
 
     # Hide the main progress bar (normally in the Help Line).
-    main_progress_bar = pm.getMainProgressBar()
-    main_progress_bar.endProgress()
+    cmds.progressBar(_get_main_progress_bar_name(), edit=True, endProgress=True)
+
+
+def _get_main_progress_bar_name():
+    """
+    Gets and returns the name of the main progress bar in Maya.
+    :return:
+    """
+    return mel.eval("$retvalue = $gMainProgressBar;")
 
 
 def _create_login_menu():
@@ -289,25 +298,28 @@ def _create_login_menu():
     """
 
     # Creates the menu entry in the application menu bar.
-    menu = pm.menu(MENU_LOGIN, label=MENU_LABEL, parent=pm.melGlobals["gMainWindow"])
+    menu = cmds.menu(
+        MENU_LOGIN,
+        label=MENU_LABEL,
+        # Get the mel global variable value for main window.
+        # In order to get the global variable in mel.eval we have to assign it to another temporary value
+        # so that it returns the result.
+        parent=mel.eval("$retvalue = $gMainWindow;"),
+    )
 
     # Add the login menu item.
-    pm.menuItem(
-        parent=menu, label="Log In to Shotgun...", command=pm.Callback(_login_user)
+    cmds.menuItem(
+        parent=menu, label="Log In to Shotgun...", command=Callback(_login_user)
     )
 
-    pm.menuItem(parent=menu, divider=True)
+    cmds.menuItem(parent=menu, divider=True)
 
     # Add the website menu items.
-    pm.menuItem(
-        parent=menu,
-        label="Learn about Shotgun...",
-        command=pm.Callback(_jump_to_website),
+    cmds.menuItem(
+        parent=menu, label="Learn about Shotgun...", command=Callback(_jump_to_website),
     )
-    pm.menuItem(
-        parent=menu,
-        label="Try Shotgun for Free...",
-        command=pm.Callback(_jump_to_signup),
+    cmds.menuItem(
+        parent=menu, label="Try Shotgun for Free...", command=Callback(_jump_to_signup),
     )
 
 
@@ -315,9 +327,8 @@ def _delete_login_menu():
     """
     Deletes the displayed Shotgun user login menu.
     """
-
-    if pm.menu(MENU_LOGIN, exists=True):
-        pm.deleteUI(MENU_LOGIN)
+    if cmds.menu(MENU_LOGIN, exists=True):
+        cmds.deleteUI(MENU_LOGIN)
 
 
 def _jump_to_website():
@@ -334,3 +345,40 @@ def _jump_to_signup():
     QtGui.QDesktopServices.openUrl(
         QtCore.QUrl("https://www.shotgunsoftware.com/signup")
     )
+
+
+class Callback(object):
+    def __init__(self, callback):
+        self.callback = callback
+
+    def __call__(self, *_):
+        """
+        Execute the callback deferred to avoid potential problems with the command resulting in the menu
+        being deleted, e.g. if the context changes resulting in an engine restart! - this was causing a
+        segmentation fault crash on Linux.
+
+        :param _: Accepts any args so that a callback might throw at it.
+        For example a menu callback will pass the menu state. We accept these and ignore them.
+        """
+        # note that we use a single shot timer instead of cmds.evalDeferred as we were experiencing
+        # odd behaviour when the deferred command presented a modal dialog that then performed a file
+        # operation that resulted in a QMessageBox being shown - the deferred command would then run
+        # a second time, presumably from the event loop of the modal dialog from the first command!
+        #
+        # As the primary purpose of this method is to detach the executing code from the menu invocation,
+        # using a singleShot timer achieves this without the odd behaviour exhibited by evalDeferred.
+
+        # This logic is borrowed from the menu_generation.py Callback class.
+
+        QtCore.QTimer.singleShot(0, self._execute_within_exception_trap)
+
+    def _execute_within_exception_trap(self):
+        """
+        Execute the callback and log any exception that gets raised which may otherwise have been
+        swallowed by the deferred execution of the callback.
+        """
+        try:
+            self.callback()
+        except Exception:
+            current_engine = sgtk.platform.current_engine()
+            current_engine.logger.exception("An exception was raised from a menu item:")
