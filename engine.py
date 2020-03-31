@@ -668,14 +668,14 @@ class MayaEngine(Engine):
             self.logger.debug("PySide detected - the existing version will be used.")
             return
 
-        if sys.platform == "darwin":
+        if sgtk.util.is_macos():
             pyside_path = os.path.join(
                 self.disk_location, "resources", "pyside112_py26_qt471_mac", "python"
             )
             self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
             sys.path.append(pyside_path)
 
-        elif sys.platform == "win32":
+        elif sgtk.util.is_windows():
             # default windows version of pyside for 2011 and 2012
             pyside_path = os.path.join(
                 self.disk_location, "resources", "pyside111_py26_qt471_win64", "python"
@@ -689,7 +689,7 @@ class MayaEngine(Engine):
             path += ";%s" % dll_path
             os.environ["PATH"] = path
 
-        elif sys.platform == "linux2":
+        elif sgtk.util.is_linux():
             pyside_path = os.path.join(
                 self.disk_location, "resources", "pyside112_py26_qt471_linux", "python"
             )
@@ -720,7 +720,7 @@ class MayaEngine(Engine):
 
         :returns: the created widget_class instance
         """
-        if sys.platform != "darwin":
+        if sgtk.util.is_macos():
             return super(MayaEngine, self).show_dialog(title, *args, **kwargs)
         else:
             if not self.has_ui:
