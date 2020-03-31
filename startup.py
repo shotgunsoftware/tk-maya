@@ -43,7 +43,7 @@ class MayaLauncher(SoftwareLauncher):
             # C:/Program Files/Autodesk/Maya2015/bin/maya.exe
             "C:/Program Files/Autodesk/Maya{version}/bin/maya.exe",
         ],
-        "linux2": [
+        "linux": [
             # /usr/autodesk/maya2016/bin/maya
             "/usr/autodesk/maya{version}/bin/maya",
             "/usr/autodesk/maya{version}-{mach}/bin/maya",
@@ -225,7 +225,7 @@ class MayaLauncher(SoftwareLauncher):
             if sgtk.util.is_macos()
             else "win32"
             if sgtk.util.is_windows()
-            else "linux2"
+            else "linux"
             if sgtk.util.is_linux()
             else []
         )
