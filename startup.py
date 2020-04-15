@@ -43,7 +43,7 @@ class MayaLauncher(SoftwareLauncher):
             # C:/Program Files/Autodesk/Maya2015/bin/maya.exe
             "C:/Program Files/Autodesk/Maya{version}/bin/maya.exe",
         ],
-        "linux2": [
+        "linux": [
             # /usr/autodesk/maya2016/bin/maya
             "/usr/autodesk/maya{version}/bin/maya",
             "/usr/autodesk/maya{version}-{mach}/bin/maya",
@@ -160,13 +160,13 @@ class MayaLauncher(SoftwareLauncher):
             "Looking for Application icon for executable '%s' ..." % exec_path
         )
         icon_base_path = ""
-        if sys.platform == "darwin" and "Maya.app" in exec_path:
+        if sgtk.util.is_macos() and "Maya.app" in exec_path:
             # e.g. /Applications/Autodesk/maya2016.5/Maya.app/Contents
             icon_base_path = os.path.join(
                 "".join(exec_path.partition("Maya.app")[0:2]), "Contents"
             )
 
-        elif sys.platform in ["win32", "linux2"] and "bin" in exec_path:
+        elif (sgtk.util.is_windows() or sgtk.util.is_linux()) and "bin" in exec_path:
             # e.g. C:\Program Files\Autodesk\Maya2017\  or
             #      /usr/autodesk/maya2017/
             icon_base_path = "".join(exec_path.partition("bin")[0:1])
@@ -220,7 +220,15 @@ class MayaLauncher(SoftwareLauncher):
         """
 
         # all the executable templates for the current OS
-        executable_templates = self.EXECUTABLE_TEMPLATES.get(sys.platform, [])
+        executable_templates = self.EXECUTABLE_TEMPLATES.get(
+            "darwin"
+            if sgtk.util.is_macos()
+            else "win32"
+            if sgtk.util.is_windows()
+            else "linux"
+            if sgtk.util.is_linux()
+            else []
+        )
 
         # all the discovered executables
         sw_versions = []
