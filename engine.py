@@ -719,7 +719,7 @@ class MayaEngine(Engine):
 
         :returns: the created widget_class instance
         """
-        if sgtk.util.is_macos():
+        if not sgtk.util.is_macos():
             return super(MayaEngine, self).show_dialog(title, *args, **kwargs)
         else:
             if not self.has_ui:
