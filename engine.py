@@ -386,7 +386,7 @@ class MayaEngine(Engine):
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
         if maya_ver.startswith(
-            ("2014", "2015", "2016", "2017", "2018", "2019", "2020")
+            ("2014", "2015", "2016", "2017", "2018", "2019", "2020", "2022")
         ):
             self.logger.debug("Running Maya version %s", maya_ver)
 
