@@ -36,7 +36,7 @@ def initializePlugin(mobject):
     # Make sure the plug-in is running in Maya 2014 or later.
     maya_version = mel.eval("getApplicationVersionAsFloat()")
     if maya_version < 2014:
-        msg = "The Shotgun plug-in is not compatible with version %s of Maya; it requires Maya 2014 or later."
+        msg = "The SG plug-in is not compatible with version %s of Maya; it requires Maya 2014 or later."
         OpenMaya2.MGlobal.displayError(msg % maya_version)
         # Ask Maya to unload the plug-in after returning from here.
         maya.utils.executeDeferred(cmds.unloadPlugin, PLUGIN_FILENAME)
@@ -52,7 +52,9 @@ def initializePlugin(mobject):
         import sgtk
 
         if sgtk.platform.current_engine():
-            msg = "The Shotgun plug-in cannot be loaded because Shotgun Toolkit is already running."
+            msg = (
+                "The SG plug-in cannot be loaded because SG Toolkit is already running."
+            )
             OpenMaya2.MGlobal.displayError(msg)
             # Ask Maya to unload the plug-in after returning from here.
             maya.utils.executeDeferred(cmds.unloadPlugin, PLUGIN_FILENAME)

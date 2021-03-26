@@ -209,9 +209,7 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
         logger.exception("Could not refresh the engine; error: '%s'" % e)
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         message = ""
-        message += (
-            "Message: Shotgun encountered a problem changing the Engine's context.\n"
-        )
+        message += "Message: SG encountered a problem changing the Engine's context.\n"
         message += "Please contact %s\n\n" % sgtk.support_url
         message += "Exception: %s - %s\n" % (exc_type, exc_value)
         message += "Traceback (most recent call last):\n"
@@ -224,7 +222,7 @@ def sgtk_disabled_message():
     Explain why sgtk is disabled.
     """
     msg = (
-        "Shotgun integration is disabled because it cannot recognize "
+        "SG integration is disabled because it cannot recognize "
         "the currently opened file.  Try opening another file or restarting "
         "Maya."
     )
@@ -241,7 +239,7 @@ def sgtk_disabled_message():
 
 def create_sgtk_disabled_menu(menu_name):
     """
-    Render a special "shotgun is disabled" menu
+    Render a special "SG is disabled" menu
     """
     if cmds.about(batch=True):
         # don't create menu in batch mode
@@ -270,7 +268,7 @@ def create_sgtk_disabled_menu(menu_name):
 
 def remove_sgtk_disabled_menu():
     """
-    Remove the special "shotgun is disabled" menu if it exists
+    Remove the special "SG is disabled" menu if it exists
 
     :returns: True if the menu existed and was deleted
     """
@@ -406,12 +404,12 @@ class MayaEngine(Engine):
             # older than 2014 doesn't ship with PySide. Instead, we just have to
             # raise an exception so that we bail out here with an error message
             # that will hopefully make sense for the user.
-            msg = "Shotgun integration is not compatible with Maya versions older than 2014."
+            msg = "SG integration is not compatible with Maya versions older than 2014."
             raise sgtk.TankError(msg)
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
             msg = (
-                "The Shotgun Pipeline Toolkit has not yet been fully tested with Maya %s.  "
+                "The SG Pipeline Toolkit has not yet been fully tested with Maya %s.  "
                 "You can continue to use Toolkit but you may experience bugs or instability."
                 "\n\nPlease report any issues to: %s" % (maya_ver, sgtk.support_url)
             )
@@ -435,7 +433,7 @@ class MayaEngine(Engine):
 
             if show_warning_dlg:
                 # Note, title is padded to try to ensure dialog isn't insanely narrow!
-                title = "Warning - Shotgun Pipeline Toolkit Compatibility!                          "  # padded!
+                title = "Warning - SG Pipeline Toolkit Compatibility!                          "  # padded!
                 cmds.confirmDialog(title=title, message=msg, button="Ok")
 
             # always log the warning to the script editor:
@@ -813,9 +811,9 @@ class MayaEngine(Engine):
         # where "basename" is the leaf part of the logging record name,
         # for example "tk-multi-shotgunpanel" or "qt_importer".
         if record.levelno < logging.INFO:
-            formatter = logging.Formatter("Debug: Shotgun %(basename)s: %(message)s")
+            formatter = logging.Formatter("Debug: SG %(basename)s: %(message)s")
         else:
-            formatter = logging.Formatter("Shotgun %(basename)s: %(message)s")
+            formatter = logging.Formatter("SG %(basename)s: %(message)s")
 
         msg = formatter.format(record)
 

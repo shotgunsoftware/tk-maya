@@ -109,11 +109,11 @@ def shutdown():
     engine = sgtk.platform.current_engine()
 
     if engine:
-        logger.info("Stopping the Shotgun engine.")
+        logger.info("Stopping the SG engine.")
         # Close the various windows (dialogs, panels, etc.) opened by the engine.
         engine.close_windows()
         # Turn off your engine! Step away from the car!
         engine.destroy()
 
     else:
-        logger.debug("The Shotgun engine was already stopped!")
+        logger.debug("The SG engine was already stopped!")
