@@ -13,4 +13,4 @@
 # the version number for this maya plugin - displayed in the maya plugin dialog
 PLUGIN_VERSION = "1.0.0"
 # the author of this maya plugin - displayed in the maya plugin dialog
-PLUGIN_AUTHOR = "SG Software"
+PLUGIN_AUTHOR = "Autodesk, Inc"
