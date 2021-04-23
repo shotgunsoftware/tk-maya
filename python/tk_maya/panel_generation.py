@@ -104,7 +104,7 @@ def dock_panel(engine, shotgun_panel, title):
 
         # Reparent the Shotgun app panel under the Maya window layout.
         engine.logger.debug(
-            "Reparenting Shotgun app panel %s under Maya layout %s.",
+            "Reparenting SG app panel %s under Maya layout %s.",
             shotgun_panel_name,
             maya_layout,
         )
@@ -221,7 +221,7 @@ def dock_panel(engine, shotgun_panel, title):
             "            maya.utils.executeInMainThreadWithResult(fct, msg)\n"
             "        break\n"
             "else:\n"
-            "    msg = 'Shotgun: Cannot restore %(panel_name)s: Shotgun is not currently running'\n"
+            "    msg = 'SG: Cannot restore %(panel_name)s: SG is not currently running'\n"
             "    fct = maya.api.OpenMaya.MGlobal.displayError\n"
             "    maya.utils.executeInMainThreadWithResult(fct, msg)\n"
             % {"panel_name": shotgun_panel_name}
@@ -286,7 +286,7 @@ def build_workspace_control_ui(shotgun_panel_name):
             maya_panel_name = workspace_control.objectName()
 
             engine.logger.debug(
-                "Reparenting Shotgun app panel %s under Maya workspace panel %s.",
+                "Reparenting SG app panel %s under Maya workspace panel %s.",
                 shotgun_panel_name,
                 maya_panel_name,
             )
@@ -363,7 +363,7 @@ def build_workspace_control_ui(shotgun_panel_name):
         else:
             # The Shotgun app panel that needs to be restored is not in the context configuration.
             engine.logger.error(
-                "Cannot restore %s: Shotgun app panel not found. "
+                "Cannot restore %s: SG app panel not found. "
                 "Make sure the app is in the context configuration. ",
                 shotgun_panel_name,
             )

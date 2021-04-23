@@ -50,7 +50,7 @@ def start_toolkit_classic():
         context = sgtk.context.deserialize(env_context)
     except Exception as e:
         OpenMaya.MGlobal.displayError(
-            "Shotgun: Could not create context! Shotgun Pipeline Toolkit will "
+            "SG: Could not create context! SG Pipeline Toolkit will "
             "be disabled. Details: %s" % e
         )
         return
