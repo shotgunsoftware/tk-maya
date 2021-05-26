@@ -34,7 +34,7 @@ def start_toolkit_classic():
     env_engine = os.environ.get("SGTK_ENGINE")
     if not env_engine:
         OpenMaya.MGlobal.displayError(
-            "Shotgun: Missing required environment variable SGTK_ENGINE."
+            "ShotGrid: Missing required environment variable SGTK_ENGINE."
         )
         return
 
@@ -42,7 +42,7 @@ def start_toolkit_classic():
     env_context = os.environ.get("SGTK_CONTEXT")
     if not env_context:
         OpenMaya.MGlobal.displayError(
-            "Shotgun: Missing required environment variable SGTK_CONTEXT."
+            "ShotGrid: Missing required environment variable SGTK_CONTEXT."
         )
         return
     try:
@@ -62,7 +62,7 @@ def start_toolkit_classic():
         )
         sgtk.platform.start_engine(env_engine, context.sgtk, context)
     except Exception as e:
-        OpenMaya.MGlobal.displayError("Shotgun: Could not start engine: %s" % e)
+        OpenMaya.MGlobal.displayError("ShotGrid: Could not start engine: %s" % e)
         return
 
 
@@ -109,7 +109,7 @@ def start_toolkit_with_plugins():
             # note: loadPlugin returns a list of the loaded plugins
             if not loaded_plugins:
                 OpenMaya.MGlobal.displayWarning(
-                    "Shotgun: Could not load plugin: %s" % full_plugin_path
+                    "ShotGrid: Could not load plugin: %s" % full_plugin_path
                 )
                 continue
 
@@ -125,7 +125,7 @@ def start_toolkit():
         import sgtk
     except Exception as e:
         OpenMaya.MGlobal.displayError(
-            "Shotgun: Could not import sgtk! Disabling for now: %s" % e
+            "ShotGrid: Could not import sgtk! Disabling for now: %s" % e
         )
         return
 
@@ -142,7 +142,7 @@ def start_toolkit():
     # Check if a file was specified to open and open it.
     file_to_open = os.environ.get("SGTK_FILE_TO_OPEN")
     if file_to_open:
-        OpenMaya.MGlobal.displayInfo("Shotgun: Opening '%s'..." % file_to_open)
+        OpenMaya.MGlobal.displayInfo("ShotGrid: Opening '%s'..." % file_to_open)
         cmds.file(file_to_open, force=True, open=True)
 
     # Clean up temp env variables.

@@ -115,7 +115,9 @@ class MenuGenerator(object):
 
         # link to UI
         cmds.menuItem(
-            label="Jump to Shotgun", parent=ctx_menu, command=Callback(self._jump_to_sg)
+            label="Jump to ShotGrid",
+            parent=ctx_menu,
+            command=Callback(self._jump_to_sg),
         )
 
         # Add the menu item only when there are some file system locations.
