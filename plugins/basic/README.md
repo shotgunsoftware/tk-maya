@@ -1,7 +1,7 @@
 # Maya Basic Toolkit workflow plugin
 
-This is a Shotgun Pipeline Toolkit plugin,
-embedding the Shotgun Pipeline Toolkit and allowing
+This is a ShotGrid Pipeline Toolkit plugin,
+embedding the ShotGrid Pipeline Toolkit and allowing
 you to easily run and deploy Toolkit Apps and Engines.
 
 The plugin will appear as `shotgun.py` inside of Maya
@@ -15,7 +15,7 @@ via the toolkit launch application, or as a standalone plugin.
 
 ### Technical Details
 
-This is a Maya Module that enables basic Shotgun integration
+This is a Maya Module that enables basic ShotGrid integration
 inside Maya. The plugin source is located in the [toolkit maya engine repository](https://github.com/shotgunsoftware/tk-maya/tree/develop/plugin/plugins/basic).
 Maya version 2014 and above are supported.
 You can read more about maya modules [here](http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__files_GUID_CB76E356_753B_4837_8C5B_3296C14872CA_htm).
@@ -117,7 +117,7 @@ If you are a developer making changes to this plugin or it's components,
 you may find the following resources useful:
 
 - Read more about Plugin development
-  in our [Toolkit Developer Documentation](http://developer.shotgunsoftware.com/tk-core/bootstrap.html#developing-plugins).
+  in our [Toolkit Developer Documentation](http://developer.shotgridsoftware.com/tk-core/bootstrap.html#developing-plugins).
 
 - The plugin needs to be built before it can be executed. You do this by
   executing the build tools found [here](https://github.com/shotgunsoftware/tk-core/blob/master/developer).

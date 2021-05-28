@@ -178,7 +178,7 @@ def refresh_engine(engine_name, prev_context, menu_name):
 
     except sgtk.TankError as e:
         logger.exception("Could not execute sgtk_from_path('%s')" % new_path)
-        OpenMaya.MGlobal.displayInfo("Shotgun: Engine cannot be started: %s" % e)
+        OpenMaya.MGlobal.displayInfo("ShotGrid: Engine cannot be started: %s" % e)
         # build disabled menu
         create_sgtk_disabled_menu(menu_name)
         return
@@ -246,13 +246,13 @@ def create_sgtk_disabled_menu(menu_name):
         return
 
     # destroy any pre-existing shotgun menu - the one that holds the apps
-    if cmds.menu("ShotgunMenu", exists=True):
-        cmds.deleteUI("ShotgunMenu")
+    if cmds.menu("ShotGridMenu", exists=True):
+        cmds.deleteUI("ShotGridMenu")
 
     # create a new shotgun disabled menu if one doesn't exist already.
-    if not cmds.menu("ShotgunMenuDisabled", exists=True):
+    if not cmds.menu("ShotGridMenuDisabled", exists=True):
         sg_menu = cmds.menu(
-            "ShotgunMenuDisabled",
+            "ShotGridMenuDisabled",
             label=menu_name,
             # Get the mel global variable value for main window.
             # In order to get the global variable in mel.eval we have to assign it to another temporary value
@@ -276,8 +276,8 @@ def remove_sgtk_disabled_menu():
         # don't create menu in batch mode
         return False
 
-    if cmds.menu("ShotgunMenuDisabled", exists=True):
-        cmds.deleteUI("ShotgunMenuDisabled")
+    if cmds.menu("ShotGridMenuDisabled", exists=True):
+        cmds.deleteUI("ShotGridMenuDisabled")
         return True
 
     return False
@@ -458,7 +458,7 @@ class MayaEngine(Engine):
 
         # default menu name is Shotgun but this can be overriden
         # in the configuration to be Sgtk in case of conflicts
-        self._menu_name = "Shotgun"
+        self._menu_name = "ShotGrid"
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 
@@ -483,10 +483,10 @@ class MayaEngine(Engine):
         """
 
         # only create the shotgun menu if not in batch mode and menu doesn't already exist
-        if self.has_ui and not cmds.menu("ShotgunMenu", exists=True):
+        if self.has_ui and not cmds.menu("ShotGridMenu", exists=True):
 
             self._menu_path = cmds.menu(
-                "ShotgunMenu",
+                "ShotGridMenu",
                 label=self._menu_name,
                 # Get the mel global variable value for main window.
                 # In order to get the global variable in mel.eval we have to assign it to another temporary value
