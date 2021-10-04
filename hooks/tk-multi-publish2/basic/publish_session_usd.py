@@ -147,10 +147,10 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         item.properties["publish_template"] = publish_template
 
         # check that the mayaUsdPlugin command is available!
-        if not cmds.pluginInfo('mayaUsdPlugin', query=True, loaded=True):
+        if not cmds.pluginInfo("mayaUsdPlugin", query=True, loaded=True):
             try:
                 # Try to load the plugin if it is installed
-                cmds.loadPlugin('mayaUsdPlugin' + ".mll")
+                cmds.loadPlugin("mayaUsdPlugin" + ".mll")
             except:
                 self.logger.debug(
                     "Item not accepted because Maya USD plugin is not installed. "
@@ -256,16 +256,22 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         frame_range = range(start_frame, end_frame)
 
         # This is the really long Maya command to export everything in the scene to USDA
-        usd_command: str = 'file -force -options ";exportUVs=1;exportSkels=auto;exportSkin=auto;exportBlendShapes=1' \
-                     ';exportColorSets=1;defaultMeshScheme=catmullClark;defaultUSDFormat=usda;animation=1;eulerFilter' \
-                     '=0;staticSingleSample=0;startTime=' + str(start_frame) + ';endTime=' + str(end_frame) + ';frameStride=1;frameSample=0.0;parentScope' \
-                     '=;exportDisplayColor=0;shadingMode=useRegistry;convertMaterialsTo=UsdPreviewSurface' \
-                     ';exportInstances=1;exportVisibility=1;mergeTransformAndShape=1;stripNamespaces=0" -type "USD ' \
-                     'Export" -pr -ea '
+        usd_command: str = (
+            'file -force -options ";exportUVs=1;exportSkels=auto;exportSkin=auto;exportBlendShapes=1'
+            ";exportColorSets=1;defaultMeshScheme=catmullClark;defaultUSDFormat=usda;animation=1;eulerFilter"
+            "=0;staticSingleSample=0;startTime="
+            + str(start_frame)
+            + ";endTime="
+            + str(end_frame)
+            + ";frameStride=1;frameSample=0.0;parentScope"
+            "=;exportDisplayColor=0;shadingMode=useRegistry;convertMaterialsTo=UsdPreviewSurface"
+            ';exportInstances=1;exportVisibility=1;mergeTransformAndShape=1;stripNamespaces=0" -type "USD '
+            'Export" -pr -ea '
+        )
 
         file_path = ' "' + publish_path.replace("\\", "/") + '"'
 
-        usd_command = usd_command + file_path + ';'
+        usd_command = usd_command + file_path + ";"
 
         self.parent.log_debug("Executing command: %s" % usd_command)
         mel.eval(usd_command)
