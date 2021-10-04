@@ -111,7 +111,8 @@ class MayaSessionCollector(HookBaseClass):
             )
 
         if cmds.ls(geometry=True, noIntermediate=True):
-            self._collect_session_geometry(item)
+            self._collect_session_usd(item)
+            self._collect_session_abc(item)
 
     def collect_current_maya_session(self, settings, parent_item):
         """
@@ -205,7 +206,7 @@ class MayaSessionCollector(HookBaseClass):
             # to handle alembic files
             super(MayaSessionCollector, self)._collect_file(parent_item, cache_path)
 
-    def _collect_session_geometry(self, parent_item):
+    def _collect_session_abc(self, parent_item):
         """
         Creates items for session geometry to be exported.
 
@@ -213,11 +214,27 @@ class MayaSessionCollector(HookBaseClass):
         """
 
         geo_item = parent_item.create_item(
-            "maya.session.geometry", "Geometry", "All Session Geometry"
+            "maya.session.geometry", "Geometry", "All Geometry to Alembic"
         )
 
         # get the icon path to display for this item
-        icon_path = os.path.join(self.disk_location, os.pardir, "icons", "geometry.png")
+        icon_path = os.path.join(self.disk_location, os.pardir, "icons", "alembic.png")
+
+        geo_item.set_icon_from_path(icon_path)
+
+    def _collect_session_usd(self, parent_item):
+        """
+        Creates items for session geometry to be exported.
+
+        :param parent_item: Parent Item instance
+        """
+
+        geo_item = parent_item.create_item(
+            "maya.session.usd", "Geometry", "All Geometry to USD "
+        )
+
+        # get the icon path to display for this item
+        icon_path = os.path.join(self.disk_location, os.pardir, "icons", "usd.png")
 
         geo_item.set_icon_from_path(icon_path)
 

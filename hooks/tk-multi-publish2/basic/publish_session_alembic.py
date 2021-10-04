@@ -248,6 +248,9 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         publish_folder = os.path.dirname(publish_path)
         self.parent.ensure_folder_exists(publish_folder)
 
+        #file -force -options "-boundingBox;-mask 6399;-lightLinks 1;-shadowLinks 1;-startFrame 1.0;-endFrame 200.0;-frameStep 1.0;-fullPath" -typ "Arnold-USD" -pr -es "C:/Users/Gilles.Vink/Desktop/test.usd";
+        #arnoldExportAss -f "C:/Users/Gilles.Vink/Desktop/test.usd" -s -boundingBox -mask 6399 -lightLinks 1 -shadowLinks 1 -startFrame 1.0 -endFrame 200.0 -frameStep 1.0 -fullPath-cam perspShape;
+
         # set the alembic args that make the most sense when working with Mari.
         # These flags will ensure the export of an Alembic file that contains
         # all visible geometry from the current scene together with UV's and
@@ -296,7 +299,7 @@ def _find_scene_animation_range():
     # if there aren't any animation curves then just return
     # a single frame:
     if not animation_curves:
-        return 1, 1
+        return 1001, 1001
 
     # something in the scene is animated so return the
     # current timeline.  This could be extended if needed
