@@ -233,6 +233,31 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         # run the base class validation
         return super(MayaSessionUSDPublishPlugin, self).validate(settings, item)
 
+    def rename_uv(self):
+        current_selection = cmds.ls(sl=True)
+
+        # Select all geometry
+        geometry = cmds.ls(geometry=True)
+        geometries = cmds.listRelatives(geometry, p=True, path=True)
+
+        for mesh in geometries:
+            # Get all UV Sets
+            cmds.select(mesh, r=True)
+            uv_sets = cmds.polyUVSet(mesh, q=True, allUVSets=True)
+            uv_count = 0
+
+            # For all UV sets rename to uv and count with number
+            for uv in uv_sets:
+                uv_count = uv_count + 1
+                uv_name = "uv" + str(uv_count)
+                if not uv_name == uv:
+                    cmds.polyUVSet(
+                        rename=True, perInstance=True, newUVSet=uv_name, uvSet=uv
+                    )
+
+        self.parent.log_debug("Renamed all uv sets.")
+        cmds.select(current_selection, r=True)
+
     def publish(self, settings, item):
         """
         Executes the publish logic for the given item and settings.
@@ -245,6 +270,9 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
 
         publisher = self.parent
 
+        # First make sure all the uv sets are named correctly
+        self.rename_uv()
+
         # get the path to create and publish
         publish_path = item.properties["path"]
 
@@ -253,12 +281,11 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         self.parent.ensure_folder_exists(publish_folder)
 
         start_frame, end_frame = _find_scene_animation_range()
-        frame_range = range(start_frame, end_frame)
 
         # This is the really long Maya command to export everything in the scene to USDA
         usd_command: str = (
             'file -force -options ";exportUVs=1;exportSkels=auto;exportSkin=auto;exportBlendShapes=1'
-            ";exportColorSets=1;defaultMeshScheme=catmullClark;defaultUSDFormat=usda;animation=1;eulerFilter"
+            ";exportColorSets=1;defaultMeshScheme=none;defaultUSDFormat=usda;animation=1;eulerFilter"
             "=0;staticSingleSample=0;startTime="
             + str(start_frame)
             + ";endTime="
@@ -269,9 +296,16 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
             'Export" -pr -ea '
         )
 
-        file_path = ' "' + publish_path.replace("\\", "/") + '"'
+        publish_path = publish_path.replace("\\", "/")
+        file_path = ' "' + publish_path + '"'
 
         usd_command = usd_command + file_path + ";"
+
+        # Create directories
+        publish_dir = os.path.dirname(publish_path)
+
+        if not os.path.isdir(publish_dir):
+            os.mkdir(publish_dir)
 
         self.parent.log_debug("Executing command: %s" % usd_command)
         mel.eval(usd_command)
