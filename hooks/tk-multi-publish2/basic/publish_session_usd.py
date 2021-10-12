@@ -73,8 +73,8 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
                 "type": "template",
                 "default": None,
                 "description": "Template path for published work files. Should"
-                "correspond to a template defined in "
-                "templates.yml.",
+                               "correspond to a template defined in "
+                               "templates.yml.",
             }
         }
 
@@ -214,8 +214,8 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         missing_keys = publish_template.missing_keys(work_fields)
         if missing_keys:
             error_msg = (
-                "Work file '%s' missing keys required for the "
-                "publish template: %s" % (path, missing_keys)
+                    "Work file '%s' missing keys required for the "
+                    "publish template: %s" % (path, missing_keys)
             )
             self.logger.error(error_msg)
             raise Exception(error_msg)
@@ -234,29 +234,34 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         return super(MayaSessionUSDPublishPlugin, self).validate(settings, item)
 
     def rename_uv(self):
-        current_selection = cmds.ls(sl=True)
+        try:
+            current_selection = cmds.ls(sl=True)
 
-        # Select all geometry
-        geometry = cmds.ls(geometry=True)
-        geometries = cmds.listRelatives(geometry, p=True, path=True)
+            # Select all geometry
+            geometry = cmds.ls(geometry=True)
+            geometries = cmds.listRelatives(geometry, p=True, path=True)
 
-        for mesh in geometries:
-            # Get all UV Sets
-            cmds.select(mesh, r=True)
-            uv_sets = cmds.polyUVSet(mesh, q=True, allUVSets=True)
-            uv_count = 0
+            for mesh in geometries:
+                # Get all UV Sets
+                cmds.select(mesh, r=True)
+                uv_sets = cmds.polyUVSet(mesh, q=True, allUVSets=True)
+                uv_count = 0
 
-            # For all UV sets rename to uv and count with number
-            for uv in uv_sets:
-                uv_count = uv_count + 1
-                uv_name = "uv" + str(uv_count)
-                if not uv_name == uv:
-                    cmds.polyUVSet(
-                        rename=True, perInstance=True, newUVSet=uv_name, uvSet=uv
-                    )
+                # For all UV sets rename to uv and count with number
+                if not uv_sets is None:
+                    for uv in uv_sets:
+                        uv_count = uv_count + 1
+                        uv_name = "uv" + str(uv_count)
+                        if not uv_name == uv:
+                            cmds.polyUVSet(
+                                rename=True, perInstance=True, newUVSet=uv_name, uvSet=uv
+                            )
 
-        self.parent.log_debug("Renamed all uv sets.")
-        cmds.select(current_selection, r=True)
+            self.parent.log_debug("Renamed all uv sets.")
+            cmds.select(current_selection, r=True)
+
+        except Exception as e:
+            self.logger.debug(str(e))
 
     def publish(self, settings, item):
         """
@@ -284,16 +289,16 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
 
         # This is the really long Maya command to export everything in the scene to USDA
         usd_command: str = (
-            'file -force -options ";exportUVs=1;exportSkels=auto;exportSkin=auto;exportBlendShapes=1'
-            ";exportColorSets=1;defaultMeshScheme=none;defaultUSDFormat=usda;animation=1;eulerFilter"
-            "=0;staticSingleSample=0;startTime="
-            + str(start_frame)
-            + ";endTime="
-            + str(end_frame)
-            + ";frameStride=1;frameSample=0.0;parentScope"
-            "=;exportDisplayColor=0;shadingMode=useRegistry;convertMaterialsTo=UsdPreviewSurface"
-            ';exportInstances=1;exportVisibility=1;mergeTransformAndShape=1;stripNamespaces=0" -type "USD '
-            'Export" -pr -ea '
+                'file -force -options ";exportUVs=1;exportSkels=auto;exportSkin=auto;exportBlendShapes=1'
+                ";exportColorSets=1;defaultMeshScheme=none;defaultUSDFormat=usda;animation=1;eulerFilter"
+                "=0;staticSingleSample=0;startTime="
+                + str(start_frame)
+                + ";endTime="
+                + str(end_frame)
+                + ";frameStride=1;frameSample=0.0;parentScope"
+                  "=;exportDisplayColor=0;shadingMode=useRegistry;convertMaterialsTo=UsdPreviewSurface"
+                  ';exportInstances=1;exportVisibility=1;mergeTransformAndShape=1;stripNamespaces=0" -type "USD '
+                  'Export" -pr -ea '
         )
 
         publish_path = publish_path.replace("\\", "/")
