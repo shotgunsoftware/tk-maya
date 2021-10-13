@@ -12,7 +12,8 @@ import os
 import maya.cmds as cmds
 import maya.mel as mel
 import sgtk
-import time
+import tempfile
+import shutil
 
 from tank_vendor import six
 
@@ -287,12 +288,10 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         # This is a quick fix to make sure directories exists before executing the usd export command
         publish_path = publish_path.replace("\\", "/")
         publish_dir = os.path.dirname(publish_path)
+        publish_name = os.path.basename(publish_path)
 
         # ensure the publish folder exists:
         self.parent.ensure_folder_exists(publish_dir)
-
-        # Sleep quick fix for Windows/Maya because otherwise explorer thinks the directory is not existing
-        time.sleep(2)
 
         start_frame, end_frame = _find_scene_animation_range()
 
@@ -310,14 +309,26 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
             'Export" -pr -ea '
         )
 
-        file_path = ' "' + publish_path + '"'
+        # Create temporary directory
+        with tempfile.TemporaryDirectory() as temp_directory:
+            # Setting file name
+            temp_file_path = os.path.join(temp_directory, publish_name).replace(
+                os.sep, "/"
+            )
+            file_path = ' "' + temp_file_path + '"'
 
-        usd_command = usd_command + file_path + ";"
+            # Setting final command
+            usd_command = usd_command + file_path + ";"
 
-        self.parent.log_debug("Executing command: %s" % usd_command)
-        mel.eval(usd_command)
+            # Executing export command
+            self.parent.log_debug("Executing command: %s" % usd_command)
+            mel.eval(usd_command)
 
-        # Now that the path has been generated, hand it off to the
+            # Copy directory
+            shutil.copy2(temp_file_path, publish_dir)
+            self.parent.log_debug("Copied file to publish path")
+
+        # Now that the usd file has been generated and copied, hand it off to the
         super(MayaSessionUSDPublishPlugin, self).publish(settings, item)
 
 
