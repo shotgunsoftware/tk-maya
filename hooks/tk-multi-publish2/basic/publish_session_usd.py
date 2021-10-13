@@ -284,9 +284,15 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         # get the path to create and publish
         publish_path = item.properties["path"]
 
+        # This is a quick fix to make sure directories exists before executing the usd export command
+        publish_path = publish_path.replace("\\", "/")
+        publish_dir = os.path.dirname(publish_path)
+
         # ensure the publish folder exists:
-        publish_folder = os.path.dirname(publish_path)
-        self.parent.ensure_folder_exists(publish_folder)
+        self.parent.ensure_folder_exists(publish_dir)
+
+        # Sleep quick fix for Windows/Maya because otherwise explorer thinks the directory is not existing
+        time.sleep(2)
 
         start_frame, end_frame = _find_scene_animation_range()
 
@@ -304,16 +310,9 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
             'Export" -pr -ea '
         )
 
-        publish_path = publish_path.replace("\\", "/")
         file_path = ' "' + publish_path + '"'
 
         usd_command = usd_command + file_path + ";"
-
-        # Create directories
-        publish_dir = os.path.dirname(publish_path)
-
-        if not os.path.isdir(publish_dir):
-            os.mkdir(publish_dir)
 
         self.parent.log_debug("Executing command: %s" % usd_command)
         mel.eval(usd_command)
