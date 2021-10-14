@@ -251,8 +251,12 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
                 # For all UV sets rename to uv and count with number
                 if not uv_sets is None:
                     for uv in uv_sets:
-                        uv_count = uv_count + 1
-                        uv_name = "uv" + str(uv_count)
+                        if uv_count == 0:
+                            uv_name = "uv"
+                            uv_count = uv_count + 1
+                        else:
+                            uv_name = 'uv' + str(uv_count)
+                            uv_count = uv_count + 1
                         if not uv_name == uv:
                             cmds.polyUVSet(
                                 rename=True,
