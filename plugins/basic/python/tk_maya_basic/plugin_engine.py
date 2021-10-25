@@ -89,7 +89,7 @@ def _get_plugin_info():
 
         # open the yaml file and read the data
         with open(plugin_info_yml, "r") as plugin_info_fh:
-            info_yml = yaml.load(plugin_info_fh)
+            info_yml = yaml.load(plugin_info_fh, Loader=yaml.FullLoader)
             plugin_id = info_yml["plugin_id"]
             base_configuration = info_yml["base_configuration"]
 
