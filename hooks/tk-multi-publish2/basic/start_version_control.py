@@ -336,6 +336,6 @@ def _get_version_docs_action():
         "action_open_url": {
             "label": "Version Docs",
             "tooltip": "Show docs for version formats",
-            "url": "https://support.shotgunsoftware.com/hc/en-us/articles/115000068574-User-Guide-WIP-#What%20happens%20when%20you%20publish",
+            "url": "https://help.autodesk.com/view/SGSUB/ENU/?guid=SG_Supervisor_Artist_sa_integrations_sa_integrations_user_guide_html",
         }
     }
