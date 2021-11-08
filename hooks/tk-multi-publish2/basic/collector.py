@@ -110,8 +110,10 @@ class MayaSessionCollector(HookBaseClass):
                 },
             )
 
+        # Always collect session USD
+        self._collect_session_usd(item)
+
         if cmds.ls(geometry=True, noIntermediate=True):
-            self._collect_session_usd(item)
             self._collect_session_abc(item)
 
     def collect_current_maya_session(self, settings, parent_item):
@@ -229,9 +231,7 @@ class MayaSessionCollector(HookBaseClass):
         :param parent_item: Parent Item instance
         """
 
-        geo_item = parent_item.create_item(
-            "maya.session.usd", "Geometry", "All Geometry to USD "
-        )
+        geo_item = parent_item.create_item("maya.session.usd", "Scene", "Scene to USD ")
 
         # get the icon path to display for this item
         icon_path = os.path.join(self.disk_location, os.pardir, "icons", "usd.png")

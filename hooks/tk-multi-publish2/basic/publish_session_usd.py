@@ -195,13 +195,14 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
 
         # check that there is still geometry in the scene:
         if not cmds.ls(geometry=True, noIntermediate=True):
-            error_msg = (
-                "Validation failed because there is no geometry in the scene "
-                "to be exported. You can uncheck this plugin or create "
-                "geometry to export to avoid this error."
-            )
-            self.logger.error(error_msg)
-            raise Exception(error_msg)
+            if not cmds.ls(cameras=True):
+                error_msg = (
+                    "Validation failed because there is no geometry in the scene "
+                    "to be exported. You can uncheck this plugin or create "
+                    "geometry to export to avoid this error."
+                )
+                self.logger.error(error_msg)
+                raise Exception(error_msg)
 
         # get the configured work file template
         work_template = item.parent.properties.get("work_template")
@@ -255,7 +256,7 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
                             uv_name = "uv"
                             uv_count = uv_count + 1
                         else:
-                            uv_name = 'uv' + str(uv_count)
+                            uv_name = "uv" + str(uv_count)
                             uv_count = uv_count + 1
                         if not uv_name == uv:
                             cmds.polyUVSet(
