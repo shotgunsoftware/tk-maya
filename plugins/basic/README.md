@@ -122,4 +122,4 @@ you may find the following resources useful:
 - The plugin needs to be built before it can be executed. You do this by
   executing the build tools found [here](https://github.com/shotgunsoftware/tk-core/blob/master/developer).
 
-- For more information about Toolkit, see http://support.shotgunsoftware.com/
+- For more information about Toolkit, see http://developer.shotgridsoftware.com/
