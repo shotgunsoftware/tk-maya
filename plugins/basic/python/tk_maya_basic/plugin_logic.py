@@ -337,7 +337,7 @@ def _jump_to_website():
     """
     Jumps to the Shotgun website in the default web browser.
     """
-    QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://www.shotgunsoftware.com"))
+    QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://www.shotgridsoftware.com"))
 
 
 def _jump_to_signup():
@@ -345,7 +345,7 @@ def _jump_to_signup():
     Jumps to the Shotgun signup page in the default web browser.
     """
     QtGui.QDesktopServices.openUrl(
-        QtCore.QUrl("https://www.shotgunsoftware.com/signup")
+        QtCore.QUrl("https://www.shotgridsoftware.com/trial")
     )
 
 
