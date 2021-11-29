@@ -17,4 +17,4 @@ working on. For an overview of all the Apps and Engines in the Toolkit App Store
 click here: https://developer.shotgridsoftware.com/162eaa4b/?title=Pipeline+Integration+Components
 
 ## Have a Question?
-Don't hesitate to contact us! You can find us on knowledge.autodesk.com/contact-support
+Don't hesitate to contact us! You can find us on https://knowledge.autodesk.com/contact-support
