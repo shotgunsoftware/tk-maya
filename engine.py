@@ -537,7 +537,9 @@ class MayaEngine(Engine):
 
         if self.get_setting("automatic_context_switch", True):
             cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name: on_scene_event_callback(
-                engine_name=en, prev_context=pc, menu_name=mn,
+                engine_name=en,
+                prev_context=pc,
+                menu_name=mn,
             )
             self.__watcher = SceneEventWatcher(cb_fn)
             self.logger.debug(

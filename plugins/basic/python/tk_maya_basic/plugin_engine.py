@@ -94,7 +94,10 @@ def _get_plugin_info():
             base_configuration = info_yml["base_configuration"]
 
     # return a dictionary with the required info
-    return dict(plugin_id=plugin_id, base_configuration=base_configuration,)
+    return dict(
+        plugin_id=plugin_id,
+        base_configuration=base_configuration,
+    )
 
 
 def shutdown():

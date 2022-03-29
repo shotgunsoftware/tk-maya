@@ -321,7 +321,9 @@ def _create_login_menu():
         command=Callback(_jump_to_website),
     )
     cmds.menuItem(
-        parent=menu, label="Try SG for Free...", command=Callback(_jump_to_signup),
+        parent=menu,
+        label="Try SG for Free...",
+        command=Callback(_jump_to_signup),
     )
 
 
