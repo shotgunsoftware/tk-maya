@@ -384,7 +384,7 @@ class MayaEngine(Engine):
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
         if maya_ver.startswith(
-            ("2014", "2015", "2016", "2017", "2018", "2019", "2020", "2022")
+            ("2014", "2015", "2016", "2017", "2018", "2019", "2020", "2022", "2023")
         ):
             self.logger.debug("Running Maya version %s", maya_ver)
 
@@ -537,7 +537,9 @@ class MayaEngine(Engine):
 
         if self.get_setting("automatic_context_switch", True):
             cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name: on_scene_event_callback(
-                engine_name=en, prev_context=pc, menu_name=mn,
+                engine_name=en,
+                prev_context=pc,
+                menu_name=mn,
             )
             self.__watcher = SceneEventWatcher(cb_fn)
             self.logger.debug(
