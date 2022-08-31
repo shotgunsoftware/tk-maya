@@ -218,11 +218,11 @@ class MayaLauncher(SoftwareLauncher):
         """
         Find executables in the default install locations.
         """
-        
+
         if sgtk.util.is_windows():
             sw_versions = self._find_window_softwares()
             return sw_versions
-            
+
         # all the executable templates for the current OS
         executable_templates = self.EXECUTABLE_TEMPLATES.get(
             "darwin"
@@ -264,10 +264,10 @@ class MayaLauncher(SoftwareLauncher):
         return sw_versions
 
     def _find_window_softwares(self):
-        """ 
+        """
         Return maya install location on Windows
-        Source: https://github.com/JukeboxPipeline/jukebox-core/blob/master/src/jukeboxcore/ostool.py       
-    
+        Source: https://github.com/JukeboxPipeline/jukebox-core/blob/master/src/jukeboxcore/ostool.py
+
         """
         # The supported maya versions
         MAYA_VERSIONS = ["2018", "2019", "2020", "2021", "2022", "2023", "2024"]
@@ -304,6 +304,6 @@ class MayaLauncher(SoftwareLauncher):
                             self._icon_from_executable(executable_path),
                         )
                     )
-            except WindowsError:           
+            except WindowsError:
                 self.logger.debug('Maya %s installation not found in registry!' % ver)
-        return sw_versions        
+        return sw_versions
