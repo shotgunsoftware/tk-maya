@@ -306,5 +306,4 @@ class MayaLauncher(SoftwareLauncher):
                     )
             except WindowsError:           
                 self.logger.debug('Maya %s installation not found in registry!' % ver)
-        return sw_versions
-        
+        return sw_versions        
