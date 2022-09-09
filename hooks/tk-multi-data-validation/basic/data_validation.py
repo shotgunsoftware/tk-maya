@@ -20,6 +20,10 @@ class MayaDataValidationHook(HookBaseClass):
     Hook to define Alias scene validation functionality.
     """
 
+    DEFAULT_MATERIALS = ["lambert1", "standardSurface1", "particleCloud1"]
+    DEFAULT_CAMERAS = ["persp", "top", "front", "side"]
+    ROOT_NODE_NAME = "ROOT"
+
     def get_validation_data(self):
         """
         Return the validation rule data set to validate an Alias scene.
@@ -40,7 +44,7 @@ class MayaDataValidationHook(HookBaseClass):
                                 Fix: Delete""",
                 "error_msg": "Found unknown nodes",
                 "check_func": self.check_unknown_nodes,
-                "fix_func": self.fix_unknown_nodes,
+                "fix_func": self.delete_items,
                 "fix_name": "Delete All",
                 "fix_tooltip": "Delete Unknown Nodes.",
                 "actions": [
@@ -50,6 +54,10 @@ class MayaDataValidationHook(HookBaseClass):
                     {
                         "name": "Select",
                         "callback": lambda item: cmds.select(item, r=True),
+                    },
+                    {
+                        "name": "Delete",
+                        "callback": lambda item: cmds.delete(item),
                     },
                 ],
             },
@@ -67,6 +75,49 @@ class MayaDataValidationHook(HookBaseClass):
                         "name": "Select",
                         "callback": lambda item: cmds.select(item, r=True),
                     },
+                    {
+                        "name": "Delete",
+                        "callback": lambda item: cmds.delete(item),
+                    },
+                ],
+            },
+            "shader_unused": {
+                "name": "Delete Unused Shaders",
+                "description": """Check: Unused shaders<br/>
+                                Fix: Delete (default shaders are not affected)""",
+                "error_msg": "Found unused shaders",
+                "check_func": self.check_unused_shaders,
+                "fix_func": self.delete_items,
+                "fix_name": "Delete All",
+                "fix_tooltip": "Delete Unused Shaders",
+                "item_actions": [
+                    {
+                        "name": "Select",
+                        "callback": lambda item: cmds.select(item, r=True),
+                    },
+                    {
+                        "name": "Delete",
+                        "callback": lambda item: cmds.delete(item),
+                    },
+                ],
+            },
+            "one_top_node": {
+                "name": "One top-node only",
+                "description": """Check: Only one top-node<br/>
+                                Fix: Select top-nodes""",
+                "error_msg": "Found more than one top-node",
+                "check_func": self.check_only_one_top_node,
+                "fix_func": self.create_root_node,
+                "fix_name": "Create",
+                "fix_tooltip": "Select top-nodes",
+                "actions": [
+                    {"name": "Select All", "callback": self.select_items},
+                ],
+                "item_actions": [
+                    {
+                        "name": "Select",
+                        "callback": lambda item: cmds.select(item, r=True),
+                    },
                 ],
             },
         }
@@ -76,13 +127,17 @@ class MayaDataValidationHook(HookBaseClass):
     # ---------------------------------------------------------------------------
 
     def check_unknown_nodes(self):
-        """ """
+        """
+        Check if there are unknown nodes in the current Maya session.
+        """
 
         unknown_nodes = cmds.ls(type="unknown")
         return _get_check_result(unknown_nodes)
 
     def check_sg_references(self):
-        """ """
+        """
+        Check that all the references correspond to a ShotGrid Published File.
+        """
 
         bad_references = []
 
@@ -90,10 +145,13 @@ class MayaDataValidationHook(HookBaseClass):
         ref_paths = list(
             dict.fromkeys(cmds.file(q=True, reference=True, withoutCopyNumber=True))
         )
+
+        # find the matching published files in ShotGrid
         sg_publishes = sgtk.util.find_publish(
             self.sgtk, ref_paths, only_current_project=False
         )
 
+        # list all the references which doesn't have a corresponding Published File
         for ref in cmds.file(q=True, reference=True):
             node_name = cmds.referenceQuery(ref, referenceNode=True)
             ref_path = cmds.referenceQuery(ref, filename=True, withoutCopyNumber=True)
@@ -102,31 +160,76 @@ class MayaDataValidationHook(HookBaseClass):
 
         return _get_check_result(bad_references)
 
+    def check_only_one_top_node(self):
+        """
+        Check that there is only one top node in the scene hierarchy.
+        """
+
+        top_nodes = [
+            n for n in cmds.ls(assemblies=True) if n not in self.DEFAULT_CAMERAS
+        ]
+        top_nodes = [] if len(top_nodes) == 1 else top_nodes
+
+        return _get_check_result(top_nodes)
+
+    def check_unused_shaders(self):
+        """
+        Check that all the materials are in used.
+        """
+
+        unassigned_materials = []
+
+        materials = cmds.ls(mat=True)
+        for m in materials:
+            if m in self.DEFAULT_MATERIALS:
+                continue
+
+            # get the shading engine(s) the material belongs to
+            # if the shading engine doesn't have an empty set, this means that the shader is assigned to something
+            shading_engines = cmds.listConnections(
+                m, d=True, et=True, t="shadingEngine"
+            )
+            if not shading_engines:
+                continue
+            is_assigned = False
+            for se in shading_engines:
+                if cmds.sets(se, q=True):
+                    is_assigned = True
+                    break
+            if not is_assigned:
+                unassigned_materials.append(m)
+
+        return _get_check_result(unassigned_materials)
+
     # ---------------------------------------------------------------------------
-    # Fix methods
+    # Fix and actions methods
     # ---------------------------------------------------------------------------
 
-    def fix_unknown_nodes(self, errors=None):
-        """ """
+    def create_root_node(self, errors):
+        """
+        Create a root top node and group all the previous top nodes under it.
+        """
+        top_nodes = [item["id"] for item in errors]
+        cmds.group(top_nodes, name=self.ROOT_NODE_NAME)
+
+    def delete_items(self, errors):
+        """
+        Delete a list of items.
+        """
         for item in errors:
             cmds.delete(item["id"])
 
-    # ---------------------------------------------------------------------------
-    # Action methods
-    # ---------------------------------------------------------------------------
-
     def select_items(self, errors=None):
-        """ """
+        """
+        Select a list of items.
+        """
+        # clear the previous selection before selecting the items
         cmds.select(cl=True)
         for item in errors:
             if isinstance(item, dict):
                 cmds.select(item["id"], add=True)
             else:
                 cmds.select(item, add=True)
-
-    def select_references(self, errors=None):
-        """ """
-        pass
 
 
 def _get_check_result(error_items):
