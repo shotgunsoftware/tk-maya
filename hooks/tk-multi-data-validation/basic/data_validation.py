@@ -65,11 +65,11 @@ class MayaDataValidationHook(HookBaseClass):
                 "item_actions": [
                     {
                         "name": "Select",
-                        "callback": lambda item: cmds.select(item, r=True),
+                        "callback": lambda errors: cmds.select(errors[0], r=True),
                     },
                     {
                         "name": "Delete",
-                        "callback": lambda item: cmds.delete(item),
+                        "callback": lambda errors: cmds.delete(errors[0]),
                     },
                 ],
             },
@@ -85,11 +85,11 @@ class MayaDataValidationHook(HookBaseClass):
                 "item_actions": [
                     {
                         "name": "Select",
-                        "callback": lambda item: cmds.select(item, r=True),
+                        "callback": lambda errors: cmds.select(errors[0], r=True),
                     },
                     {
                         "name": "Delete",
-                        "callback": lambda item: cmds.delete(item),
+                        "callback": lambda errors: cmds.delete(errors[0]),
                     },
                 ],
             },
@@ -105,11 +105,11 @@ class MayaDataValidationHook(HookBaseClass):
                 "item_actions": [
                     {
                         "name": "Select",
-                        "callback": lambda item: cmds.select(item, r=True),
+                        "callback": lambda errors: cmds.select(errors[0], r=True),
                     },
                     {
                         "name": "Delete",
-                        "callback": lambda item: cmds.delete(item),
+                        "callback": lambda errors: cmds.delete(errors[0]),
                     },
                 ],
             },
@@ -128,7 +128,7 @@ class MayaDataValidationHook(HookBaseClass):
                 "item_actions": [
                     {
                         "name": "Select",
-                        "callback": lambda item: cmds.select(item, r=True),
+                        "callback": lambda errors: cmds.select(errors[0], r=True),
                     },
                 ],
             },
@@ -200,6 +200,16 @@ class MayaDataValidationHook(HookBaseClass):
                         "check_func": self.check_references,
                         "actions": [
                             {"name": "Select All", "callback": self.select_items},
+                        ],
+                        "item_actions": [
+                            {
+                                "name": "Select",
+                                "callback": lambda errors: cmds.select(errors[0], r=True),
+                            },
+                            {
+                                "name": "Delete",
+                                "callback": lambda errors: cmds.delete(errors[0]),
+                            },
                         ],
                     },
                     "mesh_history": {
