@@ -229,6 +229,12 @@ class MayaDataValidationHook(HookBaseClass):
                         "error_msg": "Some meshes are not visible",
                         "check_func": self.check_mesh_visibility,
                     },
+                    "mesh_double_shapes": {
+                        "name": "Mesh Double Shapes",
+                        "description": """Check: Meshes should have only one shape""",
+                        "error_msg": "Some meshes have double shapes",
+                        "check_func": self.check_mesh_double_shapes,
+                    },
                     "default_materials_only": {
                         "name": "Default materials only",
                         "description": """Check: Only default materials should be used""",
@@ -427,6 +433,19 @@ class MayaDataValidationHook(HookBaseClass):
         for shape in cmds.ls(exactType="mesh", dag=1, ni=1, l=True):
             for mesh in cmds.ls(cmds.listRelatives(shape, fullPath=True, p=True)):
                 if not cmds.getAttr("{}.visibility".format(mesh)):
+                    bad_meshes.append(mesh)
+
+        return bad_meshes
+
+    def check_mesh_double_shapes(self):
+        """ """
+
+        bad_meshes = []
+
+        # get all the meshes
+        for shape in cmds.ls(exactType="mesh", dag=1, ni=1, l=True):
+            for mesh in cmds.ls(cmds.listRelatives(shape, fullPath=True, p=True)):
+                if len(cmds.listRelatives(mesh, shapes=True, fullPath=True)) > 1:
                     bad_meshes.append(mesh)
 
         return bad_meshes
