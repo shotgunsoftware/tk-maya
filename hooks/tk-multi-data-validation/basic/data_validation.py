@@ -351,7 +351,11 @@ class MayaDataValidationHook(HookBaseClass):
             n for n in cmds.ls(assemblies=True) if n not in self.DEFAULT_CAMERAS
         ]
 
+        if not top_nodes:
+            return []
+
         is_valid = True
+        # as this check depends on check_only_one_top_node(), we can assume that we have only one top node here
         pivot_positions = cmds.xform(top_nodes[0], q=True, piv=True)
         for p in pivot_positions:
             if p != 0:
