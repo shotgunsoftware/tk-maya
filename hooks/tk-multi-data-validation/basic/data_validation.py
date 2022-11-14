@@ -80,12 +80,12 @@ class MayaDataValidationHook(HookBaseClass):
                 "error_msg": "Found references which doesn't match a SG Published File",
                 "check_func": self.check_sg_references,
                 "actions": [
-                    {"name": "Select All", "callback": self.select_items},
+                    {"name": "Select All", "callback": self.select_references},
                 ],
                 "item_actions": [
                     {
                         "name": "Select",
-                        "callback": lambda errors: cmds.select(errors[0], r=True),
+                        "callback": lambda errors: cmds.select(cmds.referenceQuery(errors[0], nodes=True), r=True),
                     },
                     {
                         "name": "Delete",
@@ -347,7 +347,6 @@ class MayaDataValidationHook(HookBaseClass):
     def check_top_node_pivot_position(self):
         """ """
 
-        # as this check depends on check_only_one_top_node(), we can assume that we have only one top node here
         top_nodes = [
             n for n in cmds.ls(assemblies=True) if n not in self.DEFAULT_CAMERAS
         ]
@@ -516,6 +515,16 @@ class MayaDataValidationHook(HookBaseClass):
         cmds.select(cl=True)
         for item in errors:
             cmds.select(item["id"], add=True)
+
+    def select_references(self, errors):
+        """
+        Select the content of references.
+        """
+        # clear the previous selection before selecting the items
+        cmds.select(cl=True)
+        for item in errors:
+            ref_nodes = cmds.referenceQuery(item["id"], nodes=True)
+            cmds.select(ref_nodes, add=True)
 
     def delete_history(self, errors):
         """ """
