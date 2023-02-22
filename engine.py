@@ -850,7 +850,7 @@ class MayaEngine(Engine):
         # We need to double up and backslashes.
         proj_path = proj_path.replace("\\", "\\\\")
 
-        mel.eval('setProject("{0}")'.format(proj_path))
+        cmds.workspace(proj_path, openWorkspace=True)
 
     ##########################################################################################
     # panel support
