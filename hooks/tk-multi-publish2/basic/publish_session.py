@@ -347,7 +347,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         super(MayaSessionPublishPlugin, self).finalize(settings, item)
 
         # bump the session file to the next version
-        self._save_to_next_version(item.properties["path"], item, _save_session)
+        self._save_to_next_version(item.get_property("path"), item, _save_session)
 
 
 def _maya_find_additional_session_dependencies():
