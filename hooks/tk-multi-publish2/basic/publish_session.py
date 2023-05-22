@@ -346,7 +346,11 @@ class MayaSessionPublishPlugin(HookBaseClass):
         # do the base class finalization
         super(MayaSessionPublishPlugin, self).finalize(settings, item)
 
-        # bump the session file to the next version
+        # TODO:Remove me after QA
+        self.logger.info(
+            "Finalized (tk-maya): %s" % (item.get_property("path"),),
+            extra={"action_show_folder": {"path": item.get_property("path")}},
+        )
         self._save_to_next_version(item.get_property("path"), item, _save_session)
 
 
