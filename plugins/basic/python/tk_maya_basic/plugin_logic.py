@@ -17,7 +17,7 @@ import maya.mel as mel
 import maya.cmds as cmds
 
 try:
-    import shiboken2 as shiboken
+    import shiboken6 as shiboken
 except ImportError:
     import shiboken
 

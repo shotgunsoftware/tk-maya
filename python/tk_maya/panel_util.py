@@ -18,7 +18,7 @@ import maya.OpenMayaUI as OpenMayaUI
 from sgtk.platform.qt import QtCore, QtGui
 
 try:
-    import shiboken2 as shiboken
+    import shiboken6 as shiboken
 except ImportError:
     import shiboken
 

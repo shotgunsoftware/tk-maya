@@ -645,7 +645,7 @@ class MayaEngine(Engine):
 
         # first see if pyside2 is present
         try:
-            from PySide2 import QtGui
+            from PySide6 import QtGui
         except:
             # fine, we don't expect PySide2 to be present just yet
             self.logger.debug("PySide2 not detected - trying for PySide now...")
@@ -774,7 +774,7 @@ class MayaEngine(Engine):
         import maya.OpenMayaUI as OpenMayaUI
 
         try:
-            import shiboken2 as shiboken
+            import shiboken6 as shiboken
         except ImportError:
             import shiboken
 

@@ -267,8 +267,8 @@ def build_workspace_control_ui(shotgun_panel_name):
 
     # In the context of this function, we know that we are running in Maya 2017 and later
     # with the newer versions of PySide and shiboken.
-    from PySide2 import QtWidgets
-    from shiboken2 import wrapInstance
+    from PySide6 import QtWidgets
+    from shiboken6 import wrapInstance
 
     import sgtk.platform
 
