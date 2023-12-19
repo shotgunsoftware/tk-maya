@@ -844,8 +844,6 @@ class MayaEngine(Engine):
     ##########################################################################################
     # scene and project management
 
-
-
     def _set_project(self):
         """
         Set the maya project
