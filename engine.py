@@ -857,12 +857,6 @@ class MayaEngine(Engine):
         proj_path = tmpl.apply_fields(fields)
         self.logger.info("Setting Maya project to '%s'", proj_path)
 
-        # Since we are inserting this path into another string that will be executed in mel
-        # We need to double up and backslashes.
-        # For network paths on Windows (starting with '\\\\'), doubling backslashes is avoided
-        # as this leads to RuntimeErrors when executed in mel.
-        if not (sgtk.util.is_windows() and proj_path.startswith("\\\\")):
-            proj_path = proj_path.replace("\\", "\\\\")
         try:
             cmds.workspace(proj_path, openWorkspace=True)
         except RuntimeError as e:
