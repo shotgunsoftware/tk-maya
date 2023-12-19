@@ -844,6 +844,8 @@ class MayaEngine(Engine):
     ##########################################################################################
     # scene and project management
 
+
+
     def _set_project(self):
         """
         Set the maya project
@@ -861,7 +863,7 @@ class MayaEngine(Engine):
         # We need to double up and backslashes.
         # For network paths (starting with '\\\\'), doubling backslashes is avoided
         # as this leads to RuntimeErrors when executed in mel.
-        if not proj_path.startswith("\\\\"):
+        if not (sgtk.util.is_windows() and proj_path.startswith("\\\\")):
             # Local path and requires escaping
             proj_path = proj_path.replace("\\", "\\\\")
         try:
