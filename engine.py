@@ -861,13 +861,13 @@ class MayaEngine(Engine):
         # We need to double up and backslashes.
         # For network paths (starting with '\\\\'), doubling backslashes is avoided
         # as this leads to RuntimeErrors when executed in mel.
-        if not proj_path.startswith('\\\\'):
+        if not proj_path.startswith("\\\\"):
             # Local path and requires escaping
             proj_path = proj_path.replace("\\", "\\\\")
         try:
             cmds.workspace(proj_path, openWorkspace=True)
         except RuntimeError as e:
-            self.logger.error('Maya failed to open Project. Error: %s', str(e))
+            self.logger.error("Maya failed to open Project. Error: %s", str(e))
             raise e
 
         cmds.workspace(proj_path, openWorkspace=True)
