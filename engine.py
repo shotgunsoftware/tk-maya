@@ -857,9 +857,11 @@ class MayaEngine(Engine):
         proj_path = tmpl.apply_fields(fields)
         self.logger.info("Setting Maya project to '%s'", proj_path)
 
-        # Since we are inserting this path into another string that will be executed in mel
-        # We need to double up and backslashes.
-        proj_path = proj_path.replace("\\", "\\\\")
+        try:
+            cmds.workspace(proj_path, openWorkspace=True)
+        except RuntimeError as e:
+            self.logger.error("Maya failed to open Project. Error: %s", str(e))
+            raise e
 
         cmds.workspace(proj_path, openWorkspace=True)
 
