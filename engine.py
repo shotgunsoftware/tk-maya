@@ -384,7 +384,18 @@ class MayaEngine(Engine):
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
         if maya_ver.startswith(
-            ("2014", "2015", "2016", "2017", "2018", "2019", "2020", "2022", "2023")
+            (
+                "2014",
+                "2015",
+                "2016",
+                "2017",
+                "2018",
+                "2019",
+                "2020",
+                "2022",
+                "2023",
+                "2024",
+            )
         ):
             self.logger.debug("Running Maya version %s", maya_ver)
 
@@ -846,11 +857,13 @@ class MayaEngine(Engine):
         proj_path = tmpl.apply_fields(fields)
         self.logger.info("Setting Maya project to '%s'", proj_path)
 
-        # Since we are inserting this path into another string that will be executed in mel
-        # We need to double up and backslashes.
-        proj_path = proj_path.replace("\\", "\\\\")
+        try:
+            cmds.workspace(proj_path, openWorkspace=True)
+        except RuntimeError as e:
+            self.logger.error("Maya failed to open Project. Error: %s", str(e))
+            raise e
 
-        mel.eval('setProject("{0}")'.format(proj_path))
+        cmds.workspace(proj_path, openWorkspace=True)
 
     ##########################################################################################
     # panel support

@@ -39,7 +39,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         contain simple html for formatting.
         """
 
-        loader_url = "https://developer.shotgridsoftware.com/a4c0a4f1/?title=Loader"
+        loader_url = "https://help.autodesk.com/view/SGDEV/ENU/?contextId=PC_APP_LOADER"
 
         return """
         Publishes the file to ShotGrid. A <b>Publish</b> entry will be
@@ -346,8 +346,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         # do the base class finalization
         super(MayaSessionPublishPlugin, self).finalize(settings, item)
 
-        # bump the session file to the next version
-        self._save_to_next_version(item.properties["path"], item, _save_session)
+        self._save_to_next_version(item.get_property("path"), item, _save_session)
 
 
 def _maya_find_additional_session_dependencies():
