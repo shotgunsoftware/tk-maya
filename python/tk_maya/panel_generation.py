@@ -216,7 +216,7 @@ def dock_panel(engine, shotgun_panel, title):
             "        try:\n"
             "            sys.modules[m].build_workspace_control_ui('%(panel_name)s')\n"
             "        except Exception as e:\n"
-            "            msg = 'ShotGrid: Cannot restore %(panel_name)s: %%s' %% e\n"
+            "            msg = 'Flow Production Tracking: Cannot restore %(panel_name)s: %%s' %% e\n"
             "            fct = maya.api.OpenMaya.MGlobal.displayError\n"
             "            maya.utils.executeInMainThreadWithResult(fct, msg)\n"
             "        break\n"

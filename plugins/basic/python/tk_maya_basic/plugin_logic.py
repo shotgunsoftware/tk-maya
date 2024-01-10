@@ -37,7 +37,7 @@ QtGui = qt_importer.QtGui
 from . import plugin_engine
 
 MENU_LOGIN = "ShotGridMenuLogin"
-MENU_LABEL = "ShotGrid"
+MENU_LABEL = "Flow Production Tracking"
 
 logger = sgtk.LogManager.get_logger(__name__)
 
@@ -91,7 +91,7 @@ class ProgressHandler(QtCore.QObject):
         :param message: Progress message to report.
         """
 
-        logger.debug("Bootstrapping ShotGrid: %s" % message)
+        logger.debug("Bootstrapping Flow Production Tracking: %s" % message)
 
         # Set some state that will trigger our timer to update the progress bar.
         self._progress_value = progress_value
@@ -195,7 +195,9 @@ def _handle_bootstrap_completed(engine):
     # running as a standalone plugin
     if sgtk.platform.current_engine().context.project is None:
         sgtk.platform.current_engine().register_command(
-            "Log Out of ShotGrid", _logout_user, {"type": "context_menu"}
+            "Log Out of Flow Production Tracking",
+            _logout_user,
+            {"type": "context_menu"},
         )
 
 
@@ -271,7 +273,7 @@ def _show_progress_bar(progress_value, message):
         isMainProgressBar=True,
         isInterruptable=False,
         progress=int(progress_value * 100.0),
-        status="ShotGrid: %s" % message,
+        status="Flow Production Tracking: %s" % message,
     )
 
 
@@ -309,7 +311,7 @@ def _create_login_menu():
 
     # Add the login menu item.
     cmds.menuItem(
-        parent=menu, label="Log In to ShotGrid...", command=Callback(_login_user)
+        parent=menu, label="Log In to Flow Production Tracking...", command=Callback(_login_user),
     )
 
     cmds.menuItem(parent=menu, divider=True)
@@ -317,7 +319,7 @@ def _create_login_menu():
     # Add the website menu items.
     cmds.menuItem(
         parent=menu,
-        label="Learn about ShotGrid...",
+        label="Learn about Flow Production Tracking...",
         command=Callback(_jump_to_website),
     )
     cmds.menuItem(

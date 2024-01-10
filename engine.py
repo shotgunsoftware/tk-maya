@@ -178,7 +178,9 @@ def refresh_engine(engine_name, prev_context, menu_name):
 
     except sgtk.TankError as e:
         logger.exception("Could not execute sgtk_from_path('%s')" % new_path)
-        OpenMaya.MGlobal.displayInfo("ShotGrid: Engine cannot be started: %s" % e)
+        OpenMaya.MGlobal.displayInfo(
+            "Flow Production Tracking: Engine cannot be started: %s" % e
+        )
         # build disabled menu
         create_sgtk_disabled_menu(menu_name)
         return
@@ -469,7 +471,7 @@ class MayaEngine(Engine):
 
         # default menu name is Shotgun but this can be overriden
         # in the configuration to be Sgtk in case of conflicts
-        self._menu_name = "ShotGrid"
+        self._menu_name = "Flow Production Tracking"
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 

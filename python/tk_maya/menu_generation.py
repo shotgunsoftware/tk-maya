@@ -115,7 +115,7 @@ class MenuGenerator(object):
 
         # link to UI
         cmds.menuItem(
-            label="Jump to ShotGrid",
+            label="Jump to Flow Production Tracking",
             parent=ctx_menu,
             command=Callback(self._jump_to_sg),
         )
