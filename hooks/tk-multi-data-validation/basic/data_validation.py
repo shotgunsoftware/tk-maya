@@ -184,7 +184,7 @@ class MayaDataValidationHook(HookBaseClass):
         }
 
         # ----------------------------------------------------------------
-        # Modelling specific checks
+        # Asset - Modelling specific checks
         # ----------------------------------------------------------------
 
         if self.parent.context.step and self.parent.context.step["name"] == "Model":
@@ -261,10 +261,11 @@ class MayaDataValidationHook(HookBaseClass):
                 }
             )
 
-        elif self.parent.context.step and self.parent.context.step["name"] in [
-            "Light",
-            "Texture",
-        ]:
+        # ----------------------------------------------------------------
+        # Shot - Light specific checks
+        # ----------------------------------------------------------------
+
+        elif self.parent.context.step and self.parent.context.step["name"] == "Light":
 
             check_list.update(
                 {
@@ -276,6 +277,26 @@ class MayaDataValidationHook(HookBaseClass):
                         "fix_func": self.set_renderer,
                         "fix_name": "Set Renderer",
                         "fix_tooltip": "Set Renderer",
+                    },
+                }
+            )
+
+        # ----------------------------------------------------------------
+        # Shot - Animation specific checks
+        # ----------------------------------------------------------------
+
+        elif self.parent.context.step and self.parent.context.step["name"] == "Animation":
+
+            check_list.update(
+                {
+                    "empty_anim_layers": {
+                        "name": "Empty Animation Layers",
+                        "description": """Check: Make sure the animation layers are not empty""",
+                        "error_msg": "Found empty animation layer(s)",
+                        "check_func": self.check_empty_animation_layers,
+                        "fix_func": self.delete_items,
+                        "fix_name": "Delete All",
+                        "fix_tooltip": "Delete empty animation layers",
                     },
                 }
             )
@@ -465,6 +486,21 @@ class MayaDataValidationHook(HookBaseClass):
 
         current_renderer = cmds.getAttr("defaultRenderGlobals.currentRenderer")
         return [] if current_renderer == self.RENDERER["name"] else [current_renderer]
+
+    def check_empty_animation_layers(self):
+        """Check that the animation layers are not empty."""
+
+        bad_layers = []
+
+        root_layer = cmds.animLayer(query=True, root=True)
+        if root_layer:
+            for anim_layer in cmds.ls(type="animLayer"):
+                if anim_layer == root_layer:
+                    continue
+                if not cmds.animLayer(anim_layer, q=True, at=True):
+                    bad_layers.append(anim_layer)
+
+        return bad_layers
 
     # ---------------------------------------------------------------------------
     # Fix and actions methods
