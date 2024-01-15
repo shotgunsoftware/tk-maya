@@ -27,7 +27,36 @@ class MayaDataValidationHook(HookBaseClass):
     RENDERER = {"short_name": "arnold", "name": "Arnold Renderer", "plugin": "mtoa.mll"}
 
     def sanitize_check_result(self, errors):
-        """ """
+        """"
+        Sanitize the value returned by any validate function to conform to the standard format.
+
+        This method must be implemented by the subclass.
+
+        Each engine will provide their own validation functions which should return the list of
+        objects that do not follow the validation rule. These objects will be referred to as
+        "errors". In order for the Data Validation App to handle these objects coming from
+        different DCCs, the error objects need to be sanitized into a format that the Data
+        Validation App can handle. The standard format that the Data Validation App excepts
+        is a list of dictionaries, where each dictionary defines a DCC error object with
+        the following keys:
+
+            :is_valid: ``bool`` True if the validate function succeed with the current data, else False.
+            :errors: ``List[dict]`` The list of error objects (found by the validate function). None or empty list if the current data is valid. List elements have the following keys:
+
+                :id: ``str | int`` A unique identifier for the error object.
+                :name: ``str`` The display name for the error object.
+                :type: ``str`` The display name of the error object type (optional).
+
+        This method will be called by the Data Validation App after any validate function is
+        called, in order to receive the validate result in the required format.
+
+        :param errors: The value returned by a validate function that needs to be sanitized to
+            the standard format.
+        :type errors: any
+
+        :return: The validation result in the standardized format.
+        :rtype: dict
+        """
 
         formatted_errors = []
 
@@ -167,7 +196,7 @@ class MayaDataValidationHook(HookBaseClass):
                         "description": """Check: Top-node position should be frozen<br/>
                                         Fix: Freeze top-node position""",
                         "error_msg": "Top-node position is not frozen",
-                        "check_func": self.check_top_node_freeze_tranforms,
+                        "check_func": self.check_top_node_freeze_transforms,
                         "fix_func": self.freeze_transforms,
                         "fix_name": "Freeze All",
                         "fix_tooltip": "Freeze top-node position",
@@ -178,7 +207,7 @@ class MayaDataValidationHook(HookBaseClass):
                         "description": """Check: Group nodes positions should be frozen<br/>
                                         Fix: Freeze group nodes positions""",
                         "error_msg": "Group nodes positions are not frozen",
-                        "check_func": self.check_group_node_freeze_tranforms,
+                        "check_func": self.check_group_node_freeze_transforms,
                         "fix_func": self.freeze_transforms,
                         "fix_name": "Freeze All",
                         "fix_tooltip": "Freeze group nodes positions",
@@ -188,7 +217,7 @@ class MayaDataValidationHook(HookBaseClass):
                         "description": """Check: Meshes positions should be frozen<br/>
                                         Fix: Freeze meshes positions""",
                         "error_msg": "Meshes positions are not frozen",
-                        "check_func": self.check_mesh_freeze_tranforms,
+                        "check_func": self.check_mesh_freeze_transforms,
                         "fix_func": self.freeze_transforms,
                         "fix_name": "Freeze All",
                         "fix_tooltip": "Freeze meshes positions",
@@ -223,23 +252,11 @@ class MayaDataValidationHook(HookBaseClass):
                         "fix_tooltip": "Delete mesh history",
                         "dependency_ids": ["no_references"],
                     },
-                    "mesh_visibility": {
-                        "name": "Mesh Visibility",
-                        "description": """Check: Meshes should all be visible""",
-                        "error_msg": "Some meshes are not visible",
-                        "check_func": self.check_mesh_visibility,
-                    },
                     "mesh_double_shapes": {
                         "name": "Mesh Double Shapes",
                         "description": """Check: Meshes should have only one shape""",
                         "error_msg": "Some meshes have double shapes",
                         "check_func": self.check_mesh_double_shapes,
-                    },
-                    "default_materials_only": {
-                        "name": "Default materials only",
-                        "description": """Check: Only default materials should be used""",
-                        "error_msg": "Found non-default materials",
-                        "check_func": self.check_default_materials,
                     },
                 }
             )
@@ -251,12 +268,6 @@ class MayaDataValidationHook(HookBaseClass):
 
             check_list.update(
                 {
-                    "custom_materials_only": {
-                        "name": "Custom materials only",
-                        "description": """Check: Only custom materials should be used""",
-                        "error_msg": "Found non-custom materials",
-                        "check_func": self.check_custom_materials,
-                    },
                     "render_engine": {
                         "name": "Render Engine",
                         "description": """Check: Make sure the right render engine is selected""",
@@ -276,17 +287,13 @@ class MayaDataValidationHook(HookBaseClass):
     # ---------------------------------------------------------------------------
 
     def check_unknown_nodes(self):
-        """
-        Check if there are unknown nodes in the current Maya session.
-        """
+        """Check if there are unknown nodes in the current Maya session."""
 
         unknown_nodes = cmds.ls(type="unknown")
         return unknown_nodes
 
     def check_sg_references(self):
-        """
-        Check that all the references correspond to a ShotGrid Published File.
-        """
+        """Check that all the references correspond to a ShotGrid Published File."""
 
         bad_references = []
 
@@ -310,9 +317,7 @@ class MayaDataValidationHook(HookBaseClass):
         return bad_references
 
     def check_unused_materials(self):
-        """
-        Check that all the materials are in used.
-        """
+        """Check that all the materials are in used."""
 
         unassigned_materials = []
 
@@ -339,9 +344,7 @@ class MayaDataValidationHook(HookBaseClass):
         return unassigned_materials
 
     def check_only_one_top_node(self):
-        """
-        Check that there is only one top node in the scene hierarchy.
-        """
+        """Check that there is only one top node in the scene hierarchy."""
 
         top_nodes = [
             n for n in cmds.ls(assemblies=True) if n not in self.DEFAULT_CAMERAS
@@ -351,7 +354,7 @@ class MayaDataValidationHook(HookBaseClass):
         return top_nodes
 
     def check_top_node_pivot_position(self):
-        """ """
+        """Check that the top node pivot position is world centered."""
 
         top_nodes = [
             n for n in cmds.ls(assemblies=True) if n not in self.DEFAULT_CAMERAS
@@ -370,8 +373,8 @@ class MayaDataValidationHook(HookBaseClass):
 
         return [] if is_valid else top_nodes
 
-    def check_top_node_freeze_tranforms(self):
-        """ """
+    def check_top_node_freeze_transforms(self):
+        """Check that transforms of the top node are frozen."""
 
         # as this check depends on check_only_one_top_node(), we can assume that we have only one top node here
         top_nodes = [
@@ -380,8 +383,8 @@ class MayaDataValidationHook(HookBaseClass):
 
         return self.check_freeze_transforms(top_nodes)
 
-    def check_group_node_freeze_tranforms(self):
-        """ """
+    def check_group_node_freeze_transforms(self):
+        """Check that the transforms of the group nodes are frozen."""
         group_nodes = []
 
         # get all the group nodes
@@ -394,8 +397,8 @@ class MayaDataValidationHook(HookBaseClass):
 
         return self.check_freeze_transforms(group_nodes)
 
-    def check_mesh_freeze_tranforms(self):
-        """ """
+    def check_mesh_freeze_transforms(self):
+        """Check that the transforms of the meshes are frozen."""
 
         # get all the meshes
         all_shapes = cmds.ls(exactType="mesh", dag=1, ni=1, l=True)
@@ -407,7 +410,7 @@ class MayaDataValidationHook(HookBaseClass):
         return self.check_freeze_transforms(all_meshes)
 
     def check_mesh_history(self):
-        """ """
+        """Check that meshes don't have history."""
 
         bad_meshes = []
 
@@ -424,21 +427,8 @@ class MayaDataValidationHook(HookBaseClass):
 
         return bad_meshes
 
-    def check_mesh_visibility(self):
-        """ """
-
-        bad_meshes = []
-
-        # get all the meshes
-        for shape in cmds.ls(exactType="mesh", dag=1, ni=1, l=True):
-            for mesh in cmds.ls(cmds.listRelatives(shape, fullPath=True, p=True)):
-                if not cmds.getAttr("{}.visibility".format(mesh)):
-                    bad_meshes.append(mesh)
-
-        return bad_meshes
-
     def check_mesh_double_shapes(self):
-        """ """
+        """Check that meshes only have one shape."""
 
         bad_meshes = []
 
@@ -451,38 +441,12 @@ class MayaDataValidationHook(HookBaseClass):
         return bad_meshes
 
     def check_references(self):
-        """ """
+        """Check that the current scene doesn't contain any references."""
         return cmds.ls(references=True)
 
-    def check_default_materials(self):
-        """ """
-
-        custom_materials = []
-
-        materials = cmds.ls(mat=True)
-        for m in materials:
-            if m not in self.DEFAULT_MATERIALS:
-                custom_materials.append(m)
-
-        return custom_materials
-
-    def check_custom_materials(self):
-        """ """
-
-        bad_shapes = []
-
-        for shape in cmds.ls(exactType="mesh", dag=1, ni=1):
-            for shading_engine in cmds.listConnections(shape, t="shadingEngine"):
-                for con in cmds.listConnections(shading_engine):
-                    if con in self.DEFAULT_MATERIALS:
-                        bad_shapes.append(shape)
-
-        return bad_shapes
-
     def check_frame_range(self):
-        """ """
+        """Check that the timeline frame range is synced with ShotGrid frame range."""
 
-        self.logger.info(self.parent.engine.apps)
         tk_multi_setframerange = self.parent.engine.apps.get("tk-multi-setframerange")
         if not tk_multi_setframerange:
             self.logger.error("Can't find tk-multi-setframerange Toolkit app")
@@ -497,7 +461,7 @@ class MayaDataValidationHook(HookBaseClass):
         return []
 
     def check_render_engine(self):
-        """ """
+        """Check that the current renderer is the one defined in the RENDERER class variable."""
 
         current_renderer = cmds.getAttr("defaultRenderGlobals.currentRenderer")
         return [] if current_renderer == self.RENDERER["name"] else [current_renderer]
@@ -507,42 +471,34 @@ class MayaDataValidationHook(HookBaseClass):
     # ---------------------------------------------------------------------------
 
     def create_root_node(self, errors):
-        """
-        Create a root top node and group all the previous top nodes under it.
-        """
+        """Create a root top node and group all the previous top nodes under it."""
         top_nodes = [item["id"] for item in errors]
         cmds.group(top_nodes, name=self.ROOT_NODE_NAME)
 
     def reset_top_node_pivot_position(self, errors):
-        """ """
+        """Reset the top node pivot position."""
         top_node = errors[0]
         cmds.xform(top_node["id"], piv=(0, 0, 0))
 
     def freeze_transforms(self, errors):
-        """ """
+        """Freeze the transforms."""
         for item in errors:
             cmds.makeIdentity(item["id"], apply=True)
 
     def delete_items(self, errors):
-        """
-        Delete a list of items.
-        """
+        """Delete a list of items."""
         for item in errors:
             cmds.delete(item["id"])
 
     def select_items(self, errors):
-        """
-        Select a list of items.
-        """
+        """Select a list of items."""
         # clear the previous selection before selecting the items
         cmds.select(cl=True)
         for item in errors:
             cmds.select(item["id"], add=True)
 
     def select_references(self, errors):
-        """
-        Select the content of references.
-        """
+        """Select the content of references."""
         # clear the previous selection before selecting the items
         cmds.select(cl=True)
         for item in errors:
@@ -550,19 +506,19 @@ class MayaDataValidationHook(HookBaseClass):
             cmds.select(ref_nodes, add=True)
 
     def delete_history(self, errors):
-        """ """
+        """Delete construction history."""
         for item in errors:
             cmds.delete(item["id"], constructionHistory=True)
 
     def synch_frame_range(self, errors):
-        """ """
+        """Synchronize timeline frame range with ShotGrid frame range value."""
 
         tk_multi_setframerange = self.parent.engine.apps.get("tk-multi-setframerange")
         (sg_in, sg_out) = tk_multi_setframerange.get_frame_range_from_shotgun()
         tk_multi_setframerange.set_frame_range(sg_in, sg_out)
 
     def set_renderer(self, errors):
-        """ """
+        """Set Maya renderer."""
 
         # make sure the plugin is loaded
         if self.RENDERER["plugin"] and not cmds.pluginInfo(
@@ -584,8 +540,9 @@ class MayaDataValidationHook(HookBaseClass):
     # Utilities
     # ---------------------------------------------------------------------------
 
-    def check_freeze_transforms(self, items):
-        """ """
+    @staticmethod
+    def check_freeze_transforms(items):
+        """Helper method to check the transforms of a list of nodes."""
 
         error_items = []
 
@@ -620,8 +577,9 @@ class MayaDataValidationHook(HookBaseClass):
 
         return error_items
 
-    def is_group_node(self, node):
-        """ """
+    @staticmethod
+    def is_group_node(node):
+        """Check if a node is a group node or not."""
 
         children = cmds.listRelatives(node, children=True)
         if not children:
