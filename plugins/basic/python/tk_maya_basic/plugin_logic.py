@@ -311,7 +311,9 @@ def _create_login_menu():
 
     # Add the login menu item.
     cmds.menuItem(
-        parent=menu, label="Log In to Flow Production Tracking...", command=Callback(_login_user),
+        parent=menu,
+        label="Log In to Flow Production Tracking...",
+        command=Callback(_login_user),
     )
 
     cmds.menuItem(parent=menu, divider=True)
