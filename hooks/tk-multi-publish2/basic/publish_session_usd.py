@@ -47,7 +47,8 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         <br>
         <p>Export active selection only: Only exports your active selection as a USD file.
         Note: Everything that is highlighted in green in the viewport is your active selection.</p>
-        <p>Disable animations: Exports your scene without any animation data.</p><br></div>
+        <p>Disable animations: Exports your scene without any animation data.</p>
+        <p>Export current frame only: Only exports the frame you are currently viewing.</p><br></div>
         """
 
     @property
@@ -90,6 +91,11 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
                 "type": "bool",
                 "default": False,
                 "description": "Setting for disabling animation on export.",
+            },
+            "Export Current Frame Only": {
+                "type": "bool",
+                "default": False,
+                "description": "Setting for only exporting current frame.",
             },
         }
 
@@ -137,6 +143,10 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         disable_animation_checkbox = QtGui.QCheckBox("Disable animations")
         menu_layout.addWidget(disable_animation_checkbox)
 
+        # Current frame
+        current_frame_checkbox = QtGui.QCheckBox("Export current frame only")
+        menu_layout.addWidget(current_frame_checkbox)
+
         usd_publish_menu.setLayout(menu_layout)
 
         return usd_publish_menu
@@ -175,10 +185,13 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
                 active_selection_value = checkbox.isChecked()
             elif checkbox.text() == "Disable animations":
                 disable_animation_value = checkbox.isChecked()
+            elif checkbox.text() == "Export current frame only":
+                current_frame_value = checkbox.isChecked()
 
         updated_ui_settings = {
             "Export Active Selection Only": active_selection_value,
             "Disable Animations Export": disable_animation_value,
+            "Export Current Frame Only": current_frame_value,
         }
 
         return updated_ui_settings
@@ -236,6 +249,11 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
             elif (
                 checkbox.text() == "Disable animations"
                 and settings[0]["Disable Animations Export"]
+            ):
+                checkbox.toggle()
+            elif (
+                checkbox.text() == "Export current frame only"
+                and settings[0]["Export Current Frame Only"]
             ):
                 checkbox.toggle()
 
@@ -465,6 +483,12 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
             animation_mode = "0"
         else:
             animation_mode = "1"
+
+        if settings["Export Current Frame Only"].value:
+            self.logger.debug("Exporting current frame only.")
+            current_frame = int(cmds.currentTime(query=True))
+            start_frame = current_frame
+            end_frame = current_frame
 
         # This is the really long Maya command to export everything in the scene to USDA
         usd_command: str = (
