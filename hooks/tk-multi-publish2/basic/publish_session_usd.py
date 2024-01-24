@@ -42,8 +42,12 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         """
 
         return """
-        <p>This plugin will export the scene as an USD.
-        The plugin will fail to validate if the Maya USD plugin is not loaded</p>
+        <div><p>This plugin will export the scene as a USD file.
+        Below you will find several settings that influence your export.</p>
+        <br>
+        <p>Export active selection only: Only exports your active selection as a USD file.
+        Note: Everything that is highlighted in green in the viewport is your active selection.</p>
+        <p>Disable animations: Exports your scene without any animation data.</p><br></div>
         """
 
     @property
@@ -76,7 +80,17 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
                 "description": "Template path for published work files. Should"
                 "correspond to a template defined in "
                 "templates.yml.",
-            }
+            },
+            "Export Active Selection Only": {
+                "type": "bool",
+                "default": False,
+                "description": "Setting for only exporting active selection.",
+            },
+            "Disable Animations Export": {
+                "type": "bool",
+                "default": False,
+                "description": "Setting for disabling animation on export.",
+            },
         }
 
         # update the base settings
@@ -94,6 +108,136 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
         ["maya.*", "file.maya"]
         """
         return ["maya.session.usd"]
+
+    def create_settings_widget(self, parent):
+        """
+        Creates a custom widget for the given parent widget.
+
+        :param parent: Parent widget to host the custom UI.
+        :return: The QWidget containing the custom UI.
+        """
+        from sgtk.platform.qt import QtGui
+
+        usd_publish_menu = QtGui.QGroupBox(parent)
+        usd_publish_menu.setTitle("USD publishing")
+        menu_layout = QtGui.QVBoxLayout()
+        menu_layout.addStretch()
+
+        # Description text
+        description_label = QtGui.QLabel(self.description)
+        description_label.setWordWrap(True)
+        description_label.setOpenExternalLinks(True)
+        menu_layout.addWidget(description_label)
+
+        # Active selection
+        active_selection_checkbox = QtGui.QCheckBox("Export active selection only")
+        menu_layout.addWidget(active_selection_checkbox)
+
+        # Disable animations
+        disable_animation_checkbox = QtGui.QCheckBox("Disable animations")
+        menu_layout.addWidget(disable_animation_checkbox)
+
+        usd_publish_menu.setLayout(menu_layout)
+
+        return usd_publish_menu
+
+    def get_ui_settings(self, widget, items=None):
+        """
+        Invoked by the Publisher when the selection changes. This method gathers the settings
+        on the previously selected task, so that they can be later used to repopulate the
+        custom UI if the task gets selected again. They will also be passed to the accept, validate,
+        publish and finalize methods, so that the settings can be used to drive the publish process.
+
+        The widget argument is the widget that was previously created by
+        `create_settings_widget`.
+
+        The method returns a dictionary, where the key is the name of a
+        setting that should be updated and the value is the new value of that
+        setting. Note that it is up to you how you want to store the UI's state as
+        settings and you don't have to necessarily to return all the values from
+        the UI. This is to allow the publisher to update a subset of settings
+        when multiple tasks have been selected.
+
+        Example::
+
+            {
+                 "setting_a": "/path/to/a/file"
+            }
+
+        :param widget: The widget that was created by `create_settings_widget`
+        """
+        from sgtk.platform.qt import QtGui
+
+        checkbox_settings_list = widget.findChildren(QtGui.QCheckBox)
+
+        for checkbox in checkbox_settings_list:
+            if checkbox.text() == "Export active selection only":
+                active_selection_value = checkbox.isChecked()
+            elif checkbox.text() == "Disable animations":
+                disable_animation_value = checkbox.isChecked()
+
+        updated_ui_settings = {
+            "Export Active Selection Only": active_selection_value,
+            "Disable Animations Export": disable_animation_value,
+        }
+
+        return updated_ui_settings
+
+    def set_ui_settings(self, widget, settings, items=None):
+        """
+        Allows the custom UI to populate its fields with the settings from the
+        currently selected tasks.
+
+        The widget is the widget created and returned by
+        `create_settings_widget`.
+
+        A list of settings dictionaries are supplied representing the current
+        values of the settings for selected tasks. The settings dictionaries
+        correspond to the dictionaries returned by the settings property of the
+        hook.
+
+        Example::
+
+            settings = [
+            {
+                 "seeting_a": "/path/to/a/file"
+                 "setting_b": False
+            },
+            {
+                 "setting_a": "/path/to/a/file"
+                 "setting_b": False
+            }]
+
+        The default values for the settings will be the ones specified in the
+        environment file. Each task has its own copy of the settings.
+
+        When invoked with multiple settings dictionaries, it is the
+        responsibility of the custom UI to decide how to display the
+        information. If you do not wish to implement the editing of multiple
+        tasks at the same time, you can raise a ``NotImplementedError`` when
+        there is more than one item in the list and the publisher will inform
+        the user than only one task of that type can be edited at a time.
+
+        :param widget: The widget that was created by `create_settings_widget`.
+        :param settings: a list of dictionaries of settings for each selected
+            task.
+        :param items: A list of PublishItems the selected publish tasks are parented to.
+        """
+        from sgtk.platform.qt import QtGui
+
+        checkbox_settings_list = widget.findChildren(QtGui.QCheckBox)
+
+        for checkbox in checkbox_settings_list:
+            if (
+                checkbox.text() == "Export active selection only"
+                and settings[0]["Export Active Selection Only"]
+            ):
+                checkbox.toggle()
+            elif (
+                checkbox.text() == "Disable animations"
+                and settings[0]["Disable Animations Export"]
+            ):
+                checkbox.toggle()
 
     def accept(self, settings, item):
         """
@@ -201,8 +345,18 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
                     "to be exported. You can uncheck this plugin or create "
                     "geometry to export to avoid this error."
                 )
-                self.logger.error(error_msg)
                 raise Exception(error_msg)
+
+        # check if there's a selection when selection export is enabled
+        if settings["Export Active Selection Only"].value and not cmds.ls(
+            selection=True
+        ):
+            error_msg = (
+                "Validation failed because there is no active selection to export. "
+                "Please make a selection in the viewport or outliner, or disable"
+                "the active selection checkbox if you want to export the whole scene instead."
+            )
+            raise Exception(error_msg)
 
         # get the configured work file template
         work_template = item.parent.properties.get("work_template")
@@ -300,10 +454,24 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
 
         start_frame, end_frame = _find_scene_animation_range()
 
+        if settings["Export Active Selection Only"].value:
+            self.logger.debug("Exporting active selection USD only.")
+            export_mode = "-es"
+        else:
+            export_mode = "-ea"
+
+        if settings["Disable Animations Export"].value:
+            self.logger.debug("Disabling animation export.")
+            animation_mode = "0"
+        else:
+            animation_mode = "1"
+
         # This is the really long Maya command to export everything in the scene to USDA
         usd_command: str = (
             'file -force -options ";exportUVs=1;exportSkels=auto;exportSkin=auto;exportBlendShapes=1'
-            ";exportColorSets=1;defaultMeshScheme=none;defaultUSDFormat=usda;animation=1;eulerFilter"
+            ";exportColorSets=1;defaultMeshScheme=none;defaultUSDFormat=usda;animation="
+            + animation_mode
+            + ";eulerFilter"
             "=0;staticSingleSample=0;startTime="
             + str(start_frame)
             + ";endTime="
@@ -311,7 +479,7 @@ class MayaSessionUSDPublishPlugin(HookBaseClass):
             + ";frameStride=1;frameSample=0.0;parentScope"
             "=;exportDisplayColor=0;shadingMode=useRegistry;convertMaterialsTo=UsdPreviewSurface"
             ';exportInstances=1;exportVisibility=1;mergeTransformAndShape=1;stripNamespaces=0" -type "USD '
-            'Export" -pr -ea '
+            'Export" -pr ' + export_mode
         )
 
         # Create temporary directory
