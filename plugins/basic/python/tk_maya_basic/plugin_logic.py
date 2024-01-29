@@ -17,9 +17,14 @@ import maya.mel as mel
 import maya.cmds as cmds
 
 try:
-    import shiboken2 as shiboken
+    import shiboken6 as shiboken
 except ImportError:
-    import shiboken
+    try:
+        import shiboken2 as shiboken
+    except ImportError:
+        # If shiboken6 or shiboken2 are not available,
+        # fall back to shiboken for PySide
+        import shiboken
 
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.

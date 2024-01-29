@@ -18,9 +18,14 @@ import maya.OpenMayaUI as OpenMayaUI
 from sgtk.platform.qt import QtCore, QtGui
 
 try:
-    import shiboken2 as shiboken
+    import shiboken6 as shiboken
 except ImportError:
-    import shiboken
+    try:
+        import shiboken2 as shiboken
+    except ImportError:
+        # If shiboken6 or shiboken2 are not available,
+        # fall back to shiboken for PySide
+        import shiboken
 
 
 def install_event_filter_by_name(maya_panel_name, shotgun_panel_name):

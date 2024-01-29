@@ -654,7 +654,18 @@ class MayaEngine(Engine):
         Handles the pyside init
         """
 
-        # first see if pyside2 is present
+        # First see if pyside6 is present
+        try:
+            from PySide6 import QtGui
+        except:
+            # fine, we don't expect PySide2 to be present just yet
+            self.logger.debug("PySide6 not detected - trying for PySide2 now...")
+        else:
+            # looks like pyside2 is already working! No need to do anything
+            self.logger.debug("PySide6 detected - the existing version will be used.")
+            return
+
+        # Next, check if PySide2 is present
         try:
             from PySide2 import QtGui
         except:
@@ -665,7 +676,7 @@ class MayaEngine(Engine):
             self.logger.debug("PySide2 detected - the existing version will be used.")
             return
 
-        # then see if pyside is present
+        # Then see if pyside is present
         try:
             from PySide import QtGui
         except:
@@ -784,10 +795,14 @@ class MayaEngine(Engine):
         from sgtk.platform.qt import QtGui
         import maya.OpenMayaUI as OpenMayaUI
 
+        # Try importing PySide6 modules first
         try:
-            import shiboken2 as shiboken
+            import shiboken6 as shiboken
         except ImportError:
-            import shiboken
+            try:
+                import shiboken2 as shiboken
+            except ImportError:
+                import shiboken
 
         ptr = OpenMayaUI.MQtUtil.mainWindow()
         parent = shiboken.wrapInstance(int(ptr), QtGui.QMainWindow)
