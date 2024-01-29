@@ -267,8 +267,13 @@ def build_workspace_control_ui(shotgun_panel_name):
 
     # In the context of this function, we know that we are running in Maya 2017 and later
     # with the newer versions of PySide and shiboken.
-    from PySide2 import QtWidgets
-    from shiboken2 import wrapInstance
+    # Try importing PySide6 modules first
+    try:
+        from PySide6 import QtWidgets
+        import shiboken6 as shiboken
+    except ImportError:
+        from PySide2 import QtWidgets
+        import shiboken2 as shiboken
 
     import sgtk.platform
 
@@ -277,7 +282,7 @@ def build_workspace_control_ui(shotgun_panel_name):
 
     # Retrieve the calling Maya workspace control.
     ptr = MQtUtil.getCurrentParent()
-    workspace_control = wrapInstance(int(ptr), QtWidgets.QWidget)
+    workspace_control = shiboken.wrapInstance(int(ptr), QtWidgets.QWidget)
 
     # Search for the Shotgun app panel widget.
     for widget in QtWidgets.QApplication.allWidgets():
