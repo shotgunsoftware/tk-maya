@@ -395,6 +395,7 @@ class MayaEngine(Engine):
                 "2022",
                 "2023",
                 "2024",
+                "2025",
             )
         ):
             self.logger.debug("Running Maya version %s", maya_ver)
