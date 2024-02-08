@@ -793,17 +793,8 @@ class MayaEngine(Engine):
         show_dialog & show_modal.
         """
         # Find a parent for the dialog - this is the Maya mainWindow()
-        from sgtk.platform.qt import QtGui
+        from sgtk.platform.qt import QtGui, shiboken
         import maya.OpenMayaUI as OpenMayaUI
-
-        # Try importing PySide6 modules first
-        try:
-            import shiboken6 as shiboken
-        except ImportError:
-            try:
-                import shiboken2 as shiboken
-            except ImportError:
-                import shiboken
 
         ptr = OpenMayaUI.MQtUtil.mainWindow()
         parent = shiboken.wrapInstance(int(ptr), QtGui.QMainWindow)

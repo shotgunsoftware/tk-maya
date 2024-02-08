@@ -264,18 +264,16 @@ def build_workspace_control_ui(shotgun_panel_name):
     """
 
     from maya.OpenMayaUI import MQtUtil
+    import sgtk.platform
+    from sgtk.platform.qt import shiboken
 
     # In the context of this function, we know that we are running in Maya 2017 and later
     # with the newer versions of PySide and shiboken.
     # Try importing PySide6 modules first
     try:
         from PySide6 import QtWidgets
-        import shiboken6 as shiboken
     except ImportError:
         from PySide2 import QtWidgets
-        import shiboken2 as shiboken
-
-    import sgtk.platform
 
     # Retrieve the Maya engine.
     engine = sgtk.platform.current_engine()

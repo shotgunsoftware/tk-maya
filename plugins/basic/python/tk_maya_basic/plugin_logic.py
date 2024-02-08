@@ -16,19 +16,10 @@ import maya.OpenMayaUI as OpenMayaUI
 import maya.mel as mel
 import maya.cmds as cmds
 
-try:
-    import shiboken6 as shiboken
-except ImportError:
-    try:
-        import shiboken2 as shiboken
-    except ImportError:
-        # If shiboken6 or shiboken2 are not available,
-        # fall back to shiboken for PySide
-        import shiboken
-
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
 import sgtk
+from sgtk.platform.qt import shiboken
 
 # Knowing that the plug-in is only loaded for Maya 2014 and later,
 # import PySide packages without having to worry about the version to use

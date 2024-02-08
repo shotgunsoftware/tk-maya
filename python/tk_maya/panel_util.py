@@ -15,17 +15,7 @@ Panel support utilities for Maya
 import maya.mel as mel
 import maya.OpenMayaUI as OpenMayaUI
 
-from sgtk.platform.qt import QtCore, QtGui
-
-try:
-    import shiboken6 as shiboken
-except ImportError:
-    try:
-        import shiboken2 as shiboken
-    except ImportError:
-        # If shiboken6 or shiboken2 are not available,
-        # fall back to shiboken for PySide
-        import shiboken
+from sgtk.platform.qt import QtCore, QtGui, shiboken
 
 
 def install_event_filter_by_name(maya_panel_name, shotgun_panel_name):
