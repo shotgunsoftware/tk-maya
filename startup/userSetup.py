@@ -50,7 +50,7 @@ def start_toolkit_classic():
         context = sgtk.context.deserialize(env_context)
     except Exception as e:
         OpenMaya.MGlobal.displayError(
-            "SG: Could not create context! SG Pipeline Toolkit will "
+            "PTR: Could not create context! PTR Pipeline Toolkit will "
             "be disabled. Details: %s" % e
         )
         return

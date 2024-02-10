@@ -140,7 +140,7 @@ def _login_user():
     except sgtk.authentication.AuthenticationCancelled:
         # When the user cancelled the Shotgun login dialog,
         # keep around the displayed login menu.
-        OpenMaya.MGlobal.displayInfo("SG login was cancelled by the user.")
+        OpenMaya.MGlobal.displayInfo("PTR login was cancelled by the user.")
         return
 
     # Get rid of the displayed login menu since the engine menu will take over.
@@ -148,7 +148,7 @@ def _login_user():
     # processed before deleting the menu to avoid a crash in Maya 2017.
     maya.utils.executeDeferred(_delete_login_menu)
 
-    OpenMaya.MGlobal.displayInfo("Loading SG integration...")
+    OpenMaya.MGlobal.displayInfo("Loading PTR integration...")
 
     # Show a progress bar, and set its initial value and message.
     _show_progress_bar(0.0, "Loading...")
@@ -166,7 +166,7 @@ def _login_user():
         # return to normal state
         _handle_bootstrap_failed(phase=None, exception=e)
         # also print the full call stack
-        logger.exception("SG reported the following exception during startup:")
+        logger.exception("PTR reported the following exception during startup:")
 
 
 def _handle_bootstrap_completed(engine):
@@ -227,12 +227,12 @@ def _handle_bootstrap_failed(phase, exception):
     # the message displayed last will be the one visible in the script editor,
     # so make sure this is the error message summary.
     OpenMaya.MGlobal.displayError(
-        "An exception was raised during SG startup: %s" % exception
+        "An exception was raised during PTR startup: %s" % exception
     )
     OpenMaya.MGlobal.displayError(
         "For details, see log files in %s" % sgtk.LogManager().log_folder
     )
-    OpenMaya.MGlobal.displayError("Error loading SG integration.")
+    OpenMaya.MGlobal.displayError("Error loading PTR integration.")
 
     # Clear the user's credentials to log him/her out.
     sgtk.authentication.ShotgunAuthenticator().clear_default_user()
@@ -326,7 +326,7 @@ def _create_login_menu():
     )
     cmds.menuItem(
         parent=menu,
-        label="Try SG for Free...",
+        label="Try PTR for Free...",
         command=Callback(_jump_to_signup),
     )
 
