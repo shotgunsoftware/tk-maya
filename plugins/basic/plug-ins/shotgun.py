@@ -52,7 +52,7 @@ def initializePlugin(mobject):
         import sgtk
 
         if sgtk.platform.current_engine():
-            msg = "The PTR plug-in cannot be loaded because Flow Production Tracking Toolkit is already running."
+            msg = "The PTR plug-in cannot be loaded because Flow Production Tracking is already running."
             OpenMaya2.MGlobal.displayError(msg)
             # Ask Maya to unload the plug-in after returning from here.
             maya.utils.executeDeferred(cmds.unloadPlugin, PLUGIN_FILENAME)

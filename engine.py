@@ -424,7 +424,7 @@ class MayaEngine(Engine):
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
             msg = (
-                "The Flow Production Tracking Toolkit has not yet been fully tested with Maya %s.  "
+                "The Flow Production Tracking has not yet been fully tested with Maya %s.  "
                 "You can continue to use Toolkit but you may experience bugs or instability."
                 "\n\nPlease report any issues to: %s" % (maya_ver, sgtk.support_url)
             )
@@ -448,7 +448,7 @@ class MayaEngine(Engine):
 
             if show_warning_dlg:
                 # Note, title is padded to try to ensure dialog isn't insanely narrow!
-                title = "Warning - Flow Production Tracking Toolkit Compatibility!                          "  # padded!
+                title = "Warning - Flow Production Tracking Compatibility!                          "  # padded!
                 cmds.confirmDialog(title=title, message=msg, button="Ok")
 
             # always log the warning to the script editor:

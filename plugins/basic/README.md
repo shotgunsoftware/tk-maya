@@ -1,7 +1,7 @@
 # Maya Basic Toolkit workflow plugin
 
-This is a Flow Production Tracking Toolkit plugin,
-embedding the Flow Production Tracking Toolkit and allowing
+This is a Flow Production Tracking plugin,
+embedding the Flow Production Tracking and allowing
 you to easily run and deploy Toolkit Apps and Engines.
 
 The plugin will appear as `shotgun.py` inside of Maya
