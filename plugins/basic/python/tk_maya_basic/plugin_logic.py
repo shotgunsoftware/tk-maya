@@ -19,7 +19,6 @@ import maya.cmds as cmds
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
 import sgtk
-from sgtk.platform.qt import shiboken
 
 # Knowing that the plug-in is only loaded for Maya 2014 and later,
 # import PySide packages without having to worry about the version to use
@@ -29,6 +28,7 @@ from sgtk.util.qt_importer import QtImporter
 qt_importer = QtImporter()
 QtCore = qt_importer.QtCore
 QtGui = qt_importer.QtGui
+shiboken = qt_importer.shiboken
 
 from . import plugin_engine
 
