@@ -112,11 +112,11 @@ def shutdown():
     engine = sgtk.platform.current_engine()
 
     if engine:
-        logger.info("Stopping the SG engine.")
+        logger.info("Stopping the PTR engine.")
         # Close the various windows (dialogs, panels, etc.) opened by the engine.
         engine.close_windows()
         # Turn off your engine! Step away from the car!
         engine.destroy()
 
     else:
-        logger.debug("The SG engine was already stopped!")
+        logger.debug("The PTR engine was already stopped!")

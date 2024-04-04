@@ -1,7 +1,7 @@
 # Maya Basic Toolkit workflow plugin
 
-This is a ShotGrid Pipeline Toolkit plugin,
-embedding the ShotGrid Pipeline Toolkit and allowing
+This is a Flow Production Tracking plugin,
+embedding the Flow Production Tracking and allowing
 you to easily run and deploy Toolkit Apps and Engines.
 
 The plugin will appear as `shotgun.py` inside of Maya
@@ -15,7 +15,7 @@ via the toolkit launch application, or as a standalone plugin.
 
 ### Technical Details
 
-This is a Maya Module that enables basic ShotGrid integration
+This is a Maya Module that enables basic Flow Production Tracking integration
 inside Maya. The plugin source is located in the [toolkit maya engine repository](https://github.com/shotgunsoftware/tk-maya/tree/develop/plugin/plugins/basic).
 Maya version 2014 and above are supported.
 You can read more about maya modules [here](http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__files_GUID_CB76E356_753B_4837_8C5B_3296C14872CA_htm).
