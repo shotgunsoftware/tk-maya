@@ -1,0 +1,21 @@
+name: Update README.md
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+    paths:
+      - "info.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    name: Generating README.md
+    runs-on: ubuntu-latest
+    steps:
+      - uses: MaximumFX/tk-readme-generator@v1.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
