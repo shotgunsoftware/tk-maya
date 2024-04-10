@@ -16,6 +16,6 @@ jobs:
     name: Generating README.md
     runs-on: ubuntu-latest
     steps:
-      - uses: MaximumFX/tk-readme-generator@v1.0.0
+      - uses: MaximumFX/tk-readme-generator@v1.0.4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
