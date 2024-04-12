@@ -16,11 +16,6 @@ import maya.OpenMayaUI as OpenMayaUI
 import maya.mel as mel
 import maya.cmds as cmds
 
-try:
-    import shiboken2 as shiboken
-except ImportError:
-    import shiboken
-
 # For now, import the Shotgun toolkit core included with the plug-in,
 # but also re-import it later to ensure usage of a swapped in version.
 import sgtk
@@ -33,6 +28,7 @@ from sgtk.util.qt_importer import QtImporter
 qt_importer = QtImporter()
 QtCore = qt_importer.QtCore
 QtGui = qt_importer.QtGui
+shiboken = qt_importer.shiboken
 
 from . import plugin_engine
 
