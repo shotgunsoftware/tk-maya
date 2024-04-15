@@ -537,7 +537,9 @@ class MayaEngine(Engine):
 
         if self.get_setting("automatic_context_switch", True):
             cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name: on_scene_event_callback(
-                engine_name=en, prev_context=pc, menu_name=mn,
+                engine_name=en,
+                prev_context=pc,
+                menu_name=mn,
             )
             self.__watcher = SceneEventWatcher(cb_fn)
             self.logger.debug(
@@ -555,7 +557,7 @@ class MayaEngine(Engine):
 
         # Build a dictionary mapping app instance names to dictionaries of commands they registered with the engine.
         app_instance_commands = {}
-        for (command_name, value) in self.commands.items():
+        for command_name, value in self.commands.items():
             app_instance = value["properties"].get("app")
             if app_instance:
                 # Add entry 'command name: command function' to the command dictionary of this app instance.
@@ -585,7 +587,7 @@ class MayaEngine(Engine):
                     # Run all commands of the given app instance.
                     # Run these commands once Maya will have completed its UI update and be idle
                     # in order to run them after the ones that restore the persisted Shotgun app panels.
-                    for (command_name, command_function) in command_dict.items():
+                    for command_name, command_function in command_dict.items():
                         self.logger.debug(
                             "%s startup running app '%s' command '%s'.",
                             self.name,
@@ -965,7 +967,7 @@ class MayaEngine(Engine):
                 )
 
         # Loop through the dictionary of Maya panels that have been created by the engine.
-        for (maya_panel_name, widget_instance) in self._maya_panel_dict.items():
+        for maya_panel_name, widget_instance in self._maya_panel_dict.items():
             # Make sure the Maya panel is still opened.
             if cmds.control(maya_panel_name, query=True, exists=True):
                 try:
