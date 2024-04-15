@@ -40,10 +40,11 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         """
 
         return """
-        <p>This plugin publishes session geometry for the current session. Any
-        session geometry will be exported to the path defined by this plugin's
-        configured "Publish Template" setting. The plugin will fail to validate
-        if the "AbcExport" plugin is not enabled or cannot be found.</p>
+        <div><p>This plugin will export the scene as a baked Alembic cache.
+        Below you will find several settings that influence your export.</p>
+        <br>
+        <p>Export active selection only: Only exports your active selection as an Alembic cache.
+        Note: Everything that is highlighted in green in the viewport is your active selection.</p>
         """
 
     @property
@@ -76,13 +77,136 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
                 "description": "Template path for published work files. Should"
                 "correspond to a template defined in "
                 "templates.yml.",
-            }
+            },
+            "Export Active Selection Only": {
+                "type": "bool",
+                "default": False,
+                "description": "Setting for only exporting active selection.",
+            },
         }
 
         # update the base settings
         base_settings.update(maya_publish_settings)
 
         return base_settings
+
+    def create_settings_widget(self, parent):
+        """
+        Creates a custom widget for the given parent widget.
+
+        :param parent: Parent widget to host the custom UI.
+        :return: The QWidget containing the custom UI.
+        """
+        from sgtk.platform.qt import QtGui
+
+        alembic_publish_menu = QtGui.QGroupBox(parent)
+        alembic_publish_menu.setTitle("Alembic publishing")
+        menu_layout = QtGui.QVBoxLayout()
+        menu_layout.addStretch()
+
+        # Description text
+        description_label = QtGui.QLabel(self.description)
+        description_label.setWordWrap(True)
+        description_label.setOpenExternalLinks(True)
+        menu_layout.addWidget(description_label)
+
+        # Active selection
+        active_selection_checkbox = QtGui.QCheckBox("Export active selection only")
+        menu_layout.addWidget(active_selection_checkbox)
+
+        alembic_publish_menu.setLayout(menu_layout)
+
+        return alembic_publish_menu
+
+    def get_ui_settings(self, widget, items=None):
+        """
+        Invoked by the Publisher when the selection changes. This method gathers the settings
+        on the previously selected task, so that they can be later used to repopulate the
+        custom UI if the task gets selected again. They will also be passed to the accept, validate,
+        publish and finalize methods, so that the settings can be used to drive the publish process.
+
+        The widget argument is the widget that was previously created by
+        `create_settings_widget`.
+
+        The method returns a dictionary, where the key is the name of a
+        setting that should be updated and the value is the new value of that
+        setting. Note that it is up to you how you want to store the UI's state as
+        settings and you don't have to necessarily to return all the values from
+        the UI. This is to allow the publisher to update a subset of settings
+        when multiple tasks have been selected.
+
+        Example::
+
+            {
+                 "setting_a": "/path/to/a/file"
+            }
+
+        :param widget: The widget that was created by `create_settings_widget`
+        """
+        from sgtk.platform.qt import QtGui
+
+        checkbox_settings_list = widget.findChildren(QtGui.QCheckBox)
+
+        for checkbox in checkbox_settings_list:
+            if checkbox.text() == "Export active selection only":
+                active_selection_value = checkbox.isChecked()
+
+        updated_ui_settings = {
+            "Export Active Selection Only": active_selection_value,
+        }
+
+        return updated_ui_settings
+
+    def set_ui_settings(self, widget, settings, items=None):
+        """
+        Allows the custom UI to populate its fields with the settings from the
+        currently selected tasks.
+
+        The widget is the widget created and returned by
+        `create_settings_widget`.
+
+        A list of settings dictionaries are supplied representing the current
+        values of the settings for selected tasks. The settings dictionaries
+        correspond to the dictionaries returned by the settings property of the
+        hook.
+
+        Example::
+
+            settings = [
+            {
+                 "seeting_a": "/path/to/a/file"
+                 "setting_b": False
+            },
+            {
+                 "setting_a": "/path/to/a/file"
+                 "setting_b": False
+            }]
+
+        The default values for the settings will be the ones specified in the
+        environment file. Each task has its own copy of the settings.
+
+        When invoked with multiple settings dictionaries, it is the
+        responsibility of the custom UI to decide how to display the
+        information. If you do not wish to implement the editing of multiple
+        tasks at the same time, you can raise a ``NotImplementedError`` when
+        there is more than one item in the list and the publisher will inform
+        the user than only one task of that type can be edited at a time.
+
+        :param widget: The widget that was created by `create_settings_widget`.
+        :param settings: a list of dictionaries of settings for each selected
+            task.
+        :param items: A list of PublishItems the selected publish tasks are parented to.
+        """
+        from sgtk.platform.qt import QtGui
+
+        checkbox_settings_list = widget.findChildren(QtGui.QCheckBox)
+
+        for checkbox in checkbox_settings_list:
+            if (
+                checkbox.text() == "Export active selection only"
+                and settings[0]["Export Active Selection Only"]
+            ):
+                checkbox.toggle()
 
     @property
     def item_filters(self):
@@ -198,6 +322,27 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             self.logger.error(error_msg)
             raise Exception(error_msg)
 
+        # check if there's a selection when selection export is enabled
+        if settings["Export Active Selection Only"].value and not cmds.ls(
+            selection=True
+        ):
+            error_msg = (
+                "Validation failed because there is no active selection to export. "
+                "Please make a selection in the viewport or outliner, or disable"
+                "the active selection checkbox if you want to export the whole scene instead."
+            )
+            raise Exception(error_msg)
+
+        if (
+            settings["Export Active Selection Only"].value
+            and len(cmds.ls(selection=True)) > 1
+        ):
+            error_msg = (
+                "Validation failed because there are multiple objects selected."
+                "You must only select one object to export."
+            )
+            raise Exception(error_msg)
+
         # get the configured work file template
         work_template = item.parent.properties.get("work_template")
         publish_template = item.properties.get("publish_template")
@@ -248,8 +393,8 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         publish_folder = os.path.dirname(publish_path)
         self.parent.ensure_folder_exists(publish_folder)
 
-        #file -force -options "-boundingBox;-mask 6399;-lightLinks 1;-shadowLinks 1;-startFrame 1.0;-endFrame 200.0;-frameStep 1.0;-fullPath" -typ "Arnold-USD" -pr -es "C:/Users/Gilles.Vink/Desktop/test.usd";
-        #arnoldExportAss -f "C:/Users/Gilles.Vink/Desktop/test.usd" -s -boundingBox -mask 6399 -lightLinks 1 -shadowLinks 1 -startFrame 1.0 -endFrame 200.0 -frameStep 1.0 -fullPath-cam perspShape;
+        # file -force -options "-boundingBox;-mask 6399;-lightLinks 1;-shadowLinks 1;-startFrame 1.0;-endFrame 200.0;-frameStep 1.0;-fullPath" -typ "Arnold-USD" -pr -es "C:/Users/Gilles.Vink/Desktop/test.usd";
+        # arnoldExportAss -f "C:/Users/Gilles.Vink/Desktop/test.usd" -s -boundingBox -mask 6399 -lightLinks 1 -shadowLinks 1 -startFrame 1.0 -endFrame 200.0 -frameStep 1.0 -fullPath-cam perspShape;
 
         # set the alembic args that make the most sense when working with Mari.
         # These flags will ensure the export of an Alembic file that contains
@@ -262,7 +407,16 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             "-writeFaceSets",
             # write uv's (only the current uv set gets written)
             "-uvWrite",
+            # Enable Euler Rotation filter for cleaning incorrect rotation data
+            "-eulerFilter",
+            # Enable visibility write so animators can use visibility animations
+            "-writeVisibility",
         ]
+
+        if settings["Export Active Selection Only"].value:
+            selection = cmds.ls(selection=True, long=True)[0]
+            self.logger.debug("Exporting active selection only.")
+            alembic_args.append(f"-root {selection}")
 
         # find the animated frame range to use:
         start_frame, end_frame = _find_scene_animation_range()
