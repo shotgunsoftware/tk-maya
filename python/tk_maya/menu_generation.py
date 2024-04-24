@@ -248,7 +248,24 @@ class AppCommand(Callback):
         self.name = name
         self.properties = command_dict["properties"]
         self.favourite = False
-        super(AppCommand, self).__init__(command_dict["callback"])
+        self._callback = command_dict["callback"]
+
+        super(AppCommand, self).__init__(self._show_existing_window_or_run_callback)
+
+
+    def _show_existing_window_or_run_callback(self, *a, **kwa):
+        display_name = 'ShotGrid: ' + self.name.rstrip(' .')
+        tops = QtGui.QApplication.topLevelWidgets()
+        for top in tops:
+            if top.isWindow() and \
+               display_name in top.windowTitle() and \
+               top.__class__.__name__ == 'TankQDialog':
+                top.show()
+                top.activateWindow()
+                return None
+
+        return self._callback(*a, **kwa)
+
 
     def get_app_name(self):
         """

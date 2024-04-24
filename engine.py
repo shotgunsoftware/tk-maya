@@ -177,11 +177,19 @@ def refresh_engine(engine_name, prev_context, menu_name):
         logger.debug("Extracted sgtk instance: '%r' from path: '%r'", tk, new_path)
 
     except sgtk.TankError as e:
-        logger.exception("Could not execute sgtk_from_path('%s')" % new_path)
-        OpenMaya.MGlobal.displayInfo("ShotGrid: Engine cannot be started: %s" % e)
-        # build disabled menu
-        create_sgtk_disabled_menu(menu_name)
-        return
+        if prev_context.project:
+            logger.warn('Falling back to project context `{prev_context}` ' \
+                        'because the scene file path is unknown.'.format(prev_context=prev_context))
+            tk = sgtk.sgtk_from_entity('Project', prev_context.project['id'])
+            ctx = tk.context_from_entity('Project', prev_context.project['id'])
+            current_engine.change_context(ctx)
+            return
+        else:
+            logger.exception("Could not execute sgtk_from_path('%s')" % new_path)
+            OpenMaya.MGlobal.displayInfo("ShotGrid: Engine cannot be started: %s" % e)
+            # build disabled menu
+            create_sgtk_disabled_menu(menu_name)
+            return
 
     # shotgun menu may have been removed, so add it back in if its not already there.
     current_engine.create_shotgun_menu()
