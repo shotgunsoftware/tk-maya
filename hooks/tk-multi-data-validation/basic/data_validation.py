@@ -27,7 +27,7 @@ class MayaDataValidationHook(HookBaseClass):
     RENDERER = {"short_name": "arnold", "name": "Arnold Renderer", "plugin": "mtoa.mll"}
 
     def sanitize_check_result(self, errors):
-        """"
+        """ "
         Sanitize the value returned by any validate function to conform to the standard format.
 
         This method must be implemented by the subclass.
@@ -114,7 +114,9 @@ class MayaDataValidationHook(HookBaseClass):
                 "item_actions": [
                     {
                         "name": "Select",
-                        "callback": lambda errors: cmds.select(cmds.referenceQuery(errors[0], nodes=True), r=True),
+                        "callback": lambda errors: cmds.select(
+                            cmds.referenceQuery(errors[0], nodes=True), r=True
+                        ),
                     },
                     {
                         "name": "Delete",
@@ -233,7 +235,9 @@ class MayaDataValidationHook(HookBaseClass):
                         "item_actions": [
                             {
                                 "name": "Select",
-                                "callback": lambda errors: cmds.select(errors[0], r=True),
+                                "callback": lambda errors: cmds.select(
+                                    errors[0], r=True
+                                ),
                             },
                             {
                                 "name": "Delete",
@@ -285,7 +289,9 @@ class MayaDataValidationHook(HookBaseClass):
         # Shot - Animation specific checks
         # ----------------------------------------------------------------
 
-        elif self.parent.context.step and self.parent.context.step["name"] == "Animation":
+        elif (
+            self.parent.context.step and self.parent.context.step["name"] == "Animation"
+        ):
 
             check_list.update(
                 {
