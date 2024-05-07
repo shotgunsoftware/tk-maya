@@ -104,7 +104,7 @@ def dock_panel(engine, shotgun_panel, title):
 
         # Reparent the Shotgun app panel under the Maya window layout.
         engine.logger.debug(
-            "Reparenting SG app panel %s under Maya layout %s.",
+            "Reparenting PTR app panel %s under Maya layout %s.",
             shotgun_panel_name,
             maya_layout,
         )
@@ -216,12 +216,12 @@ def dock_panel(engine, shotgun_panel, title):
             "        try:\n"
             "            sys.modules[m].build_workspace_control_ui('%(panel_name)s')\n"
             "        except Exception as e:\n"
-            "            msg = 'ShotGrid: Cannot restore %(panel_name)s: %%s' %% e\n"
+            "            msg = 'Flow Production Tracking: Cannot restore %(panel_name)s: %%s' %% e\n"
             "            fct = maya.api.OpenMaya.MGlobal.displayError\n"
             "            maya.utils.executeInMainThreadWithResult(fct, msg)\n"
             "        break\n"
             "else:\n"
-            "    msg = 'SG: Cannot restore %(panel_name)s: SG is not currently running'\n"
+            "    msg = 'PTR: Cannot restore %(panel_name)s: PTR is not currently running'\n"
             "    fct = maya.api.OpenMaya.MGlobal.displayError\n"
             "    maya.utils.executeInMainThreadWithResult(fct, msg)\n"
             % {"panel_name": shotgun_panel_name}
@@ -264,29 +264,28 @@ def build_workspace_control_ui(shotgun_panel_name):
     """
 
     from maya.OpenMayaUI import MQtUtil
+    import sgtk.platform
+    from sgtk.platform.qt import shiboken
 
     # In the context of this function, we know that we are running in Maya 2017 and later
     # with the newer versions of PySide and shiboken.
-    from PySide2 import QtWidgets
-    from shiboken2 import wrapInstance
-
-    import sgtk.platform
+    from sgtk.platform.qt import QtGui
 
     # Retrieve the Maya engine.
     engine = sgtk.platform.current_engine()
 
     # Retrieve the calling Maya workspace control.
     ptr = MQtUtil.getCurrentParent()
-    workspace_control = wrapInstance(int(ptr), QtWidgets.QWidget)
+    workspace_control = shiboken.wrapInstance(int(ptr), QtGui.QWidget)
 
     # Search for the Shotgun app panel widget.
-    for widget in QtWidgets.QApplication.allWidgets():
+    for widget in QtGui.QApplication.allWidgets():
         if widget.objectName() == shotgun_panel_name:
 
             maya_panel_name = workspace_control.objectName()
 
             engine.logger.debug(
-                "Reparenting SG app panel %s under Maya workspace panel %s.",
+                "Reparenting PTR app panel %s under Maya workspace panel %s.",
                 shotgun_panel_name,
                 maya_panel_name,
             )
@@ -363,7 +362,7 @@ def build_workspace_control_ui(shotgun_panel_name):
         else:
             # The Shotgun app panel that needs to be restored is not in the context configuration.
             engine.logger.error(
-                "Cannot restore %s: SG app panel not found. "
+                "Cannot restore %s: PTR app panel not found. "
                 "Make sure the app is in the context configuration. ",
                 shotgun_panel_name,
             )
