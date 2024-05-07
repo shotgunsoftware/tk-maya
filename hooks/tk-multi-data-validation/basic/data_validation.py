@@ -103,7 +103,7 @@ class MayaDataValidationHook(HookBaseClass):
                 ],
             },
             "sg_references": {
-                "name": "ShotGrid Published Files References only",
+                "name": "FPTR Published Files References only",
                 "description": """Check: References which aren't SG Published Files<br/>
                                 Fix: Select references""",
                 "error_msg": "Found references which doesn't match a SG Published File",
@@ -174,12 +174,12 @@ class MayaDataValidationHook(HookBaseClass):
             },
             "sync_frame_range": {
                 "name": "Frame Range Synchronization",
-                "description": """Check: Timeline values should be synced with the values defined in ShotGrid""",
-                "error_msg": "Frame Range not synced with ShotGrid",
+                "description": """Check: Timeline values should be synced with the values defined in FPTR""",
+                "error_msg": "Frame Range not synced with FPTR",
                 "check_func": self.check_frame_range,
                 "fix_func": self.synch_frame_range,
                 "fix_name": "Synchronize",
-                "fix_tooltip": "Synchronize timeline with ShotGrid data",
+                "fix_tooltip": "Synchronize timeline with FPTR data",
             },
         }
 
@@ -314,7 +314,7 @@ class MayaDataValidationHook(HookBaseClass):
         return unknown_nodes
 
     def check_sg_references(self):
-        """Check that all the references correspond to a ShotGrid Published File."""
+        """Check that all the references correspond to a FPTR Published File."""
 
         bad_references = []
 
@@ -323,7 +323,7 @@ class MayaDataValidationHook(HookBaseClass):
             dict.fromkeys(cmds.file(q=True, reference=True, withoutCopyNumber=True))
         )
 
-        # find the matching published files in ShotGrid
+        # find the matching published files in FPTR
         sg_publishes = sgtk.util.find_publish(
             self.sgtk, ref_paths, only_current_project=False
         )
@@ -466,7 +466,7 @@ class MayaDataValidationHook(HookBaseClass):
         return cmds.ls(references=True)
 
     def check_frame_range(self):
-        """Check that the timeline frame range is synced with ShotGrid frame range."""
+        """Check that the timeline frame range is synced with FPTR frame range."""
 
         tk_multi_setframerange = self.parent.engine.apps.get("tk-multi-setframerange")
         if not tk_multi_setframerange:
@@ -547,7 +547,7 @@ class MayaDataValidationHook(HookBaseClass):
             cmds.delete(item["id"], constructionHistory=True)
 
     def synch_frame_range(self, errors):
-        """Synchronize timeline frame range with ShotGrid frame range value."""
+        """Synchronize timeline frame range with FPTR frame range value."""
 
         tk_multi_setframerange = self.parent.engine.apps.get("tk-multi-setframerange")
         (sg_in, sg_out) = tk_multi_setframerange.get_frame_range_from_shotgun()
