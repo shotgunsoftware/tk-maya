@@ -190,7 +190,11 @@ class MayaDataValidationHook(HookBaseClass):
         # ----------------------------------------------------------------
 
         if self.parent.context.step and self.parent.context.step["name"] == "Model":
+            # Remove check 'FPTR Published Files References only' from Asset Model context,
+            # it already has a check for 'No References'
+            check_list.pop("sg_references", None)
 
+            # Add Asset Model specific checks
             check_list.update(
                 {
                     "top_node_freeze_transforms": {
