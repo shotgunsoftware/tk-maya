@@ -16,12 +16,15 @@ HookBaseClass = sgtk.get_hook_baseclass()
 
 try:
     import sys
+
     sys.path.append("C:\\python_libs")
     import ptvsd
+
     ptvsd.enable_attach()
     ptvsd.wait_for_attach()
 except:
     pass
+
 
 class MayaSceneOperationsHook(HookBaseClass):
     """Hook class that sets up Maya events to update the Data Validation App."""
@@ -52,11 +55,26 @@ class MayaSceneOperationsHook(HookBaseClass):
         scene_message_events = [
             (OpenMaya.MSceneMessage.kAfterOpen, lambda x: reset_callback()),
             (OpenMaya.MSceneMessage.kAfterNew, lambda x: reset_callback()),
-            (OpenMaya.MSceneMessage.kAfterImport, lambda x: change_callback(text="File imported")),
-            (OpenMaya.MSceneMessage.kAfterImportReference, lambda x: change_callback(text="Reference imported")),
-            (OpenMaya.MSceneMessage.kAfterCreateReference, lambda x: change_callback(text="Reference created")),
-            (OpenMaya.MSceneMessage.kAfterRemoveReference, lambda x: change_callback(text="Reference removed")),
-            (OpenMaya.MSceneMessage.kSceneUpdate, lambda x: change_callback(text="Scene updated")),
+            (
+                OpenMaya.MSceneMessage.kAfterImport,
+                lambda x: change_callback(text="File imported"),
+            ),
+            (
+                OpenMaya.MSceneMessage.kAfterImportReference,
+                lambda x: change_callback(text="Reference imported"),
+            ),
+            (
+                OpenMaya.MSceneMessage.kAfterCreateReference,
+                lambda x: change_callback(text="Reference created"),
+            ),
+            (
+                OpenMaya.MSceneMessage.kAfterRemoveReference,
+                lambda x: change_callback(text="Reference removed"),
+            ),
+            (
+                OpenMaya.MSceneMessage.kSceneUpdate,
+                lambda x: change_callback(text="Scene updated"),
+            ),
         ]
         for maya_msg, callback in scene_message_events:
             callback_id = OpenMaya.MSceneMessage.addCallback(maya_msg, callback)
@@ -64,10 +82,14 @@ class MayaSceneOperationsHook(HookBaseClass):
 
         # Register Maya graph node events.
         self.__callback_ids.append(
-            OpenMaya.MDGMessage.addNodeAddedCallback(lambda n, c: change_callback(text="Node added"))
+            OpenMaya.MDGMessage.addNodeAddedCallback(
+                lambda n, c: change_callback(text="Node added")
+            )
         )
         self.__callback_ids.append(
-            OpenMaya.MDGMessage.addNodeRemovedCallback(lambda n, c: change_callback(text="Node removed"))
+            OpenMaya.MDGMessage.addNodeRemovedCallback(
+                lambda n, c: change_callback(text="Node removed")
+            )
         )
 
     def unregister_scene_events(self):
