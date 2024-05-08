@@ -109,7 +109,7 @@ class MayaDataValidationHook(HookBaseClass):
                 "error_msg": "Found references which doesn't match a FPTR Published File",
                 "check_func": self.check_sg_references,
                 "actions": [
-                    {"name": "Select All", "callback": self.select_references},
+                    {"name": "Select All", "callback": self.select_items},
                 ],
                 "item_actions": [
                     {
