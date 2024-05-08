@@ -104,9 +104,9 @@ class MayaDataValidationHook(HookBaseClass):
             },
             "sg_references": {
                 "name": "FPTR Published Files References only",
-                "description": """Check: References which aren't SG Published Files<br/>
+                "description": """Check: References which aren't FPTR Published Files<br/>
                                 Fix: Select references""",
-                "error_msg": "Found references which doesn't match a SG Published File",
+                "error_msg": "Found references which doesn't match a FPTR Published File",
                 "check_func": self.check_sg_references,
                 "actions": [
                     {"name": "Select All", "callback": self.select_references},
