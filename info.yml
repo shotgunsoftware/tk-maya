@@ -74,6 +74,11 @@ configuration:
         description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Flow Production Tracking'
         default_value: false
 
+    menu_name:
+        type: str
+        description: Choose the name to use as the primary menu name. By default 'Flow Production Tracking'
+        default_value: 'Flow Production Tracking'
+
     launch_builtin_plugins:
         type: list
         description: Comma-separated list of tk-maya plugins to load when launching Maya. Use
