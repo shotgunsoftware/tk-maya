@@ -14,17 +14,6 @@ import sgtk
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
-try:
-    import sys
-
-    sys.path.append("C:\\python_libs")
-    import ptvsd
-
-    ptvsd.enable_attach()
-    ptvsd.wait_for_attach()
-except:
-    pass
-
 
 class MayaSceneOperationsHook(HookBaseClass):
     """Hook class that sets up Maya events to update the Data Validation App."""
