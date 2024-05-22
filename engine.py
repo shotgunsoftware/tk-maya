@@ -681,60 +681,6 @@ class MayaEngine(Engine):
             self.logger.debug("PySide2 detected - the existing version will be used.")
             return
 
-        # Then see if pyside is present
-        try:
-            from PySide import QtGui
-        except:
-            # must be a very old version of Maya.
-            self.logger.debug(
-                "PySide not detected - it will be added to the setup now..."
-            )
-        else:
-            # looks like pyside is already working! No need to do anything
-            self.logger.debug("PySide detected - the existing version will be used.")
-            return
-
-        if sgtk.util.is_macos():
-            pyside_path = os.path.join(
-                self.disk_location, "resources", "pyside112_py26_qt471_mac", "python"
-            )
-            self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
-            sys.path.append(pyside_path)
-
-        elif sgtk.util.is_windows():
-            # default windows version of pyside for 2011 and 2012
-            pyside_path = os.path.join(
-                self.disk_location, "resources", "pyside111_py26_qt471_win64", "python"
-            )
-            self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
-            sys.path.append(pyside_path)
-            dll_path = os.path.join(
-                self.disk_location, "resources", "pyside111_py26_qt471_win64", "lib"
-            )
-            path = os.environ.get("PATH", "")
-            path += ";%s" % dll_path
-            os.environ["PATH"] = path
-
-        elif sgtk.util.is_linux():
-            pyside_path = os.path.join(
-                self.disk_location, "resources", "pyside112_py26_qt471_linux", "python"
-            )
-            self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
-            sys.path.append(pyside_path)
-
-        else:
-            self.logger.error("Unknown platform - cannot initialize PySide!")
-
-        # now try to import it
-        try:
-            from PySide import QtGui
-        except Exception as e:
-            self.logger.error(
-                "PySide could not be imported! Apps using pyside will not "
-                "operate correctly! Error reported: %s",
-                e,
-            )
-
     def show_dialog(self, title, *args, **kwargs):
         """
         If on Windows or Linux, this method will call through to the base implementation of
