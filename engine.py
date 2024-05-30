@@ -675,7 +675,7 @@ class MayaEngine(Engine):
             from PySide2 import QtGui
         except:
             # fine, we don't expect PySide2 to be present just yet
-            self.logger.debug("PySide2 not detected - trying for PySide now...")
+            self.logger.debug("PySide2 not detected - it will be added to the setup now...")
         else:
             # looks like pyside2 is already working! No need to do anything
             self.logger.debug("PySide2 detected - the existing version will be used.")
