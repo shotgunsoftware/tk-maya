@@ -472,9 +472,10 @@ class MayaEngine(Engine):
         # add qt paths and dlls
         self._init_pyside()
 
-        # default menu name is Shotgun but this can be overriden
-        # in the configuration to be Sgtk in case of conflicts
-        self._menu_name = "Flow Production Tracking"
+        # default menu name is Flow Production Tracking but this can be overriden
+        # in the configuration to be a custom name or to be Sgtk in case of conflicts
+        self._menu_name = self.get_setting("menu_name", "Flow Production Tracking")
+
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 
