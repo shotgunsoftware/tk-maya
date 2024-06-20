@@ -477,6 +477,8 @@ class MayaEngine(Engine):
         self._menu_name = "Flow Production Tracking"
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
+        elif self.get_setting("custom_menu_name", False):
+            self._menu_name = self.get_setting("custom_menu_name")
 
         self.__watcher = None
         if self.get_setting("automatic_context_switch", True):
