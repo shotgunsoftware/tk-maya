@@ -985,3 +985,13 @@ class MayaEngine(Engine):
 
         # Clear the dictionary of Maya panels now that they were deleted.
         self._maya_panel_dict = {}
+
+
+print("Maya engine MRO:")
+for i in MayaEngine.__mro__:
+    print("  ",i)
+print()
+
+print()
+print("Engine hasattr:", hasattr(Engine, "__get_custom_dpi"))
+print("MayaEngine hasattr:", hasattr(MayaEngine, "__get_custom_dpi"))
