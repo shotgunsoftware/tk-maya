@@ -297,7 +297,15 @@ class MayaEngine(Engine):
     __DIALOG_SIZE_CACHE = dict()
 
     def __init__(self, *args, **kwargs):
-        self.__custom_dpi_factor = 2
+        if "custom_dpi_factor" not in kwargs:
+            from maya import OpenMayaUI
+            kwargs["custom_dpi_factor"] = OpenMayaUI.MQtUtil.dpiScale(1)
+            print(f"""
+
+    MAYA DPI: {kwargs["custom_dpi_factor"]}
+
+    """)
+
         super().__init__(*args, **kwargs)
 
     @property
@@ -355,6 +363,18 @@ class MayaEngine(Engine):
             pass
 
         return host_info
+
+## Does not wok with inheritance somehow ... :(
+#     def __get_custom_dpi(self):
+#         print("__get_custom_dpi from tk-maya")
+#         from maya import OpenMayaUI
+#         dpi_factor = OpenMayaUI.MQtUtil.dpiScale(1)
+#         print(f"""
+
+# MAYA DPI: {dpi_factor}
+
+# """)
+#         return dpi_factor
 
     ##########################################################################################
     # init and destroy
