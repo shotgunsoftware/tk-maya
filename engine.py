@@ -296,6 +296,10 @@ class MayaEngine(Engine):
 
     __DIALOG_SIZE_CACHE = dict()
 
+    def __init__(self, *args, **kwargs):
+        self.__custom_dpi_factor = 2
+        super().__init__(*args, **kwargs)
+
     @property
     def context_change_allowed(self):
         """
