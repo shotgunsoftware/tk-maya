@@ -69,9 +69,9 @@ configuration:
                      empty if you do not wish the Maya project to be automatically set."
         allows_empty: True
 
-    use_sgtk_as_menu_name:
+    use_short_menu_name:
         type: bool
-        description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Flow Production Tracking'
+        description: Optionally choose to use "FPTR" as the primary menu name instead of "Flow Production Tracking"
         default_value: false
 
     launch_builtin_plugins:
