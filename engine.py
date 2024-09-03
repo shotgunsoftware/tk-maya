@@ -475,8 +475,8 @@ class MayaEngine(Engine):
         # default menu name is Shotgun but this can be overriden
         # in the configuration to be Sgtk in case of conflicts
         self._menu_name = "Flow Production Tracking"
-        if self.get_setting("use_sgtk_as_menu_name", False):
-            self._menu_name = "Sgtk"
+        if self.get_setting("use_short_menu_name", False):
+            self._menu_name = "FPTR"
 
         self.__watcher = None
         if self.get_setting("automatic_context_switch", True):
