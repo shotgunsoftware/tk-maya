@@ -697,7 +697,7 @@ class MayaEngine(Engine):
         if not sgtk.util.is_macos():
             dialog = super().show_dialog(title, *args, **kwargs)
             self.log_debug(">>> show_dialog: %s" % dialog)
-            dialog.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowMinimizeButtonHint)
+            dialog.setWindowFlags(sgtk.platform.qt.QtCore.Qt.Window | QtCore.Qt.WindowMinimizeButtonHint)
             return dialog
         else:
             if not self.has_ui:
