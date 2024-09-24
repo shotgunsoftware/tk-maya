@@ -39,55 +39,11 @@ class MayaSessionPublishPlugin(HookBaseClass):
         contain simple html for formatting.
         """
 
-        loader_url = "https://support.shotgunsoftware.com/hc/en-us/articles/219033078"
-
         return """
-        Publishes the file to ShotGrid. A <b>Publish</b> entry will be
-        created in ShotGrid which will include a reference to the file's current
-        path on disk. If a publish template is configured, a copy of the
-        current session will be copied to the publish template path which
-        will be the file that is published. Other users will be able to access
-        the published file via the <b><a href='%s'>Loader</a></b> so long as
-        they have access to the file's location on disk.
-
-        If the session has not been saved, validation will fail and a button
-        will be provided in the logging output to save the file.
-
-        <h3>File versioning</h3>
-        If the filename contains a version number, the process will bump the
-        file to the next version after publishing.
-
-        The <code>version</code> field of the resulting <b>Publish</b> in
-        ShotGrid will also reflect the version number identified in the filename.
-        The basic worklfow recognizes the following version formats by default:
-
-        <ul>
-        <li><code>filename.v###.ext</code></li>
-        <li><code>filename_v###.ext</code></li>
-        <li><code>filename-v###.ext</code></li>
-        </ul>
-
-        After publishing, if a version number is detected in the work file, the
-        work file will automatically be saved to the next incremental version
-        number. For example, <code>filename.v001.ext</code> will be published
-        and copied to <code>filename.v002.ext</code>
-
-        If the next incremental version of the file already exists on disk, the
-        validation step will produce a warning, and a button will be provided in
-        the logging output which will allow saving the session to the next
-        available version number prior to publishing.
-
-        <br><br><i>NOTE: any amount of version number padding is supported. for
-        non-template based workflows.</i>
-
-        <h3>Overwriting an existing publish</h3>
-        In non-template workflows, a file can be published multiple times,
-        however only the most recent publish will be available to other users.
-        Warnings will be provided during validation if there are previous
-        publishes.
-        """ % (
-            loader_url,
-        )
+        <div>
+        <p>Publishes the entire Maya file you're working in right now. The Maya file can then be imported or referenced 
+        in other Maya files, which is especially useful for rigs.</p></div>
+        """
 
     @property
     def settings(self):
@@ -265,7 +221,6 @@ class MayaSessionPublishPlugin(HookBaseClass):
         # to that version now
         (next_version_path, version) = self._get_next_version_info(path, item)
         if next_version_path and os.path.exists(next_version_path):
-
             # determine the next available version_number. just keep asking for
             # the next one until we get one that doesn't exist.
             while os.path.exists(next_version_path):
@@ -325,9 +280,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
         item.properties["path"] = path
 
         # add dependencies for the base class to register when publishing
-        item.properties[
-            "publish_dependencies"
-        ] = _maya_find_additional_session_dependencies()
+        item.properties["publish_dependencies"] = (
+            _maya_find_additional_session_dependencies()
+        )
 
         # let the base class register the publish
         super(MayaSessionPublishPlugin, self).publish(settings, item)

@@ -13,6 +13,7 @@ import os
 import maya.cmds as cmds
 import maya.mel as mel
 import sgtk
+import sys
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -73,7 +74,6 @@ class MayaSessionCollector(HookBaseClass):
         :param parent_item: Root item instance
 
         """
-
         # create an item representing the current maya session
         item = self.collect_current_maya_session(settings, parent_item)
         project_root = item.properties["project_root"]
@@ -83,7 +83,6 @@ class MayaSessionCollector(HookBaseClass):
 
         # if we can determine a project root, collect other files to publish
         if project_root:
-
             self.logger.info(
                 "Current Maya project is: %s." % (project_root,),
                 extra={
@@ -98,7 +97,6 @@ class MayaSessionCollector(HookBaseClass):
             self.collect_playblasts(item, project_root)
             self.collect_alembic_caches(item, project_root)
         else:
-
             self.logger.info(
                 "Could not determine the current Maya project.",
                 extra={
@@ -155,7 +153,6 @@ class MayaSessionCollector(HookBaseClass):
         # that it can be used by attached publish plugins
         work_template_setting = settings.get("Work Template")
         if work_template_setting:
-
             work_template = publisher.engine.get_template_by_name(
                 work_template_setting.value
             )
@@ -274,7 +271,6 @@ class MayaSessionCollector(HookBaseClass):
 
         # look for movie files in the movies folder
         for filename in os.listdir(movies_dir):
-
             # do some early pre-processing to ensure the file is of the right
             # type. use the base class item info method to see what the item
             # type would be.
@@ -306,7 +302,6 @@ class MayaSessionCollector(HookBaseClass):
         # iterate over defined render layers and query the render settings for
         # information about a potential render
         for layer in cmds.ls(type="renderLayer"):
-
             self.logger.info("Processing render layer: %s" % (layer,))
 
             # use the render settings api to get a path where the frame number
