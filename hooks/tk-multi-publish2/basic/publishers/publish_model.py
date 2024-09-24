@@ -31,7 +31,7 @@ class MayaSessionModelPublisherPlugin(HookBaseClass):
 
     def create_settings_widget(self, parent):
         return interface.view.PublishUserInterface(
-            interface.constants.PublisherType.MODEL
+            interface.data_structures.PublisherType.MODEL
         )
 
     def get_ui_settings(self, widget, items=None):

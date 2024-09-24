@@ -5,6 +5,7 @@ Written by Mervin van Brakel, 2024.
 
 from pathlib import Path
 
+import interface.data_structures
 import sgtk
 
 HookBaseClass = sgtk.get_hook_baseclass()
@@ -31,7 +32,7 @@ class MayaSessionCameraPublisherPlugin(HookBaseClass):
 
     def create_settings_widget(self, parent):
         return interface.view.PublishUserInterface(
-            interface.constants.PublisherType.CAMERA
+            interface.data_structures.PublisherType.CAMERA
         )
 
     def get_ui_settings(self, widget, items=None):

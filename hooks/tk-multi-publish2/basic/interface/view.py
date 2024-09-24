@@ -9,12 +9,13 @@ Written by Mervin van Brakel, 2024
 
 from PySide2 import QtCore, QtWidgets
 
-from . import constants
+from . import data_structures, models
 
 
 class PublishUserInterface(QtWidgets.QWidget):
-    def __init__(self, publisher_type: constants.PublisherType, parent=None):
+    def __init__(self, publisher_type: data_structures.PublisherType, parent=None):
         super().__init__()
+        self.publish_model = models.PublishDataModel(publisher_type)
         self.create_user_interface(publisher_type)
 
     def create_user_interface(self, publisher_type):
@@ -33,6 +34,7 @@ class PublishUserInterface(QtWidgets.QWidget):
         widget.setLayout(layout)
 
         self.publish_list = QtWidgets.QListView()
+        self.publish_list.setModel(self.publish_model)
         layout.addWidget(self.publish_list)
 
         button_layout = QtWidgets.QHBoxLayout()
@@ -65,7 +67,7 @@ class PublishUserInterface(QtWidgets.QWidget):
         last_frame = QtWidgets.QSpinBox()
         frame_range_layout.addWidget(last_frame)
 
-        if publisher_type == constants.PublisherType.MODEL:
+        if publisher_type == data_structures.PublisherType.MODEL:
             first_frame.setDisabled(True)
             last_frame.setDisabled(True)
 

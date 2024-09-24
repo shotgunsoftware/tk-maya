@@ -19,7 +19,8 @@ import interface
 import importlib
 
 importlib.reload(interface)
-importlib.reload(interface.constants)
+importlib.reload(interface.data_structures)
+importlib.reload(interface.maya_interfacing)
 importlib.reload(interface.models)
 importlib.reload(interface.view)
 
@@ -39,7 +40,7 @@ class MayaSessionAnimationPublisherPlugin(HookBaseClass):
 
     def create_settings_widget(self, parent):
         return interface.view.PublishUserInterface(
-            interface.constants.PublisherType.ANIMATION
+            interface.data_structures.PublisherType.ANIMATION
         )
 
     def get_ui_settings(self, widget, items=None):
