@@ -1,33 +1,50 @@
 [tool.black]
-line-length = 88
+line-length = 79
+
+[tool.pytest.ini_options]
+addopts = "--capture=tee-sys"
 
 [tool.isort]
 profile = "black"
 
 [tool.ruff]
-extend-select = [
+select = [
+    "A",
     "B",
     "BLE",
     "C4",
+    "EM",
     "ERA",
+    "F",
+    "FA",
+    "FIX",
+    "G",
     "I",
     "ICN",
     "INP",
     "ISC",
     "N",
     "NPY",
+    "PERF",
     "PGH",
     "PIE",
+    "PL",
+    "PT",
+    "PTH",
+    "PYI",
     "Q",
     "RET",
     "RSE",
     "RUF",
-    "S",
     "SIM",
+    "SLF",
+    "SLOT",
     "T20",
     "TCH",
+    "TD",
     "TID",
+    "UP",
+    "W",
     "YTT",
 ]
 show-fixes = true
-target-version = "py37"
