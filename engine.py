@@ -500,7 +500,6 @@ class MayaEngine(Engine):
 
         # only create the shotgun menu if not in batch mode and menu doesn't already exist
         if self.has_ui and not cmds.menu("ShotGridMenu", exists=True):
-
             self._menu_path = cmds.menu(
                 "ShotGridMenu",
                 label=self._menu_name,
@@ -584,7 +583,6 @@ class MayaEngine(Engine):
 
         # Run the series of app instance commands listed in the 'run_at_startup' setting.
         for app_setting_dict in self.get_setting("run_at_startup", []):
-
             app_instance_name = app_setting_dict["app_instance"]
             # Menu name of the command to run or '' to run all commands of the given app instance.
             setting_command_name = app_setting_dict["name"]
@@ -702,17 +700,18 @@ class MayaEngine(Engine):
                 "the requested window '%s'." % title
             )
             return None
-    
+
         # create the dialog:
         dialog, widget = self._create_dialog_with_widget(title, *args, **kwargs)
-    
+
         if not sgtk.util.is_macos():
-            dialog.setWindowFlags(dialog.windowFlags() | QtGui.Qt.WindowMinimizeButtonHint)
+            dialog.setWindowFlags(
+                dialog.windowFlags() | QtGui.Qt.WindowMinimizeButtonHint
+            )
             dialog.show()
 
             return widget
         else:
-
             # When using the recipe here to get Z-depth ordering correct we also
             # inherit another feature that results in window size and position being
             # remembered. This size/pos retention happens across app boundaries, so
