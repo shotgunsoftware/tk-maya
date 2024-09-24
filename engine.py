@@ -694,23 +694,24 @@ class MayaEngine(Engine):
 
         :returns: the created widget_class instance
         """
+        from sgtk.platform.qt import QtCore, QtGui
+
+        if not self.has_ui:
+            self.log_error(
+                "Sorry, this environment does not support UI display! Cannot show "
+                "the requested window '%s'." % title
+            )
+            return None
+    
+        # create the dialog:
+        dialog, widget = self._create_dialog_with_widget(title, *args, **kwargs)
+    
         if not sgtk.util.is_macos():
-            dialog = super().show_dialog(title, *args, **kwargs)
-            self.log_debug(">>> show_dialog: %s" % dialog)
-            dialog.setWindowFlags(sgtk.platform.qt.QtCore.Qt.Window | sgtk.platform.qt.QtCore.Qt.WindowMinimizeButtonHint)
-            return dialog
+            dialog.setWindowFlags(dialog.windowFlags() | QtGui.Qt.WindowMinimizeButtonHint)
+            dialog.show()
+
+            return widget
         else:
-            if not self.has_ui:
-                self.log_error(
-                    "Sorry, this environment does not support UI display! Cannot show "
-                    "the requested window '%s'." % title
-                )
-                return None
-
-            from sgtk.platform.qt import QtCore, QtGui
-
-            # create the dialog:
-            dialog, widget = self._create_dialog_with_widget(title, *args, **kwargs)
 
             # When using the recipe here to get Z-depth ordering correct we also
             # inherit another feature that results in window size and position being
