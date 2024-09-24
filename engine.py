@@ -695,7 +695,10 @@ class MayaEngine(Engine):
         :returns: the created widget_class instance
         """
         if not sgtk.util.is_macos():
-            return super(MayaEngine, self).show_dialog(title, *args, **kwargs)
+            status, dialog = super().show_dialog(title, *args, **kwargs)
+            self.log_debug("show_dialog status: %s" % status)
+            dialog.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowMinimizeButtonHint)
+            return dialog
         else:
             if not self.has_ui:
                 self.log_error(
