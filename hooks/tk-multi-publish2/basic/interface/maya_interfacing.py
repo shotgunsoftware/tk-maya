@@ -22,22 +22,24 @@ def get_publish_settings(
     Returns:
         A list of publish data objects that contain the stored settings.
     """
-    stored_publish_data = cmds.fileInfo(publisher_type.value, q=True)
+    stored_publish_data = cmds.fileInfo(publisher_type.storage_name, q=True)
 
     if len(stored_publish_data) == 0:
         return []
 
-    parsed_publish_data = json.loads(stored_publish_data[0])
+    parsed_publish_data = json.loads(
+        stored_publish_data[0].encode("utf-8").decode("unicode_escape")
+    )
 
     retrieved_publish_data = []
     for publish_data in parsed_publish_data:
-        name = publish_data["name"]
+        name = publish_data
         publisher = get_publisher_from_publisher_type_and_name(
-            publisher_type, publish_data["publisher"]
+            publisher_type, parsed_publish_data[publish_data]["publisher"]
         )
-        first_frame = publish_data["first_frame"]
-        last_frame = publish_data["last_frame"]
-        selection = publish_data["selection"]
+        first_frame = parsed_publish_data[publish_data]["first_frame"]
+        last_frame = parsed_publish_data[publish_data]["last_frame"]
+        selection = parsed_publish_data[publish_data]["selection"]
 
         retrieved_publish_data.append(
             data_structures.PublishData(
@@ -95,4 +97,25 @@ def store_publish_settings(
             "selection": data.selection,
         }
 
-    cmds.fileInfo(publisher_type.value, json.dumps(publish_data_to_store))
+    cmds.fileInfo(publisher_type.storage_name, json.dumps(publish_data_to_store))
+
+
+def get_project_frame_range() -> List[int]:
+    """Returns the frame range of the project.
+
+    Returns:
+        A list with the first and last frame of the project.
+    """
+    return [
+        int(cmds.playbackOptions(q=True, minTime=True)),
+        int(cmds.playbackOptions(q=True, maxTime=True)),
+    ]
+
+
+def get_current_selection() -> str:
+    """Returns the current selection in the scene.
+
+    Returns:
+        A string with the current selection.
+    """
+    return cmds.ls(selection=True, long=True)

@@ -18,28 +18,13 @@ import interface
 
 class MayaSessionModelPublisherPlugin(HookBaseClass):
     @property
-    def description(self):
-        return ""
-
-    @property
-    def settings(self):
-        return {}
-
-    @property
     def item_filters(self):
         return ["maya.session"]
 
     def create_settings_widget(self, parent):
-        return interface.view.PublishUserInterface(
+        return interface.user_interface.PublishUserInterface(
             interface.data_structures.PublisherType.MODEL
         )
-
-    def get_ui_settings(self, widget, items=None):
-        """"""
-        return {}
-
-    def set_ui_settings(self, widget, settings, items=None):
-        """"""
 
     def accept(self, settings, item):
         """"""

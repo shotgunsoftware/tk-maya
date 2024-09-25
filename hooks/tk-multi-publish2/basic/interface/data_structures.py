@@ -7,14 +7,6 @@ from enum import Enum
 from typing import Union
 
 
-class PublisherType(Enum):
-    """Class that stores types of publishers available."""
-
-    ANIMATION = "NFA_animation_publish"
-    CAMERA = "NFA_camera_publish"
-    MODEL = "NFA_model_publish"
-
-
 class AnimationPublisher(Enum):
     """Class that stores types of animation publishers available."""
 
@@ -32,8 +24,28 @@ class CameraPublisher(Enum):
 class ModelPublisher(Enum):
     """Class that stores types of model publishers available."""
 
-    FBX = "FBX"
     ALEMBIC = "Alembic"
+    FBX = "FBX"
+
+
+class PublisherType(Enum):
+    """Class that stores types of publishers available."""
+
+    ANIMATION = ("NFA_animation_publish", AnimationPublisher, AnimationPublisher.USD)
+    CAMERA = ("NFA_camera_publish", CameraPublisher, CameraPublisher.USD)
+    MODEL = ("NFA_model_publish", ModelPublisher, ModelPublisher.ALEMBIC)
+
+    def __init__(
+        self,
+        storage_name: str,
+        available_publishers_enum: Union[
+            AnimationPublisher, CameraPublisher, ModelPublisher
+        ],
+        default_publisher: Union[AnimationPublisher, CameraPublisher, ModelPublisher],
+    ):
+        self.storage_name = storage_name
+        self.available_publishers_enum = available_publishers_enum
+        self.default_publisher = default_publisher
 
 
 @dataclass
