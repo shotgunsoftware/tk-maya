@@ -302,7 +302,27 @@ class MayaSessionPublishPlugin(HookBaseClass):
         super(MayaSessionPublishPlugin, self).finalize(settings, item)
 
         # bump the session file to the next version
-        self._save_to_next_version(item.properties["path"], item, _save_session)
+        self.save_to_next_version(item)
+
+    def save_to_next_version(self, item):
+        """Saves the Maya file to the next version. Uses template if available.
+        Not using the base hook for this because our other publishers overwrite the item path properties.
+        """
+        publisher = self.parent
+        path = _session_path()
+
+        work_template = item.properties.get("work_template")
+        work_fields = None
+        if work_template and work_template.validate(path):
+            work_fields = work_template.get_fields(path)
+
+        if work_fields and "version" in work_fields:
+            work_fields["version"] += 1
+            next_version_path = work_template.apply_fields(work_fields)
+        else:
+            next_version_path = publisher.util.get_next_version_path(path)
+
+        _save_session(next_version_path)
 
 
 def _maya_find_additional_session_dependencies():

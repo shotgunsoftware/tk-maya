@@ -31,19 +31,26 @@ class ModelPublisher(Enum):
 class PublisherType(Enum):
     """Class that stores types of publishers available."""
 
-    ANIMATION = ("NFA_animation_publish", AnimationPublisher, AnimationPublisher.USD)
-    CAMERA = ("NFA_camera_publish", CameraPublisher, CameraPublisher.USD)
-    MODEL = ("NFA_model_publish", ModelPublisher, ModelPublisher.ALEMBIC)
+    ANIMATION = (
+        "NFA_animation_publish",
+        "animation",
+        AnimationPublisher,
+        AnimationPublisher.USD,
+    )
+    CAMERA = ("NFA_camera_publish", "camera", CameraPublisher, CameraPublisher.USD)
+    MODEL = ("NFA_model_publish", "model", ModelPublisher, ModelPublisher.ALEMBIC)
 
     def __init__(
         self,
         storage_name: str,
+        publish_type: str,
         available_publishers_enum: Union[
             AnimationPublisher, CameraPublisher, ModelPublisher
         ],
         default_publisher: Union[AnimationPublisher, CameraPublisher, ModelPublisher],
     ):
         self.storage_name = storage_name
+        self.publish_type = publish_type
         self.available_publishers_enum = available_publishers_enum
         self.default_publisher = default_publisher
 
