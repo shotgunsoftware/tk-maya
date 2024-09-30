@@ -10,22 +10,22 @@ from typing import Union
 class AnimationPublisher(Enum):
     """Class that stores types of animation publishers available."""
 
-    USD = "USD"
-    ALEMBIC = "Alembic"
+    USD = "usd"
+    ALEMBIC = "abc"
 
 
 class CameraPublisher(Enum):
     """Class that stores types of camera publishers available."""
 
-    USD = "USD"
-    ALEMBIC = "Alembic"
+    USD = "usd"
+    ALEMBIC = "abc"
 
 
 class ModelPublisher(Enum):
     """Class that stores types of model publishers available."""
 
-    ALEMBIC = "Alembic"
-    FBX = "FBX"
+    ALEMBIC = "abc"
+    FBX = "fbx"
 
 
 class PublisherType(Enum):

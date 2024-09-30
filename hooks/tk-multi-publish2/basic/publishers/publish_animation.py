@@ -38,7 +38,7 @@ class MayaSessionAnimationPublisherPlugin(HookBaseClass):
     @property
     def item_filters(self) -> list:
         """Function that ShotGrid calls to check if it should show the plugin."""
-        return ["maya.session"]
+        return ["maya.session.animation"]
 
     @property
     def settings(self) -> dict:
@@ -99,30 +99,26 @@ class MayaSessionAnimationPublisherPlugin(HookBaseClass):
                 error = f"No selection found for animation publish item {publish_data.name}."
                 raise ValueError(error)
 
-            new_item = self.get_configured_item(settings, item, publish_data)
-            super().validate(settings, new_item)
+            self.configure_item(settings, item, publish_data)
+            super().validate(settings, item)
 
         return True
 
-    def get_configured_item(
+    def configure_item(
         self, settings, item, publish_data: interface.data_structures.PublishData
     ):
-        """Uses the ShotGrid templates to construct the publish path. The path
+        """Uses the ShotGrid templates to construct the publish path, the path
         is then stored on the item so the base class can use it to register a publish.
-        We have to make new settings and items because they pass through all the publishers,
-        which is really annoying and is kinda because I'm forcing this tk-multi-publish thing
-        to do things it's not designed for but oh well.
 
         Args:
             settings: The stored settings for the plugin.
             item: The item that is being published.
             publish_data: The data that needs to be published.
         """
-        new_item = copy.copy(item)
         file_path = six.ensure_str(cmds.file(query=True, sn=True))
         normalized_file_path = sgtk.util.ShotgunPath.normalize(file_path)
 
-        work_template = item.properties.get("work_template")
+        work_template = item.parent.properties.get("work_template")
         publish_template = self.parent.get_template_by_name(
             settings["Publish Template"].value
         )
@@ -139,13 +135,11 @@ class MayaSessionAnimationPublisherPlugin(HookBaseClass):
             work_fields["publish_extension"] = "abc"
 
         publish_path = publish_template.apply_fields(work_fields)
-        new_item.properties["path"] = publish_path
-        new_item.properties["publish_path"] = publish_path
+        item.properties["path"] = publish_path
+        item.properties["publish_path"] = publish_path
 
         if "version" in work_fields:
-            new_item.properties["publish_version"] = work_fields["version"]
-
-        return new_item
+            item.properties["publish_version"] = work_fields["version"]
 
     def publish(self, settings, item):
         """Exports the animation to disk and publishes the file to the ShotGrid database.
@@ -159,21 +153,19 @@ class MayaSessionAnimationPublisherPlugin(HookBaseClass):
         )
 
         for publish_data in animation_publish_data:
-            new_item = self.get_configured_item(settings, item, publish_data)
-            self.ensure_publish_folder_exists(new_item.properties["path"])
+            self.configure_item(settings, item, publish_data)
+            self.ensure_publish_folder_exists(item.properties["path"])
             if (
                 publish_data.publisher
                 == interface.data_structures.AnimationPublisher.USD
             ):
-                self.export_and_publish_animation_as_usd(
-                    publish_data, settings, new_item
-                )
+                self.export_and_publish_animation_as_usd(publish_data, settings, item)
             elif (
                 publish_data.publisher
                 == interface.data_structures.AnimationPublisher.ALEMBIC
             ):
                 self.export_and_publish_animation_as_alembic(
-                    publish_data, settings, new_item
+                    publish_data, settings, item
                 )
 
     def ensure_publish_folder_exists(self, publish_path: str) -> None:
@@ -188,14 +180,27 @@ class MayaSessionAnimationPublisherPlugin(HookBaseClass):
     def export_and_publish_animation_as_usd(
         self, publish_data: interface.data_structures.PublishData, settings, item
     ) -> None:
-        """Exports the animation as USD, then loads that USD and cleans it up."""
+        """Exports the animation as USD, then loads that USD and cleans it up.
+        After that it calls the base class publish.
+
+        Args:
+            publish_data: The data that needs to be published.
+            settings: The stored settings for the plugin.
+            item: The item that is being published.
+        """
         super().publish(settings, item)
         raise NotImplementedError("This function is not implemented yet.")
 
     def export_and_publish_animation_as_alembic(
         self, publish_data: interface.data_structures.PublishData, settings, item
     ) -> None:
-        """Exports the animation as an Alembic file."""
+        """Exports the animation as an Alembic file and calls base class publish.
+
+        Args:
+            publish_data: The data that needs to be published.
+            settings: The stored settings for the plugin.
+            item: The item that is being published.
+        """
         alembic_args = [
             "-renderableOnly",
             "-writeFaceSets",
@@ -210,8 +215,6 @@ class MayaSessionAnimationPublisherPlugin(HookBaseClass):
         self.parent.log_debug(f"Executing command: {abc_export_cmd}")
         mel.eval(abc_export_cmd)
 
-        print(settings)
-        print(item)
         super().publish(settings, item)
 
     def finalize(self, settings, item):
