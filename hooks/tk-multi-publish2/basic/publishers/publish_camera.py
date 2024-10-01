@@ -143,14 +143,14 @@ class MayaSessionCameraPublisherPlugin(HookBaseClass):
         cmds.select(clear=True)
         cmds.select(publish_data.selection, replace=True)
         usd_command: str = (
-            'file -force -options ";exportUVs=1;exportSkels=auto;exportSkin=auto;exportBlendShapes=1'
-            ";exportColorSets=1;defaultMeshScheme=none;defaultUSDFormat=usda;animation=1;eulerFilter"
-            "=0;staticSingleSample=0;startTime="
+            'file -force -options ";exportUVs=1;exportSkels=none;exportSkin=none;exportBlendShapes=0'
+            ";exportColorSets=1;defaultMeshScheme=catmullClark;defaultUSDFormat=usda;animation=1;eulerFilter"
+            "=1;staticSingleSample=0;startTime="
             + str(publish_data.first_frame)
             + ";endTime="
             + str(publish_data.last_frame)
             + ";frameStride=1;frameSample=0.0;exportDisplayColor=0;shadingMode=useRegistry;"
-            "convertMaterialsTo=UsdPreviewSurface;exportInstances=1;exportVisibility=1;mergeTransformAndShape=1;"
+            "exportInstances=1;exportVisibility=1;mergeTransformAndShape=1;"
             'stripNamespaces=0;parentScope=Camera" -type "USD Export" -pr -es '
         )
 

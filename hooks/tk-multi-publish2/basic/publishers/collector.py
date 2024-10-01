@@ -21,6 +21,18 @@ HookBaseClass = sgtk.get_hook_baseclass()
 # Sketchy workaround to import our own modules within tk-multi-publish2
 sys.path.append(str(Path(__file__).parent.parent))
 
+if os.environ.get("PIPELINE_DEVELOPER"):
+    # TK doesn't reload our own modules so if we're developers we reload it like this. I hate it.
+    import importlib
+
+    import interface
+
+    importlib.reload(interface)
+    importlib.reload(interface.data_structures)
+    importlib.reload(interface.maya_interfacing)
+    importlib.reload(interface.models)
+    importlib.reload(interface.user_interface)
+
 
 class MayaSessionCollector(HookBaseClass):
     """

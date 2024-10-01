@@ -5,26 +5,17 @@ of the code can be found in the interface folder.
 Written by Mervin van Brakel, 2024.
 """
 
+import shutil
+import tempfile
 from pathlib import Path
+
+import interface
 import sgtk
 from maya import cmds, mel
+from pxr import Usd
 from tank_vendor import six
-import tempfile
-import shutil
-from pxr import Sdf, Usd
 
 HookBaseClass = sgtk.get_hook_baseclass()
-
-
-# TODO: DELETE THIS PART LATER:
-import importlib
-import interface
-
-importlib.reload(interface)
-importlib.reload(interface.data_structures)
-importlib.reload(interface.maya_interfacing)
-importlib.reload(interface.models)
-importlib.reload(interface.user_interface)
 
 
 class MayaSessionAnimationPublisherPlugin(HookBaseClass):
