@@ -709,8 +709,6 @@ class MayaEngine(Engine):
                 dialog.windowFlags() | QtGui.Qt.WindowMinimizeButtonHint
             )
             dialog.show()
-
-            return widget
         else:
             # When using the recipe here to get Z-depth ordering correct we also
             # inherit another feature that results in window size and position being
@@ -739,8 +737,8 @@ class MayaEngine(Engine):
             dialog.resize(self.__DIALOG_SIZE_CACHE[title])
             dialog.move(center_screen - dialog.rect().center())
 
-            # lastly, return the instantiated widget
-            return widget
+        # lastly, return the instantiated widget
+        return widget
 
     def _get_dialog_parent(self):
         """
