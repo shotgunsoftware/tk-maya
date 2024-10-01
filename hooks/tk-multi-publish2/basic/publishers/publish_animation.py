@@ -5,24 +5,20 @@ of the code can be found in the interface folder.
 Written by Mervin van Brakel, 2024.
 """
 
-import sys
 from pathlib import Path
-import os
-import copy
 import sgtk
 from maya import cmds, mel
 from tank_vendor import six
+import tempfile
+import shutil
+from pxr import Sdf, Usd
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
 
-# Sketchy workaround to import our own modules within tk-multi-publish2.
-# We have to do it like this because these publisher files are not imported in a "normal" way.
-sys.path.append(str(Path(__file__).parent.parent))
-import interface
-
 # TODO: DELETE THIS PART LATER:
 import importlib
+import interface
 
 importlib.reload(interface)
 importlib.reload(interface.data_structures)
@@ -180,7 +176,7 @@ class MayaSessionAnimationPublisherPlugin(HookBaseClass):
     def export_and_publish_animation_as_usd(
         self, publish_data: interface.data_structures.PublishData, settings, item
     ) -> None:
-        """Exports the animation as USD, then loads that USD and cleans it up.
+        """Exports the animation as USD with a /Animation root prim.
         After that it calls the base class publish.
 
         Args:
@@ -188,8 +184,50 @@ class MayaSessionAnimationPublisherPlugin(HookBaseClass):
             settings: The stored settings for the plugin.
             item: The item that is being published.
         """
+        cmds.select(clear=True)
+        cmds.select(publish_data.selection, replace=True)
+        usd_command = (
+            'file -force -options ";exportUVs=1;exportSkels=none;exportSkin=none;exportBlendShapes=1'
+            ";exportColorSets=1;defaultMeshScheme=catmullClark;defaultUSDFormat=usda;animation=1;eulerFilter"
+            "=1;staticSingleSample=0;startTime="
+            + str(publish_data.first_frame)
+            + ";endTime="
+            + str(publish_data.last_frame)
+            + ";frameStride=1;frameSample=0.0;exportDisplayColor=0;shadingMode=useRegistry;"
+            "convertMaterialsTo=UsdPreviewSurface;exportInstances=1;exportVisibility=1;mergeTransformAndShape=1;"
+            'stripNamespaces=0;parentScope=Animation" -type "USD Export" -pr -es '
+        )
+
+        # USD is written to a temporary file first, because for some reason the Maya USD
+        # export just HATES our network drives.
+        with tempfile.TemporaryDirectory() as temp_directory:
+            temp_file = Path(temp_directory) / Path(item.properties["path"]).name
+            usd_command = usd_command + '" ' + str(temp_file).replace("\\", "/") + '";'
+            mel.eval(usd_command)
+
+            self.hide_curves_in_usd(str(temp_file))
+
+            shutil.copy2(str(temp_file), item.properties["path"])
+
         super().publish(settings, item)
-        raise NotImplementedError("This function is not implemented yet.")
+
+    def hide_curves_in_usd(self, usd_file: str) -> None:
+        """Hides all curves in the USD file. This is so our rig controls
+        don't show up as geometry.
+
+        Args:
+            usd_file: The path to the USD file.
+        """
+        stage = Usd.Stage.Open(usd_file)
+
+        for prim in stage.Traverse():
+            if (
+                prim.GetTypeName() == "NurbsCurves"
+                or prim.GetTypeName() == "BasisCurves"
+            ):
+                prim.GetAttribute("visibility").Set("invisible")
+
+        stage.Save()
 
     def export_and_publish_animation_as_alembic(
         self, publish_data: interface.data_structures.PublishData, settings, item

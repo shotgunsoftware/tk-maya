@@ -132,15 +132,21 @@ class PublishUserInterface(QtWidgets.QWidget):
 
     def add_publish(self):
         """Prompts the user for a publish name and stores the new publish data on the model."""
-        name_dialog = PublishNameDialog()
+        name_dialog = PublishNameDialog(self.publish_model.get_publish_names())
 
         if name_dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
 
+        selection = (
+            maya_interfacing.get_current_selection()[0]
+            if len(maya_interfacing.get_current_selection()) == 1
+            else ""
+        )
+
         self.publish_model.add_publish(
             name_dialog.get_name(),
             maya_interfacing.get_project_frame_range(),
-            "",
+            selection,
         )
 
     def remove_publish(self):
@@ -206,8 +212,9 @@ class PublishUserInterface(QtWidgets.QWidget):
 class PublishNameDialog(QtWidgets.QDialog):
     """Dialog with a text input field for the name of the publish."""
 
-    def __init__(self, parent=None):
+    def __init__(self, existing_names: list, parent=None):
         super().__init__(parent)
+        self.existing_names = existing_names
         self.create_user_interface()
 
     def create_user_interface(self):
@@ -238,7 +245,7 @@ class PublishNameDialog(QtWidgets.QDialog):
     def validate_input(self):
         """Validates the input to ensure it contains only lowercase letters."""
         text = self.name_input.text()
-        if text.islower() and text.isalpha():
+        if text.islower() and text.isalpha() and text not in self.existing_names:
             self.ok_button.setEnabled(True)
         else:
             self.ok_button.setEnabled(False)

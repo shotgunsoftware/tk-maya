@@ -12,12 +12,6 @@ from maya import cmds, mel
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
-import sys
-
-# Sketchy workaround to import our own modules within tk-multi-publish2
-sys.path.append(str(Path(__file__).parent.parent))
-import interface
-
 
 class MayaSessionModelPublisherPlugin(HookBaseClass):
     @property

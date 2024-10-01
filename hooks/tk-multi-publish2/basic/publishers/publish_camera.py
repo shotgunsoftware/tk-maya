@@ -3,6 +3,8 @@
 Written by Mervin van Brakel, 2024.
 """
 
+import shutil
+import tempfile
 from pathlib import Path
 
 import interface.data_structures
@@ -11,12 +13,6 @@ import six
 from maya import cmds, mel
 
 HookBaseClass = sgtk.get_hook_baseclass()
-
-import sys
-
-# Sketchy workaround to import our own modules within tk-multi-publish2
-sys.path.append(str(Path(__file__).parent.parent))
-import interface
 
 
 class MayaSessionCameraPublisherPlugin(HookBaseClass):
@@ -153,15 +149,19 @@ class MayaSessionCameraPublisherPlugin(HookBaseClass):
             + str(publish_data.first_frame)
             + ";endTime="
             + str(publish_data.last_frame)
-            + ";frameStride=1;frameSample=0.0;parentScope=;exportDisplayColor=0;shadingMode=useRegistry;"
+            + ";frameStride=1;frameSample=0.0;exportDisplayColor=0;shadingMode=useRegistry;"
             "convertMaterialsTo=UsdPreviewSurface;exportInstances=1;exportVisibility=1;mergeTransformAndShape=1;"
-            'stripNamespaces=0" -type "USD Export" -pr -es '
-        )
-        usd_command = (
-            usd_command + '"' + item.properties["path"].replace("\\", "/") + '";'
+            'stripNamespaces=0;parentScope=Camera" -type "USD Export" -pr -es '
         )
 
-        mel.eval(usd_command)
+        # USD is written to a temporary file first, because for some reason the Maya USD
+        # export just HATES our network drives.
+        with tempfile.TemporaryDirectory() as temp_directory:
+            temp_file = Path(temp_directory) / Path(item.properties["path"]).name
+            usd_command = usd_command + '" ' + str(temp_file).replace("\\", "/") + '";'
+            mel.eval(usd_command)
+
+            shutil.copy2(str(temp_file), item.properties["path"])
 
         super().publish(settings, item)
 

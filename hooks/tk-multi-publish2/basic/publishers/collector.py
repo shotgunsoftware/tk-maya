@@ -10,12 +10,16 @@
 
 import glob
 import os
-import maya.cmds as cmds
-import maya.mel as mel
-import sgtk
 import sys
+from pathlib import Path
+
+import sgtk
+from maya import cmds, mel
 
 HookBaseClass = sgtk.get_hook_baseclass()
+
+# Sketchy workaround to import our own modules within tk-multi-publish2
+sys.path.append(str(Path(__file__).parent.parent))
 
 
 class MayaSessionCollector(HookBaseClass):

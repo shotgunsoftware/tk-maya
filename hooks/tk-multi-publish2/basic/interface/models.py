@@ -87,3 +87,11 @@ class PublishDataModel(QtCore.QAbstractListModel):
         maya_interfacing.store_publish_settings(
             self.publisher_type, self.stored_publish_data
         )
+
+    def get_publish_names(self) -> List[str]:
+        """Returns all publish names.
+
+        Returns:
+            A list of all publish names.
+        """
+        return [publish.name for publish in self.stored_publish_data]

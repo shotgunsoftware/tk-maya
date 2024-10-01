@@ -112,10 +112,10 @@ def get_project_frame_range() -> List[int]:
     ]
 
 
-def get_current_selection() -> str:
+def get_current_selection() -> List[str]:
     """Returns the current selection in the scene.
 
     Returns:
-        A string with the current selection.
+        A list with the currently selected objects.
     """
     return cmds.ls(selection=True, long=True)
