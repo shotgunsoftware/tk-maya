@@ -692,14 +692,14 @@ class MayaEngine(Engine):
 
         :returns: the created widget_class instance
         """
-        from sgtk.platform.qt import QtCore, QtGui
-
         if not self.has_ui:
             self.log_error(
                 "Sorry, this environment does not support UI display! Cannot show "
                 "the requested window '%s'." % title
             )
-            return None
+            return
+
+        from sgtk.platform.qt import QtCore, QtGui
 
         # create the dialog:
         dialog, widget = self._create_dialog_with_widget(title, *args, **kwargs)
