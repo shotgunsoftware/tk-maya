@@ -10,11 +10,28 @@
 
 import glob
 import os
-import maya.cmds as cmds
-import maya.mel as mel
+import sys
+from pathlib import Path
+
 import sgtk
+from maya import cmds, mel
 
 HookBaseClass = sgtk.get_hook_baseclass()
+
+# Sketchy workaround to import our own modules within tk-multi-publish2
+sys.path.append(str(Path(__file__).parent.parent))
+
+if os.environ.get("PIPELINE_DEVELOPER"):
+    # TK doesn't reload our own modules so if we're developers we reload it like this. I hate it.
+    import importlib
+
+    import interface
+
+    importlib.reload(interface)
+    importlib.reload(interface.data_structures)
+    importlib.reload(interface.maya_interfacing)
+    importlib.reload(interface.models)
+    importlib.reload(interface.user_interface)
 
 
 class MayaSessionCollector(HookBaseClass):
@@ -73,7 +90,6 @@ class MayaSessionCollector(HookBaseClass):
         :param parent_item: Root item instance
 
         """
-
         # create an item representing the current maya session
         item = self.collect_current_maya_session(settings, parent_item)
         project_root = item.properties["project_root"]
@@ -83,7 +99,6 @@ class MayaSessionCollector(HookBaseClass):
 
         # if we can determine a project root, collect other files to publish
         if project_root:
-
             self.logger.info(
                 "Current Maya project is: %s." % (project_root,),
                 extra={
@@ -98,7 +113,6 @@ class MayaSessionCollector(HookBaseClass):
             self.collect_playblasts(item, project_root)
             self.collect_alembic_caches(item, project_root)
         else:
-
             self.logger.info(
                 "Could not determine the current Maya project.",
                 extra={
@@ -110,11 +124,11 @@ class MayaSessionCollector(HookBaseClass):
                 },
             )
 
-        # Always collect session USD
+        # Collect custom publishers
         self._collect_session_usd(item)
-
-        if cmds.ls(geometry=True, noIntermediate=True):
-            self._collect_session_abc(item)
+        self._collect_session_animation(item)
+        self._collect_session_camera(item)
+        self._collect_session_model(item)
 
     def collect_current_maya_session(self, settings, parent_item):
         """
@@ -143,7 +157,9 @@ class MayaSessionCollector(HookBaseClass):
         )
 
         # get the icon path to display for this item
-        icon_path = os.path.join(self.disk_location, os.pardir, "icons", "maya.png")
+        icon_path = os.path.join(
+            self.disk_location, os.pardir, os.pardir, "icons", "maya.png"
+        )
         session_item.set_icon_from_path(icon_path)
 
         # discover the project root which helps in discovery of other
@@ -155,7 +171,6 @@ class MayaSessionCollector(HookBaseClass):
         # that it can be used by attached publish plugins
         work_template_setting = settings.get("Work Template")
         if work_template_setting:
-
             work_template = publisher.engine.get_template_by_name(
                 work_template_setting.value
             )
@@ -208,19 +223,54 @@ class MayaSessionCollector(HookBaseClass):
             # to handle alembic files
             super(MayaSessionCollector, self)._collect_file(parent_item, cache_path)
 
-    def _collect_session_abc(self, parent_item):
+    def _collect_session_animation(self, parent_item):
         """
-        Creates items for session geometry to be exported.
+        Creates items for animation publishing.
 
         :param parent_item: Parent Item instance
         """
 
         geo_item = parent_item.create_item(
-            "maya.session.geometry", "Geometry", "All Geometry to Alembic"
+            "maya.session.animation", "Animation", "Animation Publishing"
         )
 
-        # get the icon path to display for this item
-        icon_path = os.path.join(self.disk_location, os.pardir, "icons", "alembic.png")
+        icon_path = os.path.join(
+            self.disk_location, os.pardir, os.pardir, "icons", "animation.png"
+        )
+
+        geo_item.set_icon_from_path(icon_path)
+
+    def _collect_session_camera(self, parent_item):
+        """
+        Creates items for camera publishing..
+
+        :param parent_item: Parent Item instance
+        """
+
+        geo_item = parent_item.create_item(
+            "maya.session.camera", "Camera", "Camera Publishing"
+        )
+
+        icon_path = os.path.join(
+            self.disk_location, os.pardir, os.pardir, "icons", "camera.png"
+        )
+
+        geo_item.set_icon_from_path(icon_path)
+
+    def _collect_session_model(self, parent_item):
+        """
+        Creates items for model publishing.
+
+        :param parent_item: Parent Item instance
+        """
+
+        geo_item = parent_item.create_item(
+            "maya.session.model", "Model", "Model Publishing"
+        )
+
+        icon_path = os.path.join(
+            self.disk_location, os.pardir, os.pardir, "icons", "model.png"
+        )
 
         geo_item.set_icon_from_path(icon_path)
 
@@ -274,7 +324,6 @@ class MayaSessionCollector(HookBaseClass):
 
         # look for movie files in the movies folder
         for filename in os.listdir(movies_dir):
-
             # do some early pre-processing to ensure the file is of the right
             # type. use the base class item info method to see what the item
             # type would be.
@@ -306,7 +355,6 @@ class MayaSessionCollector(HookBaseClass):
         # iterate over defined render layers and query the render settings for
         # information about a potential render
         for layer in cmds.ls(type="renderLayer"):
-
             self.logger.info("Processing render layer: %s" % (layer,))
 
             # use the render settings api to get a path where the frame number
