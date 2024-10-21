@@ -89,12 +89,15 @@ def _get_plugin_info():
 
         # open the yaml file and read the data
         with open(plugin_info_yml, "r") as plugin_info_fh:
-            info_yml = yaml.load(plugin_info_fh)
+            info_yml = yaml.load(plugin_info_fh, Loader=yaml.FullLoader)
             plugin_id = info_yml["plugin_id"]
             base_configuration = info_yml["base_configuration"]
 
     # return a dictionary with the required info
-    return dict(plugin_id=plugin_id, base_configuration=base_configuration,)
+    return dict(
+        plugin_id=plugin_id,
+        base_configuration=base_configuration,
+    )
 
 
 def shutdown():
@@ -109,11 +112,11 @@ def shutdown():
     engine = sgtk.platform.current_engine()
 
     if engine:
-        logger.info("Stopping the SG engine.")
+        logger.info("Stopping the PTR engine.")
         # Close the various windows (dialogs, panels, etc.) opened by the engine.
         engine.close_windows()
         # Turn off your engine! Step away from the car!
         engine.destroy()
 
     else:
-        logger.debug("The SG engine was already stopped!")
+        logger.debug("The PTR engine was already stopped!")

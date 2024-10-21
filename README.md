@@ -1,48 +1,20 @@
-[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/nfa-vfxim/tk-maya?include_prereleases)](https://github.com/nfa-vfxim/tk-maya) 
-[![GitHub issues](https://img.shields.io/github/issues/nfa-vfxim/tk-maya)](https://github.com/nfa-vfxim/tk-maya/issues) 
+[![Python 2.6 2.7 3.7](https://img.shields.io/badge/python-2.6%20%7C%202.7%20%7C%203.7-blue.svg)](https://www.python.org/)
+[![Build Status](https://dev.azure.com/shotgun-ecosystem/Toolkit/_apis/build/status/Engines/tk-maya?branchName=master)](https://dev.azure.com/shotgun-ecosystem/Toolkit/_build/latest?definitionId=28&branchName=master)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Linting](https://img.shields.io/badge/PEP8%20by-Hound%20CI-a873d1.svg)](https://houndci.com)
 
+## Documentation
+This repository is a part of the ShotGrid Pipeline Toolkit.
 
-# ShotGrid Engine for Maya <img src="icon_256.png" alt="Icon" height="24"/>
+- For more information about this app and for release notes, *see the wiki section*.
+- For general information and documentation, click here: https://support.shotgunsoftware.com/entries/95441257
+- For information about ShotGrid in general, click here: http://www.shotgunsoftware.com/toolkit
 
-ShotGrid Integration in Maya
+## Using this app in your Setup
+All the apps that are part of our standard app suite are pushed to our App Store.
+This is where you typically go if you want to install an app into a project you are
+working on. For an overview of all the Apps and Engines in the Toolkit App Store,
+click here: https://support.shotgunsoftware.com/entries/95441247.
 
-## Requirements
-
-| ShotGrid version | Core version | Engine version |
-|------------------|--------------|----------------|
-| -                | v0.19.18     | -              |
-
-## Configuration
-
-### Booleans
-
-| Name                       | Description                                                                                                                                 | Default value |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| `automatic_context_switch` | Controls whether toolkit should attempt to automatically adjust its context every time the currently loaded file changes. Defaults to True. | True          |
-| `debug_logging`            | Controls whether debug messages should be emitted to the logger                                                                             | False         |
-| `use_sgtk_as_menu_name`    | Optionally choose to use 'Sgtk' as the primary menu name instead of 'ShotGrid'                                                              | False         |
-
-
-### Integers
-
-| Name                               | Description                                                                                                                                                                                                                                                                  | Default value |
-|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| `compatibility_dialog_min_version` | Specify the minimum Application major version that will prompt a warning if it isn't yet fully supported and tested with Toolkit.  To disable the warning dialog for the version you are testing, it is recomended that you set this value to the current major version + 1. | 2015          |
-
-
-### Lists
-
-| Name                     | Description                                                                                                                                                                                                                                                                                                                                                                                                             | Default value |
-|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| `menu_favourites`        | Controls the favourites section on the main menu. This is a list and each menu item is a dictionary with keys app_instance and name. The app_instance parameter connects this entry to a particular app instance defined in the environment configuration file. The name is a menu name to make a favourite.                                                                                                            |               |
-| `run_at_startup`         | Controls what apps will run on startup.  This is a list where each element is a dictionary with two keys: 'app_instance' and 'name'.  The app_instance value connects this entry to a particular app instance defined in the environment configuration file.  The name is the menu name of the command to run when the Maya engine starts up.  If name is '' then all commands from the given app instance are started. | []            |
-| `launch_builtin_plugins` | Comma-separated list of tk-maya plugins to load when launching Maya. Use of this feature disables the classic mechanism for bootstrapping Toolkit when Maya is launched.                                                                                                                                                                                                                                                | []            |
-
-
-### Templates
-
-| Name               | Description                                                                                                                                                                                                    | Default value | Fields |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|--------|
-| `template_project` | Template to use to determine where to set the maya project location. This should be a string specifying the template to use but can also be empty if you do not wish the Maya project to be automatically set. |               |        |
-
-
+## Have a Question?
+Don't hesitate to contact us! You can find us on support@shotgunsoftware.com

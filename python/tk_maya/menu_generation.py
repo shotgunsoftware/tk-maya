@@ -19,7 +19,11 @@ import os
 import unicodedata
 import maya.cmds as cmds
 from sgtk.platform.qt import QtGui, QtCore
-from tank_vendor import six
+
+try:
+    from tank_vendor import sgutils
+except ImportError:
+    from tank_vendor import six as sgutils
 
 
 class MenuGenerator(object):
@@ -110,12 +114,12 @@ class MenuGenerator(object):
         # the label expects a unicode object so we cast it to support when the context may
         # contain info with non-ascii characters
         ctx_menu = cmds.menuItem(
-            label=six.ensure_str(ctx_name), parent=self._menu_path, subMenu=True
+            label=sgutils.ensure_str(ctx_name), parent=self._menu_path, subMenu=True
         )
 
         # link to UI
         cmds.menuItem(
-            label="Jump to ShotGrid",
+            label="Jump to Flow Production Tracking",
             parent=ctx_menu,
             command=Callback(self._jump_to_sg),
         )

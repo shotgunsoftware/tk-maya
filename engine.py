@@ -178,7 +178,9 @@ def refresh_engine(engine_name, prev_context, menu_name):
 
     except sgtk.TankError as e:
         logger.exception("Could not execute sgtk_from_path('%s')" % new_path)
-        OpenMaya.MGlobal.displayInfo("ShotGrid: Engine cannot be started: %s" % e)
+        OpenMaya.MGlobal.displayInfo(
+            "Flow Production Tracking: Engine cannot be started: %s" % e
+        )
         # build disabled menu
         create_sgtk_disabled_menu(menu_name)
         return
@@ -209,7 +211,7 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
         logger.exception("Could not refresh the engine; error: '%s'" % e)
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         message = ""
-        message += "Message: SG encountered a problem changing the Engine's context.\n"
+        message += "Message: PTR encountered a problem changing the Engine's context.\n"
         message += "Please contact %s\n\n" % sgtk.support_url
         message += "Exception: %s - %s\n" % (exc_type, exc_value)
         message += "Traceback (most recent call last):\n"
@@ -222,7 +224,7 @@ def sgtk_disabled_message():
     Explain why sgtk is disabled.
     """
     msg = (
-        "SG integration is disabled because it cannot recognize "
+        "PTR integration is disabled because it cannot recognize "
         "the currently opened file.  Try opening another file or restarting "
         "Maya."
     )
@@ -239,7 +241,7 @@ def sgtk_disabled_message():
 
 def create_sgtk_disabled_menu(menu_name):
     """
-    Render a special "SG is disabled" menu
+    Render a special "PTR is disabled" menu
     """
     if cmds.about(batch=True):
         # don't create menu in batch mode
@@ -268,7 +270,7 @@ def create_sgtk_disabled_menu(menu_name):
 
 def remove_sgtk_disabled_menu():
     """
-    Remove the special "SG is disabled" menu if it exists
+    Remove the special "PTR is disabled" menu if it exists
 
     :returns: True if the menu existed and was deleted
     """
@@ -384,7 +386,19 @@ class MayaEngine(Engine):
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
         if maya_ver.startswith(
-            ("2014", "2015", "2016", "2017", "2018", "2019", "2020", "2022", "2023")
+            (
+                "2014",
+                "2015",
+                "2016",
+                "2017",
+                "2018",
+                "2019",
+                "2020",
+                "2022",
+                "2023",
+                "2024",
+                "2025",
+            )
         ):
             self.logger.debug("Running Maya version %s", maya_ver)
 
@@ -404,12 +418,14 @@ class MayaEngine(Engine):
             # older than 2014 doesn't ship with PySide. Instead, we just have to
             # raise an exception so that we bail out here with an error message
             # that will hopefully make sense for the user.
-            msg = "SG integration is not compatible with Maya versions older than 2014."
+            msg = (
+                "PTR integration is not compatible with Maya versions older than 2014."
+            )
             raise sgtk.TankError(msg)
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
             msg = (
-                "The SG Pipeline Toolkit has not yet been fully tested with Maya %s.  "
+                "The Flow Production Tracking has not yet been fully tested with Maya %s.  "
                 "You can continue to use Toolkit but you may experience bugs or instability."
                 "\n\nPlease report any issues to: %s" % (maya_ver, sgtk.support_url)
             )
@@ -433,7 +449,7 @@ class MayaEngine(Engine):
 
             if show_warning_dlg:
                 # Note, title is padded to try to ensure dialog isn't insanely narrow!
-                title = "Warning - SG Pipeline Toolkit Compatibility!                          "  # padded!
+                title = "Warning - Flow Production Tracking Compatibility!                          "  # padded!
                 cmds.confirmDialog(title=title, message=msg, button="Ok")
 
             # always log the warning to the script editor:
@@ -458,15 +474,17 @@ class MayaEngine(Engine):
 
         # default menu name is Shotgun but this can be overriden
         # in the configuration to be Sgtk in case of conflicts
-        self._menu_name = "ShotGrid"
-        if self.get_setting("use_sgtk_as_menu_name", False):
-            self._menu_name = "Sgtk"
+        self._menu_name = "Flow Production Tracking"
+        if self.get_setting("use_short_menu_name", False):
+            self._menu_name = "FPTR"
 
         self.__watcher = None
         if self.get_setting("automatic_context_switch", True):
             # need to watch some scene events in case the engine needs rebuilding:
-            cb_fn = lambda en=self.instance_name, pc=self.context, mn=self._menu_name: on_scene_event_callback(
-                en, pc, mn
+            cb_fn = (
+                lambda en=self.instance_name,
+                pc=self.context,
+                mn=self._menu_name: on_scene_event_callback(en, pc, mn)
             )
             self.__watcher = SceneEventWatcher(cb_fn)
             self.logger.debug("Registered open and save callbacks.")
@@ -484,7 +502,6 @@ class MayaEngine(Engine):
 
         # only create the shotgun menu if not in batch mode and menu doesn't already exist
         if self.has_ui and not cmds.menu("ShotGridMenu", exists=True):
-
             self._menu_path = cmds.menu(
                 "ShotGridMenu",
                 label=self._menu_name,
@@ -536,10 +553,14 @@ class MayaEngine(Engine):
             self.__watcher.stop_watching()
 
         if self.get_setting("automatic_context_switch", True):
-            cb_fn = lambda en=self.instance_name, pc=new_context, mn=self._menu_name: on_scene_event_callback(
-                engine_name=en,
-                prev_context=pc,
-                menu_name=mn,
+            cb_fn = (
+                lambda en=self.instance_name,
+                pc=new_context,
+                mn=self._menu_name: on_scene_event_callback(
+                    engine_name=en,
+                    prev_context=pc,
+                    menu_name=mn,
+                )
             )
             self.__watcher = SceneEventWatcher(cb_fn)
             self.logger.debug(
@@ -568,7 +589,6 @@ class MayaEngine(Engine):
 
         # Run the series of app instance commands listed in the 'run_at_startup' setting.
         for app_setting_dict in self.get_setting("run_at_startup", []):
-
             app_instance_name = app_setting_dict["app_instance"]
             # Menu name of the command to run or '' to run all commands of the given app instance.
             setting_command_name = app_setting_dict["name"]
@@ -643,70 +663,29 @@ class MayaEngine(Engine):
         Handles the pyside init
         """
 
-        # first see if pyside2 is present
+        # First see if pyside6 is present
+        try:
+            from PySide6 import QtGui
+        except:
+            # fine, we don't expect PySide2 to be present just yet
+            self.logger.debug("PySide6 not detected - trying for PySide2 now...")
+        else:
+            # looks like pyside2 is already working! No need to do anything
+            self.logger.debug("PySide6 detected - the existing version will be used.")
+            return
+
+        # Next, check if PySide2 is present
         try:
             from PySide2 import QtGui
         except:
             # fine, we don't expect PySide2 to be present just yet
-            self.logger.debug("PySide2 not detected - trying for PySide now...")
+            self.logger.debug(
+                "PySide2 not detected - it will be added to the setup now..."
+            )
         else:
             # looks like pyside2 is already working! No need to do anything
             self.logger.debug("PySide2 detected - the existing version will be used.")
             return
-
-        # then see if pyside is present
-        try:
-            from PySide import QtGui
-        except:
-            # must be a very old version of Maya.
-            self.logger.debug(
-                "PySide not detected - it will be added to the setup now..."
-            )
-        else:
-            # looks like pyside is already working! No need to do anything
-            self.logger.debug("PySide detected - the existing version will be used.")
-            return
-
-        if sgtk.util.is_macos():
-            pyside_path = os.path.join(
-                self.disk_location, "resources", "pyside112_py26_qt471_mac", "python"
-            )
-            self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
-            sys.path.append(pyside_path)
-
-        elif sgtk.util.is_windows():
-            # default windows version of pyside for 2011 and 2012
-            pyside_path = os.path.join(
-                self.disk_location, "resources", "pyside111_py26_qt471_win64", "python"
-            )
-            self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
-            sys.path.append(pyside_path)
-            dll_path = os.path.join(
-                self.disk_location, "resources", "pyside111_py26_qt471_win64", "lib"
-            )
-            path = os.environ.get("PATH", "")
-            path += ";%s" % dll_path
-            os.environ["PATH"] = path
-
-        elif sgtk.util.is_linux():
-            pyside_path = os.path.join(
-                self.disk_location, "resources", "pyside112_py26_qt471_linux", "python"
-            )
-            self.logger.debug("Adding pyside to sys.path: %s", pyside_path)
-            sys.path.append(pyside_path)
-
-        else:
-            self.logger.error("Unknown platform - cannot initialize PySide!")
-
-        # now try to import it
-        try:
-            from PySide import QtGui
-        except Exception as e:
-            self.logger.error(
-                "PySide could not be imported! Apps using pyside will not "
-                "operate correctly! Error reported: %s",
-                e,
-            )
 
     def show_dialog(self, title, *args, **kwargs):
         """
@@ -770,13 +749,8 @@ class MayaEngine(Engine):
         show_dialog & show_modal.
         """
         # Find a parent for the dialog - this is the Maya mainWindow()
-        from sgtk.platform.qt import QtGui
+        from sgtk.platform.qt import QtGui, shiboken
         import maya.OpenMayaUI as OpenMayaUI
-
-        try:
-            import shiboken2 as shiboken
-        except ImportError:
-            import shiboken
 
         ptr = OpenMayaUI.MQtUtil.mainWindow()
         parent = shiboken.wrapInstance(int(ptr), QtGui.QMainWindow)
@@ -813,9 +787,9 @@ class MayaEngine(Engine):
         # where "basename" is the leaf part of the logging record name,
         # for example "tk-multi-shotgunpanel" or "qt_importer".
         if record.levelno < logging.INFO:
-            formatter = logging.Formatter("Debug: SG %(basename)s: %(message)s")
+            formatter = logging.Formatter("Debug: PTR %(basename)s: %(message)s")
         else:
-            formatter = logging.Formatter("SG %(basename)s: %(message)s")
+            formatter = logging.Formatter("PTR %(basename)s: %(message)s")
 
         msg = formatter.format(record)
 
@@ -846,11 +820,13 @@ class MayaEngine(Engine):
         proj_path = tmpl.apply_fields(fields)
         self.logger.info("Setting Maya project to '%s'", proj_path)
 
-        # Since we are inserting this path into another string that will be executed in mel
-        # We need to double up and backslashes.
-        proj_path = proj_path.replace("\\", "\\\\")
+        try:
+            cmds.workspace(proj_path, openWorkspace=True)
+        except RuntimeError as e:
+            self.logger.error("Maya failed to open Project. Error: %s", str(e))
+            raise e
 
-        mel.eval('setProject("{0}")'.format(proj_path))
+        cmds.workspace(proj_path, openWorkspace=True)
 
     ##########################################################################################
     # panel support
