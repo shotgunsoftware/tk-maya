@@ -706,7 +706,7 @@ class MayaEngine(Engine):
 
         if not sgtk.util.is_macos():
             window_flags = dialog.windowFlags()
-            
+
             if self.get_setting("enable_dialogs_minimize_button", False):
                 window_flags |= QtGui.Qt.WindowMinimizeButtonHint
 
