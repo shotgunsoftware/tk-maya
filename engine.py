@@ -500,7 +500,6 @@ class MayaEngine(Engine):
 
         # only create the shotgun menu if not in batch mode and menu doesn't already exist
         if self.has_ui and not cmds.menu("ShotGridMenu", exists=True):
-
             self._menu_path = cmds.menu(
                 "ShotGridMenu",
                 label=self._menu_name,
@@ -584,7 +583,6 @@ class MayaEngine(Engine):
 
         # Run the series of app instance commands listed in the 'run_at_startup' setting.
         for app_setting_dict in self.get_setting("run_at_startup", []):
-
             app_instance_name = app_setting_dict["app_instance"]
             # Menu name of the command to run or '' to run all commands of the given app instance.
             setting_command_name = app_setting_dict["name"]
@@ -694,21 +692,27 @@ class MayaEngine(Engine):
 
         :returns: the created widget_class instance
         """
+        if not self.has_ui:
+            self.log_error(
+                "Sorry, this environment does not support UI display! Cannot show "
+                "the requested window '%s'." % title
+            )
+            return
+
+        from sgtk.platform.qt import QtCore, QtGui
+
+        # create the dialog:
+        dialog, widget = self._create_dialog_with_widget(title, *args, **kwargs)
+
         if not sgtk.util.is_macos():
-            return super(MayaEngine, self).show_dialog(title, *args, **kwargs)
+            window_flags = dialog.windowFlags()
+
+            if self.get_setting("enable_dialogs_minimize_button", False):
+                window_flags |= QtGui.Qt.WindowMinimizeButtonHint
+
+            dialog.setWindowFlags(window_flags)
+            dialog.show()
         else:
-            if not self.has_ui:
-                self.log_error(
-                    "Sorry, this environment does not support UI display! Cannot show "
-                    "the requested window '%s'." % title
-                )
-                return None
-
-            from sgtk.platform.qt import QtCore, QtGui
-
-            # create the dialog:
-            dialog, widget = self._create_dialog_with_widget(title, *args, **kwargs)
-
             # When using the recipe here to get Z-depth ordering correct we also
             # inherit another feature that results in window size and position being
             # remembered. This size/pos retention happens across app boundaries, so
@@ -736,8 +740,8 @@ class MayaEngine(Engine):
             dialog.resize(self.__DIALOG_SIZE_CACHE[title])
             dialog.move(center_screen - dialog.rect().center())
 
-            # lastly, return the instantiated widget
-            return widget
+        # lastly, return the instantiated widget
+        return widget
 
     def _get_dialog_parent(self):
         """
