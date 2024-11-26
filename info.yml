@@ -84,6 +84,11 @@ configuration:
         values:
             type: str
 
+    enable_dialogs_minimize_button:
+        type: bool
+        description: Enable the minimize button for Toolkit dialogs (experimental)
+        default_value: false
+
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
 

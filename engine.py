@@ -705,9 +705,12 @@ class MayaEngine(Engine):
         dialog, widget = self._create_dialog_with_widget(title, *args, **kwargs)
 
         if not sgtk.util.is_macos():
-            dialog.setWindowFlags(
-                dialog.windowFlags() | QtGui.Qt.WindowMinimizeButtonHint
-            )
+            window_flags = dialog.windowFlags()
+            
+            if self.get_setting("enable_dialogs_minimize_button", False):
+                window_flags |= QtGui.Qt.WindowMinimizeButtonHint
+
+            dialog.setWindowFlags(window_flags)
             dialog.show()
         else:
             # When using the recipe here to get Z-depth ordering correct we also
