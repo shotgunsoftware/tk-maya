@@ -269,9 +269,7 @@ class MayaSessionCollector(HookBaseClass):
 
             # allow the base class to collect and create the item. it knows how
             # to handle movie files
-            item = super()._collect_file(
-                parent_item, movie_path
-            )
+            item = super()._collect_file(parent_item, movie_path)
 
             # the item has been created. update the display name to include
             # the an indication of what it is and why it was collected
