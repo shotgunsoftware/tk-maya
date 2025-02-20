@@ -48,7 +48,7 @@ class MenuGenerator(object):
 
         # now enumerate all items and create menu objects for them
         menu_items = []
-        for (cmd_name, cmd_details) in self._engine.commands.items():
+        for cmd_name, cmd_details in self._engine.commands.items():
             menu_items.append(AppCommand(cmd_name, cmd_details))
 
         # sort list of commands in name order
@@ -108,9 +108,7 @@ class MenuGenerator(object):
         # create the menu object
         # the label expects a unicode object so we cast it to support when the context may
         # contain info with non-ascii characters
-        ctx_menu = cmds.menuItem(
-            label=ctx_name, parent=self._menu_path, subMenu=True
-        )
+        ctx_menu = cmds.menuItem(label=ctx_name, parent=self._menu_path, subMenu=True)
 
         # link to UI
         cmds.menuItem(
@@ -268,7 +266,7 @@ class AppCommand(Callback):
         app_instance = self.properties["app"]
         engine = app_instance.engine
 
-        for (app_instance_name, app_instance_obj) in engine.apps.items():
+        for app_instance_name, app_instance_obj in engine.apps.items():
             if app_instance_obj == app_instance:
                 # found our app!
                 return app_instance_name

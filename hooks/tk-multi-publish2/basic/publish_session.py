@@ -324,9 +324,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
         item.properties["path"] = path
 
         # add dependencies for the base class to register when publishing
-        item.properties[
-            "publish_dependencies"
-        ] = _maya_find_additional_session_dependencies()
+        item.properties["publish_dependencies"] = (
+            _maya_find_additional_session_dependencies()
+        )
 
         # let the base class register the publish
         super().publish(settings, item)
