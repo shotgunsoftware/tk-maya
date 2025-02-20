@@ -14,11 +14,6 @@ import maya.mel as mel
 import sgtk
 from sgtk.util.filesystem import ensure_folder_exists
 
-try:
-    from tank_vendor import sgutils
-except ImportError:
-    from tank_vendor import six as sgutils
-
 HookBaseClass = sgtk.get_hook_baseclass()
 
 
@@ -114,7 +109,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         """
 
         # inherit the settings from the base publish plugin
-        base_settings = super(MayaSessionPublishPlugin, self).settings or {}
+        base_settings = super().settings or {}
 
         # settings specific to this class
         maya_publish_settings = {
@@ -306,7 +301,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         item.properties["path"] = path
 
         # run the base class validation
-        return super(MayaSessionPublishPlugin, self).validate(settings, item)
+        return super().validate(settings, item)
 
     def publish(self, settings, item):
         """
@@ -334,7 +329,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         ] = _maya_find_additional_session_dependencies()
 
         # let the base class register the publish
-        super(MayaSessionPublishPlugin, self).publish(settings, item)
+        super().publish(settings, item)
 
     def finalize(self, settings, item):
         """
@@ -348,7 +343,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         """
 
         # do the base class finalization
-        super(MayaSessionPublishPlugin, self).finalize(settings, item)
+        super().finalize(settings, item)
 
         self._save_to_next_version(item.get_property("path"), item, _save_session)
 
@@ -401,7 +396,7 @@ def _session_path():
     path = cmds.file(query=True, sn=True)
 
     if path is not None:
-        path = sgutils.ensure_str(path)
+        path = str(path)
 
     return path
 
