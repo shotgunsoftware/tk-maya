@@ -20,9 +20,9 @@ import maya.cmds as cmds
 # but also re-import it later to ensure usage of a swapped in version.
 import sgtk
 
-# Knowing that the plug-in is only loaded for Maya 2014 and later,
-# import PySide packages without having to worry about the version to use
-# (PySide in Maya 2014-2015-2016 and PySide2 in Maya 2017 and later).
+# Import PySide packages without having to worry about the version to use:
+#  PySide6/Qt6 in Maya 2025 and later
+#  PySide2/Qt5 in Maya 2017-2024
 from sgtk.util.qt_importer import QtImporter
 
 qt_importer = QtImporter()

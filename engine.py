@@ -469,9 +469,6 @@ class MayaEngine(Engine):
         # Set the Maya project based on config
         self._set_project()
 
-        # add qt paths and dlls
-        self._init_pyside()
-
         # default menu name is Shotgun but this can be overriden
         # in the configuration to be Sgtk in case of conflicts
         self._menu_name = "Flow Production Tracking"
@@ -652,34 +649,6 @@ class MayaEngine(Engine):
         if self.has_ui and cmds.menu(self._menu_path, exists=True):
             cmds.deleteUI(self._menu_path)
 
-    def _init_pyside(self):
-        """
-        Handles the pyside init
-        """
-
-        # First see if pyside6 is present
-        try:
-            from PySide6 import QtGui
-        except:
-            # fine, we don't expect PySide2 to be present just yet
-            self.logger.debug("PySide6 not detected - trying for PySide2 now...")
-        else:
-            # looks like pyside2 is already working! No need to do anything
-            self.logger.debug("PySide6 detected - the existing version will be used.")
-            return
-
-        # Next, check if PySide2 is present
-        try:
-            from PySide2 import QtGui
-        except:
-            # fine, we don't expect PySide2 to be present just yet
-            self.logger.debug(
-                "PySide2 not detected - it will be added to the setup now..."
-            )
-        else:
-            # looks like pyside2 is already working! No need to do anything
-            self.logger.debug("PySide2 detected - the existing version will be used.")
-            return
 
     def show_dialog(self, title, *args, **kwargs):
         """
