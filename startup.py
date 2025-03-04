@@ -26,7 +26,7 @@ class MayaLauncher(SoftwareLauncher):
     # matching against supplied versions and products. Similar to the glob
     # strings, these allow us to alter the regex matching for any of the
     # variable components of the path in one place
-    COMPONENT_REGEX_LOOKUP = {"version": r"[\d.]+", "mach": r"x\d+"}
+    COMPONENT_REGEX_LOOKUP = {"version": r"[\d\.]+", "mach": r"x\d+"}
 
     # This dictionary defines a list of executable template strings for each
     # of the supported operating systems. The templates are used for both
