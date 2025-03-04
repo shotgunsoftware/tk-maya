@@ -383,16 +383,23 @@ class MayaEngine(Engine):
                 "are Mac, Linux 64 and Windows 64."
             )
 
-        maya_major_version = cmds.about(majorVersion=True)
-        if not maya_major_version.isdigit():
+        url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
+
+        maya_ver = cmds.about(version=True)
+        if maya_ver.startswith("Maya "):
+            maya_ver = maya_ver[5:]
+
+        try:
+            maya_major_version = int(cmds.about(majorVersion=True))
+        except (TypeError, ValueError):
             raise sgtk.TankError(
                 "FPTR integration is not compatible with this version of Maya."
-                # TODO add link to supported version documentation
+                " For information regarding support engine versions, please"
+                f" visit this page: {url_doc_supported_versions}."
             )
 
         compatibility_warning_msg = None
 
-        maya_major_version = int(maya_major_version)
         if maya_major_version < 2013:
             # We won't be able to rely on the warning dialog below, because Maya
             # older than 2014 doesn't ship with PySide. Instead, we just have to
@@ -405,17 +412,17 @@ class MayaEngine(Engine):
         elif maya_major_version < 2022:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
             compatibility_warning_msg = (
-                f"Flow Production Tracking no longer support Maya {cmds.about(version=True)}. "
+                f"Flow Production Tracking no longer support Maya {maya_ver}. "
                 "You can continue to use Toolkit but you may experience bugs or instability."
-                f"\n\nPlease refer to this document regarding supported engine version: https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
+                f"\n\n For information regarding support engine versions,"
+                f" please visit this page: {url_doc_supported_versions}."
             )
         elif maya_major_version < 2026:
-            self.logger.debug(f"Running Maya version {cmds.about(version=True)}")
-            ## ALL good
+            self.logger.debug(f"Running Maya version {maya_ver}")
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
             compatibility_warning_msg = (
-                f"The Flow Production Tracking has not yet been fully tested with Maya {cmds.about(version=True)}.  "
+                f"The Flow Production Tracking has not yet been fully tested with Maya {maya_ver}.  "
                 "You can continue to use Toolkit but you may experience bugs or instability."
                 f"\n\nPlease report any issues to: {sgtk.support_url}"
             )
