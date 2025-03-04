@@ -25,6 +25,11 @@ import maya.utils
 import maya.mel as mel
 from sgtk.platform import Engine
 
+# Maya versions compatibility constants
+VERSION_OLDEST_COMPATIBLE = 2022
+VERSION_OLDEST_SUPPORTED = 2023
+VERSION_NEWEST_SUPPORTED = 2026
+
 # Although the engine has logging already, this logger is needed for callback based logging
 # where an engine may not be present.
 logger = sgtk.LogManager.get_logger(__name__)
@@ -382,96 +387,115 @@ class MayaEngine(Engine):
                 "are Mac, Linux 64 and Windows 64."
             )
 
+        url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
+        compatibility_warning_msg = None
+        show_warning_dlg = (
+            self.has_ui and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
+        )
+
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
             maya_ver = maya_ver[5:]
-        if maya_ver.startswith(
-            (
-                "2022",
-                "2023",
-                "2024",
-                "2025",
-                "2026",
-            )
-        ):
-            self.logger.debug("Running Maya version %s", maya_ver)
 
-            # In the case of Maya on Windows, we have the possility of locking
-            # up if we allow the PySide shim to import QtWebEngineWidgets. We can
-            # stop that happening here by setting the environment variable.
-            version_num = int(maya_ver[0:4])
-
-            if current_os.startswith("win"):
-                self.logger.debug(
-                    "Maya on Windows can deadlock if QtWebEngineWidgets "
-                    "is imported. Setting SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT=1..."
-                )
-                os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = "1"
-        elif maya_ver.startswith(
-            (
-                "2012",
-                "2013",
-                "2014",
-                "2015",
-                "2016",
-                "2017",
-                "2018",
-                "2019",
-                "2020",
+        try:
+            maya_major_version = int(cmds.about(majorVersion=True))
+        except (TypeError, ValueError):
+            raise sgtk.TankError(
+                "Flow Production Tracking is not compatible with this version "
+                "of Maya.\n"
+                "For information regarding support engine versions, please "
+                f"visit this page: {url_doc_supported_versions}."
             )
-        ):
+
+        if maya_major_version < VERSION_OLDEST_COMPATIBLE:
+            # Older that the oldest known compatible version
+
             # We won't be able to rely on the warning dialog below, because Maya
             # older than 2022 ships Python 2. And older versions come with Qt4.
             # Instead, we just have to raise an exception so that we bail out
             # here with an error message that will hopefully make sense for the
             # user.
-            msg = (
-                "PTR integration is not compatible with Maya versions older than 2022."
-            )
-            raise sgtk.TankError(msg)
-        else:
-            # show a warning that this version of Maya isn't yet fully tested with Shotgun:
-            msg = (
-                "The Flow Production Tracking has not yet been fully tested with Maya %s.  "
-                "You can continue to use Toolkit but you may experience bugs or instability."
-                "\n\nPlease report any issues to: %s" % (maya_ver, sgtk.support_url)
+            raise sgtk.TankError(
+                "Flow Production Tracking is no longer compatible with Maya "
+                f"versions older than {VERSION_OLDEST_COMPATIBLE}.\n"
+                "For information regarding support engine versions, please "
+                "visit this page: {url_doc_supported_versions}."
             )
 
-            # determine if we should show the compatibility warning dialog:
-            show_warning_dlg = (
-                self.has_ui and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
+        elif maya_major_version < VERSION_OLDEST_SUPPORTED:
+            # Older than the oldest supported version
+
+            compatibility_warning_msg = (
+                "Flow Production Tracking no longer supports Maya versions "
+                f"older than {VERSION_OLDEST_SUPPORTED}.\n"
+                "You can continue to use Toolkit but you may experience bugs "
+                "or instabilities.\n\n"
+                "For information regarding support engine versions, "
+                "please visit this page: {url_doc_supported_versions}."
             )
+
+        elif maya_major_version < VERSION_NEWEST_SUPPORTED:
+            # Within the range of supported versions
+            self.logger.debug(f"Running Maya version {maya_ver}")
+
+        else:
+            # Newer than the newest supported version
+            compatibility_warning_msg = (
+                "Flow Production Tracking has not yet been fully tested "
+                f"with Maya {maya_ver}.\n"
+                "You can continue to use Toolkit but you may experience bugs "
+                "or instabilities.\n\n"
+                "Please report any issues to: {support_url}"
+            )
+
+            show_warning_dlg = show_warning_dlg and (
+                maya_major_version
+                >= self.get_setting(
+                    "compatibility_dialog_min_version",
+                    default=VERSION_NEWEST_SUPPORTED,
+                )
+            )
+
+        if compatibility_warning_msg:
+            # determine if we should show the compatibility warning dialog:
             if show_warning_dlg:
                 # make sure we only show it once per session:
                 os.environ["SGTK_COMPATIBILITY_DIALOG_SHOWN"] = "1"
 
-                # split off the major version number - accomodate complex version strings and decimals:
-                major_version_number_str = maya_ver.split(" ")[0].split(".")[0]
-                if major_version_number_str and major_version_number_str.isdigit():
-                    # check against the compatibility_dialog_min_version setting:
-                    if int(major_version_number_str) < self.get_setting(
-                        "compatibility_dialog_min_version"
-                    ):
-                        show_warning_dlg = False
-
-            if show_warning_dlg:
-                # Note, title is padded to try to ensure dialog isn't insanely narrow!
-                title = "Warning - Flow Production Tracking Compatibility!                          "  # padded!
-                cmds.confirmDialog(title=title, message=msg, button="Ok")
+                cmds.confirmDialog(
+                    # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                    title="Warning - Flow Production Tracking Compatibility!".ljust(70),
+                    message=compatibility_warning_msg.replace(
+                        # Precense of \n breaks the Rich Text Format
+                        "\n", "<br>"
+                    ).format(
+                        support_url='<a href="{u}">{u}</a>'.format(
+                            u=sgtk.support_url
+                        ),
+                        url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
+                            u=url_doc_supported_versions,
+                        ),
+                    ),
+                    button="Ok",
+                )
 
             # always log the warning to the script editor:
-            self.logger.warning(msg)
-
-            # In the case of Maya 2018 on Windows, we have the possility of locking
-            # up if we allow the PySide shim to import QtWebEngineWidgets. We can
-            # stop that happening here by setting the environment variable.
-
-            if current_os.startswith("win"):
-                self.logger.debug(
-                    "Maya 2018+ on Windows can deadlock if QtWebEngineWidgets "
-                    "is imported. Setting SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT=1..."
+            self.log_warning(
+                re.sub("\\n+", " ", compatibility_warning_msg).format(
+                    support_url=sgtk.support_url,
+                    url_doc_supported_versions=url_doc_supported_versions,
                 )
-                os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = "1"
+            )
+
+        # In the case of Maya Windows, we have the possility of locking
+        # up if we allow the PySide shim to import QtWebEngineWidgets. We can
+        # stop that happening here by setting the environment variable.
+        if current_os.startswith("win"):
+            self.logger.debug(
+                "Maya on Windows can deadlock if QtWebEngineWidgets "
+                "is imported. Setting SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT=1..."
+            )
+            os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = "1"
 
         # Set the Maya project based on config
         self._set_project()
