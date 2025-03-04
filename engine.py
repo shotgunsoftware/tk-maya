@@ -417,7 +417,7 @@ class MayaEngine(Engine):
                 f"\n\n For information regarding support engine versions,"
                 f" please visit this page: {url_doc_supported_versions}."
             )
-        elif maya_major_version < 2026:
+        elif maya_major_version <= 2026:
             self.logger.debug(f"Running Maya version {maya_ver}")
         else:
             # show a warning that this version of Maya isn't yet fully tested with Shotgun:
