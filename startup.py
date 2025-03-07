@@ -223,11 +223,11 @@ class MayaLauncher(SoftwareLauncher):
         executable_templates = self.EXECUTABLE_TEMPLATES.get(
             "darwin"
             if sgtk.util.is_macos()
-            else "win32"
-            if sgtk.util.is_windows()
-            else "linux"
-            if sgtk.util.is_linux()
-            else []
+            else (
+                "win32"
+                if sgtk.util.is_windows()
+                else "linux" if sgtk.util.is_linux() else []
+            )
         )
 
         # all the discovered executables
@@ -242,7 +242,7 @@ class MayaLauncher(SoftwareLauncher):
             )
 
             # Extract all products from that executable.
-            for (executable_path, key_dict) in executable_matches:
+            for executable_path, key_dict in executable_matches:
 
                 # extract the matched keys form the key_dict (default to None if
                 # not included)
