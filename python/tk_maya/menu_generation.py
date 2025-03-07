@@ -53,7 +53,7 @@ class MenuGenerator(object):
 
         # now enumerate all items and create menu objects for them
         menu_items = []
-        for (cmd_name, cmd_details) in self._engine.commands.items():
+        for cmd_name, cmd_details in self._engine.commands.items():
             menu_items.append(AppCommand(cmd_name, cmd_details))
 
         # sort list of commands in name order
@@ -273,7 +273,7 @@ class AppCommand(Callback):
         app_instance = self.properties["app"]
         engine = app_instance.engine
 
-        for (app_instance_name, app_instance_obj) in engine.apps.items():
+        for app_instance_name, app_instance_obj in engine.apps.items():
             if app_instance_obj == app_instance:
                 # found our app!
                 return app_instance_name
