@@ -51,7 +51,7 @@ class ProgressHandler(QtCore.QObject):
         ptr = OpenMayaUI.MQtUtil.mainWindow()
         parent = shiboken.wrapInstance(int(ptr), QtGui.QMainWindow)
 
-        super(ProgressHandler, self).__init__(parent=parent)
+        super().__init__(parent=parent)
 
         self._progress_value = None
         self._message = None

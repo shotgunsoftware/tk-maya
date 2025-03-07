@@ -20,11 +20,6 @@ import unicodedata
 import maya.cmds as cmds
 from sgtk.platform.qt import QtGui, QtCore
 
-try:
-    from tank_vendor import sgutils
-except ImportError:
-    from tank_vendor import six as sgutils
-
 
 class MenuGenerator(object):
     """
@@ -113,9 +108,7 @@ class MenuGenerator(object):
         # create the menu object
         # the label expects a unicode object so we cast it to support when the context may
         # contain info with non-ascii characters
-        ctx_menu = cmds.menuItem(
-            label=sgutils.ensure_str(ctx_name), parent=self._menu_path, subMenu=True
-        )
+        ctx_menu = cmds.menuItem(label=ctx_name, parent=self._menu_path, subMenu=True)
 
         # link to UI
         cmds.menuItem(
@@ -252,7 +245,7 @@ class AppCommand(Callback):
         self.name = name
         self.properties = command_dict["properties"]
         self.favourite = False
-        super(AppCommand, self).__init__(command_dict["callback"])
+        super().__init__(command_dict["callback"])
 
     def get_app_name(self):
         """

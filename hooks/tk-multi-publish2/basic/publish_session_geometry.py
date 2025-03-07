@@ -13,11 +13,6 @@ import maya.cmds as cmds
 import maya.mel as mel
 import sgtk
 
-try:
-    from tank_vendor import sgutils
-except ImportError:
-    from tank_vendor import six as sgutils
-
 HookBaseClass = sgtk.get_hook_baseclass()
 
 
@@ -69,7 +64,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
         part of its environment configuration.
         """
         # inherit the settings from the base publish plugin
-        base_settings = super(MayaSessionGeometryPublishPlugin, self).settings or {}
+        base_settings = super().settings or {}
 
         # settings specific to this class
         maya_publish_settings = {
@@ -230,7 +225,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             item.properties["publish_version"] = work_fields["version"]
 
         # run the base class validation
-        return super(MayaSessionGeometryPublishPlugin, self).validate(settings, item)
+        return super().validate(settings, item)
 
     def publish(self, settings, item):
         """
@@ -286,7 +281,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             return
 
         # Now that the path has been generated, hand it off to the
-        super(MayaSessionGeometryPublishPlugin, self).publish(settings, item)
+        super().publish(settings, item)
 
 
 def _find_scene_animation_range():
@@ -318,7 +313,7 @@ def _session_path():
     path = cmds.file(query=True, sn=True)
 
     if path is not None:
-        path = sgutils.ensure_str(path)
+        path = str(path)
 
     return path
 

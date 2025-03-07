@@ -19,7 +19,7 @@ class MayaSceneOperationsHook(HookBaseClass):
     """Hook class that sets up Maya events to update the Data Validation App."""
 
     def __init__(self, *args, **kwargs):
-        super(MayaSceneOperationsHook, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.__callback_ids = []
 
     def register_scene_events(self, reset_callback, change_callback):
