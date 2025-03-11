@@ -12,11 +12,6 @@ import os
 import maya.cmds as cmds
 import sgtk
 
-try:
-    from tank_vendor import sgutils
-except ImportError:
-    from tank_vendor import six as sgutils
-
 HookBaseClass = sgtk.get_hook_baseclass()
 
 
@@ -277,7 +272,7 @@ def _session_path():
     path = cmds.file(query=True, sn=True)
 
     if path is not None:
-        path = sgutils.ensure_str(path)
+        path = str(path)
 
     return path
 
