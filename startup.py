@@ -55,7 +55,7 @@ class MayaLauncher(SoftwareLauncher):
         """
         The minimum software version that is supported by the launcher.
         """
-        return "2014"
+        return "2022"
 
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
