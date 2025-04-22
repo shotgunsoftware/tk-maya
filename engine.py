@@ -387,6 +387,30 @@ class MayaEngine(Engine):
             maya_ver = maya_ver[5:]
         if maya_ver.startswith(
             (
+                "2022",
+                "2023",
+                "2024",
+                "2025",
+                "2026",
+            )
+        ):
+            self.logger.debug("Running Maya version %s", maya_ver)
+
+            # In the case of Maya on Windows, we have the possility of locking
+            # up if we allow the PySide shim to import QtWebEngineWidgets. We can
+            # stop that happening here by setting the environment variable.
+            version_num = int(maya_ver[0:4])
+
+            if current_os.startswith("win"):
+                self.logger.debug(
+                    "Maya on Windows can deadlock if QtWebEngineWidgets "
+                    "is imported. Setting SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT=1..."
+                )
+                os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = "1"
+        elif maya_ver.startswith(
+            (
+                "2012",
+                "2013",
                 "2014",
                 "2015",
                 "2016",
@@ -394,32 +418,15 @@ class MayaEngine(Engine):
                 "2018",
                 "2019",
                 "2020",
-                "2022",
-                "2023",
-                "2024",
-                "2025",
             )
         ):
-            self.logger.debug("Running Maya version %s", maya_ver)
-
-            # In the case of Maya 2018 on Windows, we have the possility of locking
-            # up if we allow the PySide shim to import QtWebEngineWidgets. We can
-            # stop that happening here by setting the environment variable.
-            version_num = int(maya_ver[0:4])
-
-            if version_num >= 2018 and current_os.startswith("win"):
-                self.logger.debug(
-                    "Maya 2018+ on Windows can deadlock if QtWebEngineWidgets "
-                    "is imported. Setting SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT=1..."
-                )
-                os.environ["SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT"] = "1"
-        elif maya_ver.startswith(("2012", "2013")):
             # We won't be able to rely on the warning dialog below, because Maya
-            # older than 2014 doesn't ship with PySide. Instead, we just have to
-            # raise an exception so that we bail out here with an error message
-            # that will hopefully make sense for the user.
+            # older than 2022 ships Python 2. And older versions come with Qt4.
+            # Instead, we just have to raise an exception so that we bail out
+            # here with an error message that will hopefully make sense for the
+            # user.
             msg = (
-                "PTR integration is not compatible with Maya versions older than 2014."
+                "PTR integration is not compatible with Maya versions older than 2022."
             )
             raise sgtk.TankError(msg)
         else:
