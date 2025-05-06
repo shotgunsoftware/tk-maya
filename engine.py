@@ -409,7 +409,9 @@ For information regarding support engine versions, please visit this page:
                         button="Ok",
                         icon="critical",
                         # Note, title is padded to try to ensure dialog isn't insanely narrow!
-                        title="Error - Flow Production Tracking Compatibility!".ljust(70),
+                        title="Error - Flow Production Tracking Compatibility!".ljust(
+                            70
+                        ),
                         message=compatibility_warning_msg.replace(
                             # Precense of \n breaks the Rich Text Format
                             "\n",
@@ -445,7 +447,9 @@ For information regarding support engine versions, please visit this page:
                         button="Ok",
                         icon="critical",
                         # Note, title is padded to try to ensure dialog isn't insanely narrow!
-                        title="Error - Flow Production Tracking Compatibility!".ljust(70),
+                        title="Error - Flow Production Tracking Compatibility!".ljust(
+                            70
+                        ),
                         message=message.replace(
                             # Precense of \n breaks the Rich Text Format
                             "\n",
@@ -497,11 +501,13 @@ You can continue to use Toolkit but you may experience bugs or instabilities.
 
 For information regarding support engine versions, please visit this page:
 {url_doc_supported_versions}
-                    """.strip().replace(
+                    """.strip()
+                    .replace(
                         # Precense of \n breaks the Rich Text Format
                         "\n",
                         "<br>",
-                    ).format(
+                    )
+                    .format(
                         product="Maya",
                         url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
                             u=url_doc_supported_versions,
@@ -527,9 +533,9 @@ For information regarding support engine versions, please visit this page:
 
             if (
                 # determine if we should show the compatibility warning dialog
-                self.has_ui and
-                "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ and
-                maya_major_version
+                self.has_ui
+                and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
+                and maya_major_version
                 >= self.get_setting(
                     "compatibility_dialog_min_version",
                     default=VERSION_NEWEST_SUPPORTED,
@@ -550,15 +556,15 @@ You can continue to use Toolkit but you may experience bugs or instabilities.
 
 Please report any issues to:
 {support_url}
-                    """.strip().replace(
+                    """.strip()
+                    .replace(
                         # Precense of \n breaks the Rich Text Format
                         "\n",
                         "<br>",
-                    ).format(
+                    )
+                    .format(
                         product="Maya",
-                        support_url='<a href="{u}">{u}</a>'.format(
-                            u=sgtk.support_url
-                        ),
+                        support_url='<a href="{u}">{u}</a>'.format(u=sgtk.support_url),
                         version=VERSION_NEWEST_SUPPORTED,
                     ),
                 )
