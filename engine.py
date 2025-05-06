@@ -29,6 +29,8 @@ from sgtk.platform import Engine
 VERSION_OLDEST_COMPATIBLE = 2023
 VERSION_OLDEST_SUPPORTED = 2023
 VERSION_NEWEST_SUPPORTED = 2026
+# Caution: make sure compatibility_dialog_min_version default value in info.yml
+# is equal to VERSION_NEWEST_SUPPORTED
 
 # Although the engine has logging already, this logger is needed for callback based logging
 # where an engine may not be present.
@@ -529,7 +531,7 @@ For information regarding support engine versions, please visit this page:
                 "Flow Production Tracking has not yet been fully tested with "
                 "{product} version {version}.".format(
                     product="Maya",
-                    version=VERSION_NEWEST_SUPPORTED,
+                    version=maya_major_version,
                 )
             )
 
@@ -540,7 +542,6 @@ For information regarding support engine versions, please visit this page:
                 and maya_major_version
                 >= self.get_setting(
                     "compatibility_dialog_min_version",
-                    default=VERSION_NEWEST_SUPPORTED,
                 )
             ):
                 # make sure we only show it once per session:
@@ -569,7 +570,7 @@ Please report any issues to:
                     .format(
                         product="Maya",
                         support_url='<a href="{u}">{u}</a>'.format(u=sgtk.support_url),
-                        version=VERSION_NEWEST_SUPPORTED,
+                        version=maya_major_version,
                     ),
                 )
 
