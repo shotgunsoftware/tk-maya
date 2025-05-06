@@ -26,7 +26,7 @@ import maya.mel as mel
 from sgtk.platform import Engine
 
 # Maya versions compatibility constants
-VERSION_OLDEST_COMPATIBLE = 2022
+VERSION_OLDEST_COMPATIBLE = 2023
 VERSION_OLDEST_SUPPORTED = 2023
 VERSION_NEWEST_SUPPORTED = 2026
 
@@ -388,10 +388,6 @@ class MayaEngine(Engine):
             )
 
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
-        compatibility_warning_msg = None
-        show_warning_dlg = (
-            self.has_ui and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
-        )
 
         maya_ver = cmds.about(version=True)
         if maya_ver.startswith("Maya "):
@@ -400,39 +396,119 @@ class MayaEngine(Engine):
         try:
             maya_major_version = int(cmds.about(majorVersion=True))
         except (TypeError, ValueError):
-            raise sgtk.TankError(
-                "Flow Production Tracking is not compatible with this version "
-                "of Maya.\n"
-                "For information regarding support engine versions, please "
-                f"visit this page: {url_doc_supported_versions}."
-            )
+            message = """
+Flow Production Tracking is not compatible with this version of {product}.
+
+For information regarding support engine versions, please visit this page:
+{url_doc_supported_versions}.
+            """.strip()
+
+            try:
+                if self.has_ui:
+                    cmds.confirmDialog(
+                        button="Ok",
+                        icon="critical",
+                        # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                        title="Error - Flow Production Tracking Compatibility!".ljust(70),
+                        message=compatibility_warning_msg.replace(
+                            # Precense of \n breaks the Rich Text Format
+                            "\n",
+                            "<br>",
+                        ).format(
+                            product="Maya",
+                            url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
+                                u=url_doc_supported_versions,
+                            ),
+                        ),
+                    )
+            finally:
+                raise sgtk.TankError(
+                    message.format(
+                        product="Maya",
+                        url_doc_supported_versions=url_doc_supported_versions,
+                    )
+                )
 
         if maya_major_version < VERSION_OLDEST_COMPATIBLE:
             # Older that the oldest known compatible version
+            message = """
+Flow Production Tracking is no longer compatible with {product} versions older
+than {version}.
 
-            # We won't be able to rely on the warning dialog below, because Maya
-            # older than 2022 ships Python 2. And older versions come with Qt4.
-            # Instead, we just have to raise an exception so that we bail out
-            # here with an error message that will hopefully make sense for the
-            # user.
+For information regarding support engine versions, please visit this page:
+{url_doc_supported_versions}
+            """.strip()
+
+            if self.has_ui:
+                try:
+                    cmds.confirmDialog(
+                        button="Ok",
+                        icon="critical",
+                        # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                        title="Error - Flow Production Tracking Compatibility!".ljust(70),
+                        message=message.replace(
+                            # Precense of \n breaks the Rich Text Format
+                            "\n",
+                            "<br>",
+                        ).format(
+                            product="Maya",
+                            url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
+                                u=url_doc_supported_versions,
+                            ),
+                            version=VERSION_OLDEST_COMPATIBLE,
+                        ),
+                    )
+                except:
+                    # We probably won't be able to rely on the warning dialog,
+                    # because Maya older than 2022 ships Python 2. And older
+                    # versions come with Qt4.
+                    # So, we raise an exception cases with an error message that
+                    # will hopefully make sense for the user.
+                    pass
+
             raise sgtk.TankError(
-                "Flow Production Tracking is no longer compatible with Maya "
-                f"versions older than {VERSION_OLDEST_COMPATIBLE}.\n"
-                "For information regarding support engine versions, please "
-                "visit this page: {url_doc_supported_versions}."
+                message.format(
+                    product="Maya",
+                    url_doc_supported_versions=url_doc_supported_versions,
+                    version=VERSION_OLDEST_COMPATIBLE,
+                )
             )
 
         elif maya_major_version < VERSION_OLDEST_SUPPORTED:
             # Older than the oldest supported version
-
-            compatibility_warning_msg = (
-                "Flow Production Tracking no longer supports Maya versions "
-                f"older than {VERSION_OLDEST_SUPPORTED}.\n"
-                "You can continue to use Toolkit but you may experience bugs "
-                "or instabilities.\n\n"
-                "For information regarding support engine versions, "
-                "please visit this page: {url_doc_supported_versions}."
+            self.logger.warning(
+                "Flow Production Tracking no longer supports {product} "
+                "versions older than {version}".format(
+                    product="Maya",
+                    version=VERSION_OLDEST_SUPPORTED,
+                )
             )
+
+            if self.has_ui:
+                cmds.confirmDialog(
+                    button="Ok",
+                    icon="warning",
+                    # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                    title="Warning - Flow Production Tracking Compatibility!".ljust(70),
+                    message="""
+Flow Production Tracking no longer supports {product} versions older than
+{version}.
+You can continue to use Toolkit but you may experience bugs or instabilities.
+
+For information regarding support engine versions, please visit this page:
+{url_doc_supported_versions}
+                    """.strip().replace(
+                        # Precense of \n breaks the Rich Text Format
+                        "\n",
+                        "<br>",
+                    ).format(
+                        product="Maya",
+                        url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
+                            u=url_doc_supported_versions,
+                        ),
+                        version=VERSION_OLDEST_SUPPORTED,
+                    ),
+                )
 
         elif maya_major_version < VERSION_NEWEST_SUPPORTED:
             # Within the range of supported versions
@@ -440,51 +516,52 @@ class MayaEngine(Engine):
 
         else:
             # Newer than the newest supported version
-            compatibility_warning_msg = (
-                "Flow Production Tracking has not yet been fully tested "
-                f"with Maya {maya_ver}.\n"
-                "You can continue to use Toolkit but you may experience bugs "
-                "or instabilities.\n\n"
-                "Please report any issues to: {support_url}"
+            # This is an untested version of Maya.
+            self.logger.warning(
+                "Flow Production Tracking has not yet been fully tested with "
+                "{product} version {version}.".format(
+                    product="Maya",
+                    version=VERSION_NEWEST_SUPPORTED,
+                )
             )
 
-            show_warning_dlg = show_warning_dlg and (
+            if (
+                # determine if we should show the compatibility warning dialog
+                self.has_ui and
+                "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ and
                 maya_major_version
                 >= self.get_setting(
                     "compatibility_dialog_min_version",
                     default=VERSION_NEWEST_SUPPORTED,
                 )
-            )
-
-        if compatibility_warning_msg:
-            # determine if we should show the compatibility warning dialog:
-            if show_warning_dlg:
+            ):
                 # make sure we only show it once per session:
                 os.environ["SGTK_COMPATIBILITY_DIALOG_SHOWN"] = "1"
 
                 cmds.confirmDialog(
+                    button="Ok",
+                    icon="warning",
                     # Note, title is padded to try to ensure dialog isn't insanely narrow!
                     title="Warning - Flow Production Tracking Compatibility!".ljust(70),
-                    message=compatibility_warning_msg.replace(
+                    message="""
+Flow Production Tracking has not yet been fully tested with {product} version
+{version}.
+You can continue to use Toolkit but you may experience bugs or instabilities.
+
+Please report any issues to:
+{support_url}
+                    """.strip().replace(
                         # Precense of \n breaks the Rich Text Format
                         "\n",
                         "<br>",
                     ).format(
-                        support_url='<a href="{u}">{u}</a>'.format(u=sgtk.support_url),
-                        url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
-                            u=url_doc_supported_versions,
+                        product="Maya",
+                        support_url='<a href="{u}">{u}</a>'.format(
+                            u=sgtk.support_url
                         ),
+                        version=VERSION_NEWEST_SUPPORTED,
                     ),
-                    button="Ok",
                 )
-
-            # always log the warning to the script editor:
-            self.log_warning(
-                re.sub("\\n+", " ", compatibility_warning_msg).format(
-                    support_url=sgtk.support_url,
-                    url_doc_supported_versions=url_doc_supported_versions,
-                )
-            )
 
         # In the case of Maya Windows, we have the possility of locking
         # up if we allow the PySide shim to import QtWebEngineWidgets. We can
