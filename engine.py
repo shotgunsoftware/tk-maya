@@ -446,8 +446,8 @@ For information regarding support engine versions, please visit this page:
                     cmds.confirmDialog(
                         button="Ok",
                         icon="critical",
-                        # Note, title is padded to try to ensure dialog isn't insanely narrow!
                         title="Error - Flow Production Tracking Compatibility!".ljust(
+                            # Note, title is padded to try to ensure dialog isn't insanely narrow!
                             70
                         ),
                         message=message.replace(
@@ -492,8 +492,10 @@ For information regarding support engine versions, please visit this page:
                 cmds.confirmDialog(
                     button="Ok",
                     icon="warning",
-                    # Note, title is padded to try to ensure dialog isn't insanely narrow!
-                    title="Warning - Flow Production Tracking Compatibility!".ljust(70),
+                    title="Warning - Flow Production Tracking Compatibility!".ljust(
+                        # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                        70
+                    ),
                     message="""
 Flow Production Tracking no longer supports {product} versions older than
 {version}.
@@ -547,8 +549,10 @@ For information regarding support engine versions, please visit this page:
                 cmds.confirmDialog(
                     button="Ok",
                     icon="warning",
-                    # Note, title is padded to try to ensure dialog isn't insanely narrow!
-                    title="Warning - Flow Production Tracking Compatibility!".ljust(70),
+                    title="Warning - Flow Production Tracking Compatibility!".ljust(
+                        # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                        70
+                    ),
                     message="""
 Flow Production Tracking has not yet been fully tested with {product} version
 {version}.
