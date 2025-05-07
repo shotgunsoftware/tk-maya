@@ -405,16 +405,16 @@ For information regarding support engine versions, please visit this page:
 {url_doc_supported_versions}.
             """.strip()
 
-            try:
-                if self.has_ui:
+            if self.has_ui:
+                try:
                     cmds.confirmDialog(
                         button="Ok",
                         icon="critical",
-                        # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                        # Padding to try to prevent the dialog being insanely narrow
                         title="Error - Flow Production Tracking Compatibility!".ljust(
                             70
                         ),
-                        message=compatibility_warning_msg.replace(
+                        message=message.replace(
                             # Precense of \n breaks the Rich Text Format
                             "\n",
                             "<br>",
@@ -425,13 +425,18 @@ For information regarding support engine versions, please visit this page:
                             ),
                         ),
                     )
-            finally:
-                raise sgtk.TankError(
-                    message.format(
-                        product="Maya",
-                        url_doc_supported_versions=url_doc_supported_versions,
-                    )
+                except:
+                    # It is unlikely that the above message will go through
+                    # on old versions of Maya (Python2, Qt4, ...).
+                    # But there is nothing more we can do here.
+                    pass
+
+            raise sgtk.TankError(
+                message.format(
+                    product="Maya",
+                    url_doc_supported_versions=url_doc_supported_versions,
                 )
+            )
 
         if maya_major_version < VERSION_OLDEST_COMPATIBLE:
             # Older that the oldest known compatible version
@@ -449,7 +454,7 @@ For information regarding support engine versions, please visit this page:
                         button="Ok",
                         icon="critical",
                         title="Error - Flow Production Tracking Compatibility!".ljust(
-                            # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                            # Padding to try to prevent the dialog being insanely narrow
                             70
                         ),
                         message=message.replace(
@@ -465,11 +470,9 @@ For information regarding support engine versions, please visit this page:
                         ),
                     )
                 except:
-                    # We probably won't be able to rely on the warning dialog,
-                    # because Maya older than 2022 ships Python 2. And older
-                    # versions come with Qt4.
-                    # So, we raise an exception cases with an error message that
-                    # will hopefully make sense for the user.
+                    # It is unlikely that the above message will go through
+                    # on old versions of Maya (Python2, Qt4, ...).
+                    # But there is nothing more we can do here.
                     pass
 
             raise sgtk.TankError(
@@ -495,7 +498,7 @@ For information regarding support engine versions, please visit this page:
                     button="Ok",
                     icon="warning",
                     title="Warning - Flow Production Tracking Compatibility!".ljust(
-                        # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                        # Padding to try to prevent the dialog being insanely narrow
                         70
                     ),
                     message="""
@@ -551,7 +554,7 @@ For information regarding support engine versions, please visit this page:
                     button="Ok",
                     icon="warning",
                     title="Warning - Flow Production Tracking Compatibility!".ljust(
-                        # Note, title is padded to try to ensure dialog isn't insanely narrow!
+                        # Padding to try to prevent the dialog being insanely narrow
                         70
                     ),
                     message="""
