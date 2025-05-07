@@ -543,9 +543,7 @@ For information regarding support engine versions, please visit this page:
                 self.has_ui
                 and "SGTK_COMPATIBILITY_DIALOG_SHOWN" not in os.environ
                 and maya_major_version
-                >= self.get_setting(
-                    "compatibility_dialog_min_version",
-                )
+                >= self.get_setting("compatibility_dialog_min_version")
             ):
                 # make sure we only show it once per session:
                 os.environ["SGTK_COMPATIBILITY_DIALOG_SHOWN"] = "1"
