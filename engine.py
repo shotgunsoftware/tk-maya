@@ -425,7 +425,7 @@ For information regarding support engine versions, please visit this page:
                             ),
                         ),
                     )
-                except:
+                except:  # nosec B110
                     # It is unlikely that the above message will go through
                     # on old versions of Maya (Python2, Qt4, ...).
                     # But there is nothing more we can do here.
@@ -469,7 +469,7 @@ For information regarding support engine versions, please visit this page:
                             version=VERSION_OLDEST_COMPATIBLE,
                         ),
                     )
-                except:
+                except:  # nosec B110
                     # It is unlikely that the above message will go through
                     # on old versions of Maya (Python2, Qt4, ...).
                     # But there is nothing more we can do here.
