@@ -15,6 +15,10 @@ import sgtk
 from sgtk.platform import SoftwareLauncher, SoftwareVersion, LaunchInformation
 
 
+# Maya versions compatibility constants
+VERSION_OLDEST_COMPATIBLE = 2022
+
+
 class MayaLauncher(SoftwareLauncher):
     """
     Handles launching Maya executables. Automatically starts up
@@ -55,7 +59,7 @@ class MayaLauncher(SoftwareLauncher):
         """
         The minimum software version that is supported by the launcher.
         """
-        return "2022"
+        return str(VERSION_OLDEST_COMPATIBLE)
 
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
