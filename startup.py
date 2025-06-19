@@ -223,6 +223,10 @@ class MayaLauncher(SoftwareLauncher):
         Find executables in the default install locations.
         """
 
+        if sgtk.util.is_windows():
+            sw_versions = self._find_window_softwares()
+            return sw_versions
+
         # all the executable templates for the current OS
         executable_templates = self.EXECUTABLE_TEMPLATES.get(
             "darwin"
@@ -261,4 +265,49 @@ class MayaLauncher(SoftwareLauncher):
                     )
                 )
 
+        return sw_versions
+
+    def _find_window_softwares(self):
+        """
+        Return maya install location on Windows
+        Source: https://github.com/JukeboxPipeline/jukebox-core/blob/master/src/jukeboxcore/ostool.py
+
+        """
+        # The supported maya versions
+        MAYA_VERSIONS = ["2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+
+        # Registry key on windows to access maya install path
+        MAYA_REG_KEY = "Software\\Autodesk\\Maya\\{mayaversion}\\Setup\\InstallPath"
+
+        sw_versions = []
+
+        try:
+            import _winreg as winreg
+        except:
+            import winreg
+
+        # query winreg entry
+        # the last flag is needed, if we want to test with 32 bit python!
+        # Because Maya is an 64 bit key!
+        for ver in MAYA_VERSIONS:
+            try:
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                                    MAYA_REG_KEY.format(mayaversion=ver), 0,
+                                    winreg.KEY_READ | winreg.KEY_WOW64_64KEY)
+                value = winreg.QueryValueEx(key, "MAYA_INSTALL_LOCATION")[0]
+
+
+                executable_path = os.path.join(value, "bin", "maya.exe")
+
+                if os.path.exists(executable_path):
+                    sw_versions.append(
+                        SoftwareVersion(
+                            ver,
+                            "Maya",
+                            executable_path,
+                            self._icon_from_executable(executable_path),
+                        )
+                    )
+            except WindowsError:
+                self.logger.debug('Maya %s installation not found in registry!' % ver)
         return sw_versions
