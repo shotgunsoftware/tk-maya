@@ -1,6 +1,6 @@
 # Toolkit Engine for Maya
 
-![Supported Maya versions: 2023 - 2026](https://img.shields.io/badge/Maya-2026_|_2025_|_2024_|_2023-blue?logo=autodeskmaya&logoColor=f5f5f5 "Support Maya versions")
+![Supported Maya versions: 2023 - 2026](https://img.shields.io/badge/Maya-2023_--_2026-blue?logo=autodeskmaya&logoColor=f5f5f5 "Support Maya versions")
 [![Supported VFX Platform: 2022 - 2025](https://img.shields.io/badge/VFX_Platform-2025_|_2024_|_2023_|_2022-blue)](http://www.vfxplatform.com/ "Supported VFX Platform")
 [![Supported Python versions: 3.9 - 3.11](https://img.shields.io/badge/Python-3.11_|_3.10_|_3.9-blue?logo=python&logoColor=f5f5f5)](https://www.python.org/ "Supported Python versions")
 
