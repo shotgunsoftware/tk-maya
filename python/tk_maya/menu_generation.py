@@ -310,6 +310,8 @@ class AppCommand(Callback):
             params["annotation"] = self.properties["tooltip"]
         if "enable_callback" in self.properties:
             params["enable"] = self.properties["enable_callback"]()
+        if "icon" in self.properties:
+            params["image"] = self.properties["icon"]
 
         cmds.menuItem(**params)
 
