@@ -370,7 +370,8 @@ class MayaEngine(Engine):
         # to display correctly in all of the app windows
         from sgtk.platform.qt import QtCore
 
-        # tell QT to interpret C strings as utf-8
+        # On PySide2/PySide6 we patch QTextCodec with a do-nothing stub
+        # for setCodecForCStrings(), so this will have no effect.
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
         QtCore.QTextCodec.setCodecForCStrings(utf8)
         self.logger.debug("set utf-8 codec for widget text")
