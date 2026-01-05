@@ -362,20 +362,6 @@ class MayaEngine(Engine):
     ##########################################################################################
     # init and destroy
 
-    def pre_app_init(self):
-        """
-        Runs after the engine is set up but before any apps have been initialized.
-        """
-        # unicode characters returned by the shotgun api need to be converted
-        # to display correctly in all of the app windows
-        from sgtk.platform.qt import QtCore
-
-        # On PySide2/PySide6 we patch QTextCodec with a do-nothing stub
-        # for setCodecForCStrings(), so this will have no effect.
-        utf8 = QtCore.QTextCodec.codecForName("utf-8")
-        QtCore.QTextCodec.setCodecForCStrings(utf8)
-        self.logger.debug("set utf-8 codec for widget text")
-
     def init_engine(self):
         """
         Initializes the Maya engine.
