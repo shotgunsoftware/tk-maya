@@ -15,7 +15,6 @@ import maya.utils
 
 from . import panel_util
 
-
 # Prefix prepended to the Shotgun app panel unique identifier to create
 # the name given to the Qt widget at the root of the Shotgun app panel.
 # Due to us needing to update the panel code that gets embedded with the

@@ -216,7 +216,7 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
         refresh_engine(engine_name, prev_context, menu_name)
     except Exception as e:
         logger.exception("Could not refresh the engine; error: '%s'" % e)
-        (exc_type, exc_value, exc_traceback) = sys.exc_info()
+        exc_type, exc_value, exc_traceback = sys.exc_info()
         message = ""
         message += "Message: PTR encountered a problem changing the Engine's context.\n"
         message += "Please contact %s\n\n" % sgtk.support_url

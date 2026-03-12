@@ -483,8 +483,8 @@ class MayaDataValidationHook(HookBaseClass):
             self.logger.error("Can't find tk-multi-setframerange Toolkit app")
             return []
 
-        (sg_in, sg_out) = tk_multi_setframerange.get_frame_range_from_shotgun()
-        (current_in, current_out) = tk_multi_setframerange.get_current_frame_range()
+        sg_in, sg_out = tk_multi_setframerange.get_frame_range_from_shotgun()
+        current_in, current_out = tk_multi_setframerange.get_current_frame_range()
 
         if sg_in != current_in or sg_out != current_out:
             return [os.path.basename(cmds.file(q=True, sn=True))]
@@ -560,7 +560,7 @@ class MayaDataValidationHook(HookBaseClass):
         """Synchronize timeline frame range with FPTR frame range value."""
 
         tk_multi_setframerange = self.parent.engine.apps.get("tk-multi-setframerange")
-        (sg_in, sg_out) = tk_multi_setframerange.get_frame_range_from_shotgun()
+        sg_in, sg_out = tk_multi_setframerange.get_frame_range_from_shotgun()
         tk_multi_setframerange.set_frame_range(sg_in, sg_out)
 
     def set_renderer(self, errors):
