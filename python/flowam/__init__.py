@@ -8,5 +8,6 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-from . import tk_maya
-from . import flowam
+# flake8: noqa
+
+from . import host
