@@ -14,12 +14,12 @@ import os
 
 from tank import LogManager
 from tank.flowam.host import FlowHost
+from tank_vendor.flow_integration_sdk.dependency import DependencyData
 from tank_vendor.flow_integration_sdk.utils import (
     cleanpath,
     fileext,
     trace,
 )
-from tank.flowam.dependency import DependencyData
 
 from maya import cmds, mel, OpenMaya
 
