@@ -19,8 +19,7 @@ from tank_vendor.flow_integration_sdk.utils import (
     fileext,
     trace,
 )
-#from ..flow.data import DependencyData
-#from ..flow.exceptions import CreateReferenceError, UpdateDependencyError
+from tank.flowam.dependency import DependencyData
 
 from maya import cmds, mel, OpenMaya
 
@@ -52,11 +51,11 @@ class MayaHost(FlowHost):
     # ------------------------------------------
     # BASE CLASS INTERFACE
     # ------------------------------------------
-    
+
     def __init__(self, context):
-        
+
         self.logger.info("Doing MayaHost initialization...")
-        
+
         super().__init__(context)
 
         # Add callbacks for relevant Maya events
@@ -250,274 +249,275 @@ class MayaHost(FlowHost):
         qtg.QApplication.instance().clipboard().setText(text)
         return True
 
-    #@trace
-    #def get_dependency_tree(self, must_exist: bool = True) -> DependencyData:
-    #    """Return a DependencyData object which is the root of the
-    #    dependency tree for the scene.
+    @trace
+    def get_dependency_tree(self, must_exist: bool = True) -> DependencyData:
+        """Return a DependencyData object which is the root of the
+        dependency tree for the scene.
 
-    #    Args:
-    #        must_exist: Only return dependencies that can be found on disk.
-    #    """
-    #    dependencies = self._get_maya_dependencies(must_exist=must_exist)
-    #    dependencies.sort()
-    #    root = DependencyData(dependencies=dependencies)
-    #    for d in dependencies:
-    #        d.parent = root
-    #    return root
+        Args:
+            must_exist: Only return dependencies that can be found on disk.
+        """
+        dependencies = self._get_maya_dependencies(must_exist=must_exist)
+        dependencies.sort()
+        root = DependencyData(dependencies=dependencies)
+        for d in dependencies:
+            d.parent = root
+        return root
 
-    #@trace
-    #def update_dependency(
-    #    self,
-    #    dep: DependencyData,
-    #    file_path: str,
-    #) -> DependencyData:
-    #    """Update an existing dependency to point to given file in current scene.
+    @trace
+    def update_dependency(
+        self,
+        dep: DependencyData,
+        file_path: str,
+    ) -> DependencyData:
+        """Update an existing dependency to point to given file in current scene.
 
-    #    Args:
-    #        dep: DependencyData node which identifies the dependency to be updated.
-    #        file_path: New path to set dependency to.
+        Args:
+            dep: DependencyData node which identifies the dependency to be updated.
+            file_path: New path to set dependency to.
 
-    #    Returns:
-    #        DependencyData object describing new state of dependency.
-    #        NOTE: This will be an isolated node, not including sub-dependency info.
+        Returns:
+            DependencyData object describing new state of dependency.
+            NOTE: This will be an isolated node, not including sub-dependency info.
 
-    #    Raises:
-    #        UpdateDependencyError
-    #    """
+        Raises:
+            RuntimeError
+            ValueError
+        """
 
-    #    node_handle = dep.node_handle
-    #    attribute = dep.attribute
+        node_handle = dep.node_handle
+        attribute = dep.attribute
 
-    #    if not cmds.ls([node_handle]):
-    #        msg = f"Invalid node handle provided: {node_handle}."
-    #        raise UpdateDependencyError(
-    #            node=node_handle, file_path=file_path, details=msg
-    #        )
+        if not cmds.ls([node_handle]):
+            msg = "Error updating dependency. "
+            msg += f"Invalid node handle provided: {node_handle}."
+            raise RuntimeError(msg)
 
-    #    if attribute:
-    #        # Change an attribute on a Maya node to point to new path
-    #        self._update_attribute_dep(node_handle, attribute, file_path)
+        if attribute:
+            # Change an attribute on a Maya node to point to new path
+            self._update_attribute_dep(node_handle, attribute, file_path)
 
-    #    else:
-    #        # Change Maya reference node
-    #        self._update_reference_dep(node_handle, attribute, file_path)
+        else:
+            # Change Maya reference node
+            self._update_reference_dep(node_handle, attribute, file_path)
 
-    #    updated_dep = DependencyData(
-    #        dep_type=dep.dep_type,
-    #        node_handle=dep.node_handle,
-    #        node_type=dep.node_type,
-    #        attribute=dep.attribute,
-    #        file_path=self._resolve_path(file_path),
-    #        raw_path=file_path,
-    #    )
+        updated_dep = DependencyData(
+            dep_type=dep.dep_type,
+            node_handle=dep.node_handle,
+            node_type=dep.node_type,
+            attribute=dep.attribute,
+            file_path=self._resolve_path(file_path),
+            raw_path=file_path,
+        )
 
-    #    self.logger.info(
-    #        f'Dependency node "{node_handle}" updated to point to file "{file_path}".'
-    #    )
-    #    return updated_dep
+        self.logger.info(
+            f'Dependency node "{node_handle}" updated to point to file "{file_path}".'
+        )
+        return updated_dep
 
     # ------------------------------------------
     # ADDITIONAL SUBCLASS FUNCTIONS
     # ------------------------------------------
 
-    #@trace
-    #def create_reference(self, file_path: str, namespace: str) -> DependencyData:
-    #    """Create a native maya reference.
+    @trace
+    def create_reference(self, file_path: str, namespace: str) -> DependencyData:
+        """Create a native maya reference.
 
-    #    Args:
-    #        file_path: Path to be referenced into Maya.
-    #        namespace: Namespace to be added to reference node.
+        Args:
+            file_path: Path to be referenced into Maya.
+            namespace: Namespace to be added to reference node.
 
-    #    Returns:
-    #        DependencyData object with all pertinent info about asset reference created.
-    #    """
-    #    # Check file type
-    #    ext = fileext(file_path)
-    #    if ext not in self.FILE_TYPES:
-    #        msg = f'File type "{ext}" not supported for referencing in Maya.'
-    #        raise CreateReferenceError(file_path=file_path, details=msg)
+        Returns:
+            DependencyData object with all pertinent info about asset reference created.
 
-    #    # Create the reference in maya
-    #    res = cmds.file(file_path, reference=True, namespace=namespace)
-    #    node_name = cmds.referenceQuery(res, referenceNode=True, topReference=True)
+        Raises:
+            ValueError
+        """
+        # Check file type
+        ext = fileext(file_path)
+        if ext not in self.FILE_TYPES:
+            msg = f'File type "{ext}" not supported for referencing in Maya.'
+            raise ValueError(msg)
 
-    #    msg = f'Reference node "{node_name}" created pointing to file "{file_path}".'
-    #    self.logger.info(msg)
+        # Create the reference in maya
+        res = cmds.file(file_path, reference=True, namespace=namespace)
+        node_name = cmds.referenceQuery(res, referenceNode=True, topReference=True)
 
-    #    return DependencyData(
-    #        node_handle=node_name,
-    #        node_type="reference",
-    #        file_path=self._resolve_path(file_path),
-    #        raw_path=file_path,
-    #    )
+        msg = f'Reference node "{node_name}" created pointing to file "{file_path}".'
+        self.logger.info(msg)
 
-    #def _resolve_path(self, path: str):
-    #    """Given a maya dependency file path, resolve against current maya project."""
-    #    if cmds.file(path, q=True, exists=True):
-    #        path = cmds.file(path, q=True, loc=True)
-    #    return cleanpath(cmds.workspace(expandName=path))
+        return DependencyData(
+            node_handle=node_name,
+            node_type="reference",
+            file_path=self._resolve_path(file_path),
+            raw_path=file_path,
+        )
 
-    #def _get_maya_dependencies(
-    #    self,
-    #    filter_nodes: set[str] | None = None,
-    #    ignore_nodes: set[str] | None = None,
-    #    must_exist: bool = True,
-    #) -> list[DependencyData]:
-    #    """Returns all references to external files in the current scene.
-    #    Examples include textures, geometry caches and other maya scene files.
+    def _resolve_path(self, path: str):
+        """Given a maya dependency file path, resolve against current maya project."""
+        if cmds.file(path, q=True, exists=True):
+            path = cmds.file(path, q=True, loc=True)
+        return cleanpath(cmds.workspace(expandName=path))
 
-    #    Args:
-    #        filter_nodes: Optionally provide a list of filter nodes.
-    #                      Return the subset of these nodes that are dependencies.
-    #        ignore_nodes: Optionally provide a list of nodes to ignore.
-    #        must_exist: Only return dependencies that can be found on disk.
+    def _get_maya_dependencies(
+        self,
+        filter_nodes: set[str] | None = None,
+        ignore_nodes: set[str] | None = None,
+        must_exist: bool = True,
+    ) -> list[DependencyData]:
+        """Returns all references to external files in the current scene.
+        Examples include textures, geometry caches and other maya scene files.
 
-    #    Returns:
-    #        List of DependencyData objects containing all pertinent information
-    #        related to a file dependency.
-    #    """
-    #    # Get list of external files and references (querying the attributes,
-    #    # which is "node.attribute", or just "node" for references)
-    #    cmds.filePathEditor(refresh=True)  # force refresh of file path editor
-    #    node_attributes = cmds.filePathEditor(
-    #        query=True, listFiles="", attributeOnly=True
-    #    )
+        Args:
+            filter_nodes: Optionally provide a list of filter nodes.
+                          Return the subset of these nodes that are dependencies.
+            ignore_nodes: Optionally provide a list of nodes to ignore.
+            must_exist: Only return dependencies that can be found on disk.
 
-    #    if not node_attributes:
-    #        return []
+        Returns:
+            List of DependencyData objects containing all pertinent information
+            related to a file dependency.
+        """
+        # Get list of external files and references (querying the attributes,
+        # which is "node.attribute", or just "node" for references)
+        cmds.filePathEditor(refresh=True)  # force refresh of file path editor
+        node_attributes = cmds.filePathEditor(
+            query=True, listFiles="", attributeOnly=True
+        )
 
-    #    # Get list of AM references (so we can skip them and their nodes)
-    #    if ignore_nodes is None:
-    #        ignore_nodes = set()
+        if not node_attributes:
+            return []
 
-    #    deps: list[DependencyData] = []
-    #    # Bit of a hack, but we want to ensure we visit parent reference nodes
-    #    # before visiting sub references. Leverage sorting to achieve this.
-    #    # NOTE: "namespaceRN" will always be alphabetically after "namespace:..."
-    #    node_attributes.sort()
-    #    node_attributes.reverse()
-    #    for node_attr in node_attributes:
-    #        node_type = cmds.filePathEditor(node_attr, query=True, attributeType=True)
-    #        if node_type == "mayaUsdProxyShape.filePath":
-    #            # This case is handled by get_usd_dependencies()
-    #            continue
-    #        if node_attr in ignore_nodes:
-    #            continue
-    #        if filter_nodes and node_attr.split(".")[0] not in filter_nodes:
-    #            continue
-    #        self._get_dependency_info(node_attr, deps, ignore_nodes, must_exist)
+        # Get list of AM references (so we can skip them and their nodes)
+        if ignore_nodes is None:
+            ignore_nodes = set()
 
-    #    return deps
+        deps: list[DependencyData] = []
+        # Bit of a hack, but we want to ensure we visit parent reference nodes
+        # before visiting sub references. Leverage sorting to achieve this.
+        # NOTE: "namespaceRN" will always be alphabetically after "namespace:..."
+        node_attributes.sort()
+        node_attributes.reverse()
+        for node_attr in node_attributes:
+            node_type = cmds.filePathEditor(node_attr, query=True, attributeType=True)
+            if node_type == "mayaUsdProxyShape.filePath":
+                # This case is handled by get_usd_dependencies()
+                continue
+            if node_attr in ignore_nodes:
+                continue
+            if filter_nodes and node_attr.split(".")[0] not in filter_nodes:
+                continue
+            self._get_dependency_info(node_attr, deps, ignore_nodes, must_exist)
 
-    #def _get_dependency_info(
-    #    self,
-    #    node_attr: str,
-    #    deps: list[DependencyData],
-    #    ignore_nodes: set[str],
-    #    must_exist,
-    #    node_type: str | None = None,
-    #):
-    #    """Add dependency associated with node attribute to list."""
+        return deps
 
-    #    if node_type is None:
-    #        node_type = cmds.filePathEditor(node_attr, query=True, attributeType=True)
-    #    sub_deps: list[DependencyData] = []  # sub dependencies
+    def _get_dependency_info(
+        self,
+        node_attr: str,
+        deps: list[DependencyData],
+        ignore_nodes: set[str],
+        must_exist,
+        node_type: str | None = None,
+    ):
+        """Add dependency associated with node attribute to list."""
 
-    #    if node_type == "reference":
-    #        # For references the node_attr will be just the reference node (without attribute)
-    #        node, attr = node_attr, ""
-    #        file_path = cmds.referenceQuery(node, filename=True, withoutCopyNumber=True)
-    #        raw_path = cmds.referenceQuery(
-    #            node, filename=True, unresolvedName=True, withoutCopyNumber=True
-    #        )
-    #        ref_nodes = cmds.referenceQuery(node, nodes=True)
-    #        if ref_nodes:
-    #            sub_deps = self._get_maya_dependencies(
-    #                ref_nodes, ignore_nodes, must_exist
-    #            )
-    #            sub_deps.sort()
-    #            ignore_nodes.update(ref_nodes)
-    #    else:
-    #        # Here the node_attr will be of the format node.attribute
-    #        node, attr = node_attr.split(".", 1)
-    #        # Sometimes file path will be empty, so we need to check for that
-    #        file_path = cmds.getAttr(node_attr, expandEnvironmentVariables=True)
-    #        raw_path = cmds.getAttr(node_attr)
-    #        ignore_nodes.add(node_attr)
-    #        if not file_path:
-    #            return
-    #        file_path = cleanpath(file_path)
+        if node_type is None:
+            node_type = cmds.filePathEditor(node_attr, query=True, attributeType=True)
+        sub_deps: list[DependencyData] = []  # sub dependencies
 
-    #    # Get absolute path
-    #    resolved_file_path = self._resolve_path(file_path)
+        if node_type == "reference":
+            # For references the node_attr will be just the reference node (without attribute)
+            node, attr = node_attr, ""
+            file_path = cmds.referenceQuery(node, filename=True, withoutCopyNumber=True)
+            raw_path = cmds.referenceQuery(
+                node, filename=True, unresolvedName=True, withoutCopyNumber=True
+            )
+            ref_nodes = cmds.referenceQuery(node, nodes=True)
+            if ref_nodes:
+                sub_deps = self._get_maya_dependencies(
+                    ref_nodes, ignore_nodes, must_exist
+                )
+                sub_deps.sort()
+                ignore_nodes.update(ref_nodes)
+        else:
+            # Here the node_attr will be of the format node.attribute
+            node, attr = node_attr.split(".", 1)
+            # Sometimes file path will be empty, so we need to check for that
+            file_path = cmds.getAttr(node_attr, expandEnvironmentVariables=True)
+            raw_path = cmds.getAttr(node_attr)
+            ignore_nodes.add(node_attr)
+            if not file_path:
+                return
+            file_path = cleanpath(file_path)
 
-    #    if must_exist and not os.path.isfile(resolved_file_path):
-    #        self.logger.warning(f"Could not find dependency file: {resolved_file_path}")
-    #        return
+        # Get absolute path
+        resolved_file_path = self._resolve_path(file_path)
 
-    #    cur_dep = DependencyData(
-    #        node_handle=node,
-    #        node_type=node_type,
-    #        attribute=attr,
-    #        file_path=resolved_file_path,
-    #        raw_path=raw_path,
-    #        dependencies=sub_deps,
-    #    )
-    #    cur_dep.identify_component()
+        if must_exist and not os.path.isfile(resolved_file_path):
+            self.logger.warning(f"Could not find dependency file: {resolved_file_path}")
+            return
 
-    #    for d in sub_deps:
-    #        d.parent = cur_dep
+        cur_dep = DependencyData(
+            node_handle=node,
+            node_type=node_type,
+            attribute=attr,
+            file_path=resolved_file_path,
+            raw_path=raw_path,
+            dependencies=sub_deps,
+        )
+        cur_dep.identify_component()
+        cur_dep.set_type()
 
-    #    cur_dep.set_type()
-    #    deps.append(cur_dep)
+        for d in sub_deps:
+            d.parent = cur_dep
 
-    #def _update_attribute_dep(self, node_handle: str, attribute: str, file_path: str):
-    #    """Update attribute type dependency to new file. (e.g. texture path)"""
+        deps.append(cur_dep)
 
-    #    # Check attribute exists
-    #    attribute_handle = f"{node_handle}.{attribute}"
-    #    if not cmds.attributeQuery(attribute, node=node_handle, exists=True):
-    #        msg = f'Invalid attribute provided "{attribute_handle}".'
-    #        raise UpdateDependencyError(
-    #            node=attribute_handle, file_path=file_path, details=msg
-    #        )
+    def _update_attribute_dep(self, node_handle: str, attribute: str, file_path: str):
+        """Update attribute type dependency to new file. (e.g. texture path)"""
 
-    #    # Check if new path is different
-    #    orig_path = cleanpath(cmds.getAttr(attribute_handle))
-    #    if file_path == orig_path:
-    #        return
+        # Check attribute exists
+        attribute_handle = f"{node_handle}.{attribute}"
+        if not cmds.attributeQuery(attribute, node=node_handle, exists=True):
+            msg = "Error updating attribute dependency. "
+            msg += f'Invalid attribute provided "{attribute_handle}".'
+            raise RuntimeError(msg)
 
-    #    # Update maya attribute
-    #    cmds.setAttr(f"{node_handle}.{attribute}", file_path, type="string")
+        # Check if new path is different
+        orig_path = cleanpath(cmds.getAttr(attribute_handle))
+        if file_path == orig_path:
+            return
 
-    #def _update_reference_dep(self, node_handle: str, attribute: str, file_path: str):
-    #    """Update Maya reference to new file."""
+        # Update maya attribute
+        cmds.setAttr(f"{node_handle}.{attribute}", file_path, type="string")
 
-    #    # Check that file type is valid
-    #    file_ext = fileext(file_path)
-    #    if file_ext not in self.FILE_TYPES:
-    #        msg = f"Invalid file type provided: {file_ext}."
-    #        raise UpdateDependencyError(
-    #            node=node_handle, file_path=file_path, details=msg
-    #        )
+    def _update_reference_dep(self, node_handle: str, attribute: str, file_path: str):
+        """Update Maya reference to new file."""
 
-    #    # Check if new path is different
-    #    orig_path = cmds.referenceQuery(
-    #        node_handle, filename=True, withoutCopyNumber=True
-    #    )
-    #    if file_path == cleanpath(orig_path):
-    #        return
+        # Check that file type is valid
+        file_ext = fileext(file_path)
+        if file_ext not in self.FILE_TYPES:
+            msg = "Error updating reference dependency. "
+            msg += f"Invalid file type provided: {file_ext}."
+            raise ValueError(msg)
 
-    #    # Remember load state so we can preserve it because
-    #    # changing a reference path always loads it
-    #    loaded = cmds.referenceQuery(node_handle, isLoaded=True)
-    #    # Update and load the reference
-    #    cmds.file(file_path, loadReference=node_handle)
-    #    if not loaded:
-    #        cmds.file(unloadReference=node_handle)
+        # Check if new path is different
+        orig_path = cmds.referenceQuery(
+            node_handle, filename=True, withoutCopyNumber=True
+        )
+        if file_path == cleanpath(orig_path):
+            return
 
-    #    # NOTE: ignoring namespace changes for now. Assuming that
-    #    #       dependency updates apply only to different versions of same asset.
+        # Remember load state so we can preserve it because
+        # changing a reference path always loads it
+        loaded = cmds.referenceQuery(node_handle, isLoaded=True)
+        # Update and load the reference
+        cmds.file(file_path, loadReference=node_handle)
+        if not loaded:
+            cmds.file(unloadReference=node_handle)
+
+        # NOTE: ignoring namespace changes for now. Assuming that
+        #       dependency updates apply only to different versions of same asset.
 
     @trace
     def _check_unsaved_changes(self) -> bool:
