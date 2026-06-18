@@ -9,4 +9,3 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 from . import tk_maya
-from . import flowam

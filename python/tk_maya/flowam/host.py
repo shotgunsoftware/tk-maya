@@ -131,6 +131,7 @@ class MayaHost(FlowHost):
 
         Raises:
             ValueError
+            RuntimeError
         """
         ext = fileext(file_path)
         if ext not in self.EXPORT_TYPES:

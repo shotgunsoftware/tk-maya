@@ -640,7 +640,7 @@ Please report any issues to:
         # Instantiate FlowHost if current context is configured with Flow
         if self.context.flow_project_id:
             self.logger.info("Instantiating Flow host as MayaHost...")
-            host_mod = self.import_module("flowam.host")
+            host_mod = self.import_module("tk_maya.flowam.host")
             self._flow_host = host_mod.MayaHost(self.context)
 
     def post_context_change(self, old_context, new_context):
