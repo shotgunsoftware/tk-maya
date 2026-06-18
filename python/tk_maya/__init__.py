@@ -8,8 +8,5 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-# flake8: noqa
-
 from .menu_generation import MenuGenerator
 from . import panel_generation
-from . import flowam
