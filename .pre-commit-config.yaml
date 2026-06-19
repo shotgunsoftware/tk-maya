@@ -33,7 +33,7 @@ repos:
     - id: trailing-whitespace
   # Leave black at the bottom so all touchups are done before it is run.
   - repo: https://github.com/psf/black
-    rev: 26.1.0
+    rev: 26.5.1
     hooks:
     - id: black
       language_version: python3
