@@ -201,7 +201,7 @@ class MayaHost(FlowHost):
             title: Title of dialog.
             starting_dir: Starting location of dialog.
             folder_mode: If True, dialog will browse folders instead of files.
-            file_filter: Extension of file type to filter for.
+            file_type: Extension of file type to filter for.
                          Applicable only when browsing files.
             multi_select: If True, allow multiple selection of files.
                           Applicable only when browsing files.
