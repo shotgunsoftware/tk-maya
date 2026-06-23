@@ -244,10 +244,13 @@ class MayaHost(FlowHost):
         Returns:
             True on success.
         """
-        from tank.platform.qt import QtGui as qtg
+        from tank.platform.qt import QtGui
 
-        qtg.QApplication.instance().clipboard().setText(text)
-        return True
+        app = QtGui.QApplication.instance()
+        if app:
+            app.clipboard().setText(text)
+            return True
+        return False
 
     @trace
     def get_dependency_tree(self, must_exist: bool = True) -> DependencyData:
@@ -299,7 +302,7 @@ class MayaHost(FlowHost):
 
         else:
             # Change Maya reference node
-            self._update_reference_dep(node_handle, attribute, file_path)
+            self._update_reference_dep(node_handle, file_path)
 
         updated_dep = DependencyData(
             dep_type=dep.dep_type,
@@ -491,7 +494,7 @@ class MayaHost(FlowHost):
         # Update maya attribute
         cmds.setAttr(f"{node_handle}.{attribute}", file_path, type="string")
 
-    def _update_reference_dep(self, node_handle: str, attribute: str, file_path: str):
+    def _update_reference_dep(self, node_handle: str, file_path: str):
         """Update Maya reference to new file."""
 
         # Check that file type is valid
