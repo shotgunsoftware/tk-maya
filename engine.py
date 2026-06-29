@@ -638,7 +638,7 @@ Please report any issues to:
         self._run_app_instance_commands()
 
         # Instantiate FlowHost if current context is configured with Flow
-        if self.context.flow_project_id:
+        if hasattr(self.context, "flow_project_id") and self.context.flow_project_id:
             self.logger.info("Instantiating Flow host as MayaHost...")
             host_mod = self.import_module("flowam.host")
             self._flow_host = host_mod.MayaHost(self.context)
