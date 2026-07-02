@@ -637,6 +637,12 @@ Please report any issues to:
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
 
+        # Instantiate FlowHost if current context is configured with Flow
+        if hasattr(self.context, "flow_project_id") and self.context.flow_project_id:
+            self.logger.info("Instantiating Flow host as MayaHost...")
+            host_mod = self.import_module("flowam.host")
+            self._flow_host = host_mod.MayaHost(self.context)
+
     def post_context_change(self, old_context, new_context):
         """
         Runs after a context change. The Maya event watching will be stopped
