@@ -120,7 +120,9 @@ class SceneEventWatcher(object):
         """
         if watcher.__run_once:
             watcher.stop_watching()
-        watcher.__cb_fn()
+        # Defer to avoid calling Maya commands from within a scene message callback,
+        # which causes a native crash in Maya 2027.
+        maya.utils.executeDeferred(watcher.__cb_fn)
 
     @staticmethod
     def __maya_exiting_callback(watcher):
@@ -212,6 +214,10 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
     """
     Callback that's run whenever a scene is saved or opened.
     """
+    engine = sgtk.platform.current_engine()
+    if engine and getattr(engine, "_scene_events_suppressed", False):
+        logger.debug("Scene event callback skipped: managed file operation in progress.")
+        return
     try:
         refresh_engine(engine_name, prev_context, menu_name)
     except Exception as e:
@@ -917,6 +923,22 @@ Please report any issues to:
     ##########################################################################################
     # scene and project management
 
+    def enter_file_operation(self):
+        """
+        Suppress scene event callbacks for the duration of a Workfiles file operation.
+        Must be paired with exit_file_operation().
+        """
+        self._scene_events_suppressed = True
+
+    def exit_file_operation(self):
+        """
+        Resume scene event callbacks after a Workfiles file operation.
+        The clear is deferred so callbacks already queued during the operation are skipped.
+        """
+        maya.utils.executeDeferred(
+            lambda: setattr(self, "_scene_events_suppressed", False)
+        )
+
     def _set_project(self):
         """
         Set the maya project
@@ -931,12 +953,12 @@ Please report any issues to:
         self.logger.info("Setting Maya project to '%s'", proj_path)
 
         try:
-            cmds.workspace(proj_path, openWorkspace=True)
+            # Use the `directory` flag instead of `openWorkspace` to avoid
+            # triggering Maya 2027's native Flow integration during workspace init.
+            cmds.workspace(directory=proj_path)
         except RuntimeError as e:
             self.logger.error("Maya failed to open Project. Error: %s", str(e))
             raise e
-
-        cmds.workspace(proj_path, openWorkspace=True)
 
     ##########################################################################################
     # panel support
