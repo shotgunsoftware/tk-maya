@@ -84,9 +84,7 @@ class MayaSessionPublishPlugin(HookBaseClass):
         however only the most recent publish will be available to other users.
         Warnings will be provided during validation if there are previous
         publishes.
-        """ % (
-            loader_url,
-        )
+        """ % (loader_url,)
 
     @property
     def settings(self):
