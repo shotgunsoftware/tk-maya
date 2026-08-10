@@ -84,7 +84,9 @@ class MayaSessionPublishPlugin(HookBaseClass):
         however only the most recent publish will be available to other users.
         Warnings will be provided during validation if there are previous
         publishes.
-        """ % (loader_url,)
+        """ % (
+            loader_url,
+        )
 
     @property
     def settings(self):
@@ -316,17 +318,41 @@ class MayaSessionPublishPlugin(HookBaseClass):
         path = sgtk.util.ShotgunPath.normalize(_session_path())
 
         # ensure the session is saved
-        _save_session(path)
+        # NOTE: skip this if we're in a background publish as the session has already been saved
+        if not self._in_bg_process(item):
+            _save_session(path)
+
+        # store the session path to ensure the background process can access the work file
+        if self._is_deferred_to_bg(item):
+            # store the current session path in the root item properties
+            # it will be used later in the background process to open the file before running the publishing actions
+            # NOTE: Because the collector has filtered for "maya session" items, we know that the parent
+            #       of this item will be the root item.
+            if "session_path" not in item.parent.properties:
+                item.parent.properties["session_path"] = path
+                item.parent.properties["session_name"] = (
+                    "Maya Session - {task_name}, {entity_type} {entity_name} - {file_name}".format(
+                        task_name=item.context.task["name"],
+                        entity_type=item.context.entity["type"],
+                        entity_name=item.context.entity["name"],
+                        file_name=os.path.basename(path),
+                    )
+                )
 
         # update the item with the saved session path
         item.properties["path"] = path
 
-        # add dependencies for the base class to register when publishing
-        item.properties["publish_dependencies"] = (
-            _maya_find_additional_session_dependencies()
-        )
+        if not self._is_deferred_to_bg(item):
+            # add dependencies for the base class to register when publishing
+            # (skip computing this when deferring - the base class would just
+            # discard it without using it, and this can be slow on heavy scenes)
+            item.properties["publish_dependencies"] = (
+                _maya_find_additional_session_dependencies()
+            )
 
         # let the base class register the publish
+        # NOTE: base class publish will gate publishing based on background publish
+        #       status so we will not explicitly gate this here.
         super().publish(settings, item)
 
     def finalize(self, settings, item):
@@ -341,9 +367,33 @@ class MayaSessionPublishPlugin(HookBaseClass):
         """
 
         # do the base class finalization
+        # NOTE: base class publish will gate finalizing based on background publish
+        #       status so we will not explicitly gate this here.
         super().finalize(settings, item)
 
-        self._save_to_next_version(item.get_property("path"), item, _save_session)
+        if not self._in_bg_process(item):
+            # Only increment the version if we are not in a background publish
+            # (This will have already been done by the foreground process and we do not
+            #  want to do it twice.)
+            self._save_to_next_version(item.get_property("path"), item, _save_session)
+
+    def _in_bg_process(self, item) -> bool:
+        """Return True if we are currently in a background publish process."""
+        root = item
+        while not root.is_root:
+            root = root.parent
+        return bool(root.properties.get("in_bg_process"))
+
+    def _is_deferred_to_bg(self, item) -> bool:
+        """Return True if publish item or any ancestor of it has bg publish enabled
+        but we are not currently in a bg process.
+        """
+        root = item
+        while not root.is_root:
+            root = root.parent
+        return bool(root.properties.get("bg_processing")) and not bool(
+            root.properties.get("in_bg_process")
+        )
 
 
 def _maya_find_additional_session_dependencies():
