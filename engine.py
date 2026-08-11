@@ -220,6 +220,13 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
         return
     try:
         refresh_engine(engine_name, prev_context, menu_name)
+    except sgtk.platform.TankMissingEngineError:
+        # The resolved context maps to an environment that doesn't include
+        # tk-maya (e.g. site.yml). Stay in the current context.
+        logger.debug(
+            "Engine '%s' not found in the resolved environment. Skipping context change.",
+            engine_name,
+        )
     except Exception as e:
         logger.exception("Could not refresh the engine; error: '%s'" % e)
         exc_type, exc_value, exc_traceback = sys.exc_info()
