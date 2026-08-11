@@ -324,11 +324,12 @@ class MayaSessionPublishPlugin(HookBaseClass):
         if self._is_deferred_to_bg(item):
             # store the current session path in the root item properties
             # it will be used later in the background process to open the file before running the publishing actions
-            # NOTE: Because the collector has filtered for "maya session" items, we know that the parent
-            #       of this item will be the root item.
-            if "session_path" not in item.parent.properties:
-                item.parent.properties["session_path"] = path
-                item.parent.properties["session_name"] = (
+            root = item
+            while not root.is_root:
+                root = root.parent
+            if root.properties.get("session_path") != path:
+                root.properties["session_path"] = path
+                root.properties["session_name"] = (
                     "Maya Session - {task_name}, {entity_type} {entity_name} - {file_name}".format(
                         task_name=item.context.task["name"],
                         entity_type=item.context.entity["type"],
