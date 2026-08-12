@@ -281,7 +281,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             try:
                 # Load Alembic plugin if it isn't already
                 if not cmds.pluginInfo("AbcExport", query=True, loaded=True):
-                    cmds.loadPlugin("AbcExport")
+                    cmds.loadPlugin(plugin)
                 self.parent.log_debug("Executing command: %s" % abc_export_cmd)
                 mel.eval(abc_export_cmd)
             except Exception as e:
@@ -306,7 +306,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             super().finalize(settings, item)
         else:
             self.logger.info(
-                "Background publish enabled — deferring finalize to the background process."
+                "Background publish enabled — deferring alembic publish finalize to the background process."
             )
 
     def _is_deferred_to_bg(self, item) -> bool:
