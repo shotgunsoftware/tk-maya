@@ -349,10 +349,12 @@ class MayaSessionPublishPlugin(HookBaseClass):
                 _maya_find_additional_session_dependencies()
             )
 
-        # let the base class register the publish
-        # NOTE: base class publish will gate publishing based on background publish
-        #       status so we will not explicitly gate this here.
-        super().publish(settings, item)
+            # let the base class register the publish
+            super().publish(settings, item)
+        else:
+            self.logger.info(
+                "Background publish enabled — deferring publish registration to the background process."
+            )
 
     def finalize(self, settings, item):
         """
@@ -365,10 +367,12 @@ class MayaSessionPublishPlugin(HookBaseClass):
         :param item: Item to process
         """
 
-        # do the base class finalization
-        # NOTE: base class publish will gate finalizing based on background publish
-        #       status so we will not explicitly gate this here.
-        super().finalize(settings, item)
+        if not self._is_deferred_to_bg(item):
+            super().finalize(settings, item)
+        else:
+            self.logger.info(
+                "Background publish enabled — deferring finalize to the background process."
+            )
 
         if not self._in_bg_process(item):
             # Only increment the version if we are not in a background publish
