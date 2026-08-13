@@ -684,8 +684,10 @@ Please report any issues to:
                 "Registered new open and save callbacks before changing context."
             )
 
-        # Set the Maya project to match the new context.
-        self._set_project()
+        # Defer the Maya project update to avoid a crash in Maya 2027 where
+        # cmds.workspace() followed immediately by cmds.file(save=True)
+        # causes Maya's native FPT kAfterSave callback to crash.
+        maya.utils.executeDeferred(self._set_project)
 
     def _run_app_instance_commands(self):
         """
