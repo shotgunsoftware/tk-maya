@@ -281,7 +281,7 @@ class MayaSessionGeometryPublishPlugin(HookBaseClass):
             try:
                 # Load Alembic plugin if it isn't already
                 if not cmds.pluginInfo("AbcExport", query=True, loaded=True):
-                    cmds.loadPlugin(plugin)
+                    cmds.loadPlugin("AbcExport")
                 self.parent.log_debug("Executing command: %s" % abc_export_cmd)
                 mel.eval(abc_export_cmd)
             except Exception as e:
