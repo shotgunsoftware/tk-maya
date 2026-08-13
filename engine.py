@@ -939,6 +939,7 @@ Please report any issues to:
         Suppress scene event callbacks for the duration of a Workfiles file operation.
         Must be paired with exit_file_operation().
         """
+        self._file_operation_depth = getattr(self, "_file_operation_depth", 0) + 1
         self._scene_events_suppressed = True
 
     def exit_file_operation(self):
@@ -946,9 +947,12 @@ Please report any issues to:
         Resume scene event callbacks after a Workfiles file operation.
         The clear is deferred so callbacks already queued during the operation are skipped.
         """
-        maya.utils.executeDeferred(
-            lambda: setattr(self, "_scene_events_suppressed", False)
-        )
+        def _clear_if_idle():
+            self._file_operation_depth = max(0, getattr(self, "_file_operation_depth", 1) - 1)
+            if self._file_operation_depth == 0:
+                self._scene_events_suppressed = False
+
+        maya.utils.executeDeferred(_clear_if_idle)
 
     def _set_project(self):
         """
@@ -969,7 +973,7 @@ Please report any issues to:
             cmds.workspace(directory=proj_path)
         except RuntimeError as e:
             self.logger.error("Maya failed to open Project. Error: %s", str(e))
-            raise e
+            raise
 
     ##########################################################################################
     # panel support
