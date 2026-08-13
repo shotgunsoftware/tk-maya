@@ -216,7 +216,9 @@ def on_scene_event_callback(engine_name, prev_context, menu_name):
     """
     engine = sgtk.platform.current_engine()
     if engine and getattr(engine, "_scene_events_suppressed", False):
-        logger.debug("Scene event callback skipped: managed file operation in progress.")
+        logger.debug(
+            "Scene event callback skipped: managed file operation in progress."
+        )
         return
     try:
         refresh_engine(engine_name, prev_context, menu_name)
