@@ -16,7 +16,6 @@ logger = LogManager.get_logger(__name__)
 
 from . import tk_maya
 
-
 try:
     from . import flowam
 except ImportError as exc:
