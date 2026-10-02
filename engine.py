@@ -184,6 +184,24 @@ def refresh_engine(engine_name, prev_context, menu_name):
         logger.debug("Extracted sgtk instance: '%r' from path: '%r'", tk, new_path)
 
     except sgtk.TankError as e:
+        # TEMP (SG-44954): a FlowAM session legitimately opens/saves scenes
+        # outside any Toolkit project folder (the sandbox draft, and a temp
+        # scratch file saved while building a new asset). Those paths cannot be
+        # resolved, so without this guard the on-open refresh would disable the
+        # FPT menu mid-build. For a FlowAM session, keep the current context and
+        # menu instead of disabling; a draft's FPT context is set explicitly by
+        # the loader, not derived from the path. Remove this branch when
+        # Iteration 2 drops the draft/sandbox layer and paths resolve normally.
+        if getattr(current_engine.context, "flow_project_id", None) is not None:
+            logger.debug(
+                "Path '%r' is not a Toolkit project path but this is a FlowAM "
+                "session; keeping the current context and menu.",
+                new_path,
+            )
+            current_engine.create_shotgun_menu()
+            remove_sgtk_disabled_menu()
+            return
+
         logger.exception("Could not execute sgtk_from_path('%s')" % new_path)
         OpenMaya.MGlobal.displayInfo(
             "Flow Production Tracking: Engine cannot be started: %s" % e
@@ -641,7 +659,7 @@ Please report any issues to:
         if hasattr(self.context, "flow_project_id") and self.context.flow_project_id:
             self.logger.info("Instantiating Flow host as MayaHost...")
             host_mod = self.import_module("flowam.host")
-            self._flow_host = host_mod.MayaHost(self.context)
+            self._flow_host = host_mod.MayaHost()
 
     def post_context_change(self, old_context, new_context):
         """
