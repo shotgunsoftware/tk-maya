@@ -51,6 +51,19 @@ def install_event_filter_by_widget(maya_panel, shotgun_panel_name):
     maya_panel.installEventFilter(filter)
 
 
+def remove_event_filters(maya_panel):
+    """
+    Removes and deletes the event filters installed on a Maya panel widget by
+    :func:`install_event_filter_by_widget`.
+
+    :param maya_panel: Qt widget of a Maya panel.
+    """
+    for child in maya_panel.children():
+        if isinstance(child, CloseEventFilter):
+            maya_panel.removeEventFilter(child)
+            shiboken.delete(child)
+
+
 def _find_widget(widget_name):
     """
     Given a name, return the first corresponding

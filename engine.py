@@ -595,6 +595,13 @@ Please report any issues to:
         # Each panel entry has a Maya panel name key and an app widget instance value.
         self._maya_panel_dict = {}
 
+        # Delete the engine's Qt widgets when Maya quits, see _on_maya_exiting.
+        self._maya_exiting_callback_id = None
+        if self.has_ui:
+            self._maya_exiting_callback_id = OpenMaya.MSceneMessage.addCallback(
+                OpenMaya.MSceneMessage.kMayaExiting, self._on_maya_exiting
+            )
+
     def create_shotgun_menu(self):
         """
         Creates the main shotgun menu in maya.
@@ -750,6 +757,8 @@ Please report any issues to:
         Stops watching scene events and tears down menu.
         """
         self.logger.debug("%s: Destroying...", self)
+
+        self._remove_maya_exiting_callback()
 
         # Clear the dictionary of Maya panels to keep the garbage collector happy.
         self._maya_panel_dict = {}
@@ -1075,3 +1084,60 @@ Please report any issues to:
 
         # Clear the dictionary of Maya panels now that they were deleted.
         self._maya_panel_dict = {}
+
+    def _on_maya_exiting(self, client_data=None):
+        """
+        Deletes the Qt widgets of the engine's dialogs and panels when Maya quits.
+
+        Maya destroys its Qt widgets natively when it quits. In release builds of
+        Maya 2027.2, PySide can crash when this teardown reaches Toolkit widgets:
+        the widgets of closed dialogs, which tk-core keeps alive, and the app
+        widgets docked in Maya panels. kMayaExiting runs while Maya and the Qt
+        event loop are still fully alive, so delete these widgets here first. It
+        runs in both classic and plug-in launches, while destroy_engine is not
+        called in a classic launch.
+
+        :param client_data: Unused data passed by Maya.
+        """
+        self._remove_maya_exiting_callback()
+        # Exceptions must not escape a Maya callback while Maya quits.
+        try:
+            self._destroy_qt_dialogs()
+        except Exception:
+            self.logger.exception("Could not delete the dialogs on Maya exit.")
+        try:
+            self._destroy_panels()
+        except Exception:
+            self.logger.exception("Could not delete the panels on Maya exit.")
+
+    def _destroy_panels(self):
+        """
+        Closes and deletes the app widgets docked in Maya panels.
+
+        The Maya panels themselves are kept, so Maya saves them in its layout and
+        the engine restores them at the next launch.
+        """
+        from sgtk.platform.qt import shiboken
+
+        tk_maya = self.import_module("tk_maya")
+        for maya_panel_name, widget in self._maya_panel_dict.items():
+            if not shiboken.isValid(widget):
+                continue
+            parent = widget.parentWidget()
+            if parent is not None and parent.objectName() == maya_panel_name:
+                # Otherwise, the event filter reparents the widget when Maya
+                # closes the panel.
+                tk_maya.panel_util.remove_event_filters(parent)
+            self.logger.debug("Deleting panel widget %s.", widget.objectName())
+            # Let the app shut down as when the user closes the panel.
+            widget.close()
+            shiboken.delete(widget)
+        self._maya_panel_dict = {}
+
+    def _remove_maya_exiting_callback(self):
+        """
+        Removes the kMayaExiting callback registered by init_engine, if any.
+        """
+        if self._maya_exiting_callback_id is not None:
+            OpenMaya.MMessage.removeCallback(self._maya_exiting_callback_id)
+            self._maya_exiting_callback_id = None
