@@ -26,7 +26,6 @@ exclude =
     .git,
     .flake8,
     .gitignore,
-    .travis.yml,
     .cache,
     .eggs,
     *.rst,
