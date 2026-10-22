@@ -52,11 +52,11 @@ class MayaHost(FlowHost):
     # BASE CLASS INTERFACE
     # ------------------------------------------
 
-    def __init__(self, context):
+    def __init__(self):
 
         self.logger.info("Doing MayaHost initialization...")
 
-        super().__init__(context)
+        super().__init__()
 
         # Add callbacks for relevant Maya events
         OpenMaya.MSceneMessage.addCallback(
